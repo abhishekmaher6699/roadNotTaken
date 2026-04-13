@@ -12,6 +12,8 @@ type BaseAuthFormProps = {
   footerText: string;
   footerHref: string;
   footerLinkLabel: string;
+  googleLabel: string;
+  onGoogleAuth: () => Promise<void>;
 };
 
 export type LoginAuthFormProps = BaseAuthFormProps & {

@@ -8,7 +8,6 @@ export function getPool() {
       throw new Error("DATABASE_URL is not defined");
     }
 
-    console.log("Connecting to:", process.env.DATABASE_URL);
 
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,

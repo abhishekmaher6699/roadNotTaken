@@ -31,6 +31,7 @@ export function AuthForm(props: AuthFormProps) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   const handleChange = (field: keyof SignupFormValues, value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -90,12 +91,41 @@ export function AuthForm(props: AuthFormProps) {
     }
   };
 
+  const handleGoogleAuth = async () => {
+    setSubmitError(null);
+    setIsGoogleSubmitting(true);
+
+    try {
+      await props.onGoogleAuth();
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Something went wrong"
+      );
+      setIsGoogleSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-100 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-md">
         <h1 className="mb-6 text-2xl font-semibold text-neutral-950">
           {props.title}
         </h1>
+
+        <button
+          type="button"
+          onClick={handleGoogleAuth}
+          disabled={isGoogleSubmitting || isSubmitting}
+          className="mb-4 flex w-full items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isGoogleSubmitting ? "Redirecting..." : props.googleLabel}
+        </button>
+
+        <div className="mb-4 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-neutral-400">
+          <span className="h-px flex-1 bg-neutral-200" />
+          <span>or</span>
+          <span className="h-px flex-1 bg-neutral-200" />
+        </div>
 
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <div className="space-y-1.5">

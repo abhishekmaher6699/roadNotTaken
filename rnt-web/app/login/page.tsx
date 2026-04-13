@@ -1,45 +1,13 @@
-"use client";
+import { redirect } from "next/navigation";
+import { LoginPageClient } from "./login-page-client";
+import { getServerAuthUser } from "@/lib/server-auth";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { AuthForm } from "@/components/auth/auth-form";
-import { useAuth } from "@/features/auth/hooks";
-import { isAuthenticated } from "@/lib/auth";
-import { type LoginFormValues } from "@/features/auth/validation";
+export default async function LoginPage() {
+  const user = await getServerAuthUser();
 
-export default function LoginPage() {
-  const router = useRouter();
-  const { login } = useAuth();
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    if (isAuthenticated()) {
-      router.replace("/map");
-      return;
-    }
-
-    setIsReady(true);
-  }, [router]);
-
-  const handleLogin = async ({ email, password }: LoginFormValues) => {
-    await login(email, password);
-    router.replace("/map");
-  };
-
-  if (!isReady) {
-    return null;
+  if (user) {
+    redirect("/map");
   }
 
-  return (
-    <AuthForm
-      mode="login"
-      title="Login"
-      submitLabel="Login"
-      pendingLabel="Logging in..."
-      footerText="Don't have an account?"
-      footerHref="/signup"
-      footerLinkLabel="Sign up"
-      onSubmit={handleLogin}
-    />
-  );
+  return <LoginPageClient />;
 }

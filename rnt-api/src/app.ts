@@ -8,8 +8,14 @@ import authRoutes from "./modules/auth/auth.routes"
 
 const app = express();
 
+const webUrl = process.env.WEB_URL || "http://localhost:3000";
 
-app.use(cors());
+app.use(
+  cors({
+    origin: webUrl,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 

@@ -1,19 +1,14 @@
-const API_URL = "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export async function apiClient(
   endpoint: string,
   options: RequestInit = {}
 ) {
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("token")
-      : null;
-
   const res = await fetch(`${API_URL}${endpoint}`, {
+    credentials: "include",
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     },
   });
@@ -24,4 +19,8 @@ export async function apiClient(
   }
 
   return res.json();
+}
+
+export function getApiUrl(endpoint: string) {
+  return `${API_URL}${endpoint}`;
 }

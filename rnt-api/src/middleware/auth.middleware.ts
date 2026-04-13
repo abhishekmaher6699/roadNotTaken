@@ -1,18 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { getSupabaseClient } from '../config/supabase';
+import { getAccessTokenFromRequest } from '../modules/auth/auth.cookies';
 
 
 export async function authMiddleware(req: any, res: Response, next: NextFunction) {
   
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const token = authHeader.split(' ')[1];
+    const token = getAccessTokenFromRequest(req);
     if (!token) {
-      return res.status(401).json({ error: 'Invalid token format' });
+      return res.status(401).json({ error: 'No token provided' });
     }
 
     const supabase = getSupabaseClient();
@@ -22,6 +18,7 @@ export async function authMiddleware(req: any, res: Response, next: NextFunction
     }
 
     req.user = data.user;
+    req.accessToken = token;
 
     next();
   } catch (err) {

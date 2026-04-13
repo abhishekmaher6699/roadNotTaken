@@ -1,8 +1,11 @@
-export function getToken() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token");
-}
+export function getOAuthHashParams() {
+  if (typeof window === "undefined") {
+    return new URLSearchParams();
+  }
 
-export function isAuthenticated() {
-  return !!getToken();
+  const hash = window.location.hash.startsWith("#")
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+
+  return new URLSearchParams(hash);
 }
