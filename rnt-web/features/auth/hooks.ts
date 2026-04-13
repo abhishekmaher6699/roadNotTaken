@@ -10,7 +10,8 @@ export function useAuth() {
   };
 
   const signup = async (email: string, password: string) => {
-    return signupApi(email, password);
+    await signupApi(email, password);
+    return login(email, password);
   };
 
   return { login, signup };
