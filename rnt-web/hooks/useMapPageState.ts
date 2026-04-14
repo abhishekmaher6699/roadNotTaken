@@ -12,7 +12,7 @@ import type {
   MapViewport,
   PendingPin,
 } from "@/types/mapTypes";
-import { getVisibleTiles } from "@/features/pins/tile-utils";
+import { getVisibleTiles, MIN_PIN_ZOOM } from "@/features/pins/tile-utils";
 
 export function useMapPageState() {
   const { pins, addPin, editPin, removePin, loadTiles } = usePins();
@@ -78,8 +78,13 @@ export function useMapPageState() {
     }
 
     viewportDebounceRef.current = setTimeout(() => {
+      if (viewport.zoom < MIN_PIN_ZOOM) {
+        void loadTiles([], viewport);
+        return;
+      }
+
       const visibleTiles = getVisibleTiles(viewport, viewport.zoom);
-      void loadTiles(visibleTiles);
+      void loadTiles(visibleTiles, viewport);
     }, 120);
   };
 

@@ -51,6 +51,14 @@ export interface TileCoordinates {
   z: number;
 }
 
+export type TileCacheStatus = "idle" | "loading" | "ready" | "error";
+
+export interface TileCacheEntry {
+  pins: Pin[];
+  status: TileCacheStatus;
+  fetchedAt: number | null;
+}
+
 export interface TilePinsResponse {
   pins: Pin[];
   tiles: TileCoordinates[];

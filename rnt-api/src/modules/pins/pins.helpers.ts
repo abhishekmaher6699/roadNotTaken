@@ -15,17 +15,34 @@ export function getPinsPerTileLimit(zoom: number) {
   const zoomLevel = Math.max(0, Math.floor(zoom));
 
   if (zoomLevel <= 4) return 1;
-  if (zoomLevel <= 6) return 2;
-  if (zoomLevel <= 8) return 3;
-  if (zoomLevel <= 10) return 5;
-  if (zoomLevel === 11) return 7;
-  if (zoomLevel === 12) return 10;
-  if (zoomLevel === 13) return 14;
-  if (zoomLevel === 14) return 18;
-  if (zoomLevel === 15) return 24;
-  if (zoomLevel === 16) return 32;
+  if (zoomLevel <= 6) return 1;
+  if (zoomLevel <= 8) return 2;
+  if (zoomLevel <= 10) return 3;
+  if (zoomLevel === 11) return 4;
+  if (zoomLevel === 12) return 6;
+  if (zoomLevel === 13) return 8;
+  if (zoomLevel === 14) return 10;
+  if (zoomLevel === 15) return 12;
+  if (zoomLevel === 16) return 16;
 
-  return 40;
+  return 20;
+}
+
+export function getViewportPinLimit(zoom: number) {
+  const zoomLevel = Math.max(0, Math.floor(zoom));
+
+  if (zoomLevel <= 4) return 4;
+  if (zoomLevel <= 6) return 6;
+  if (zoomLevel <= 8) return 10;
+  if (zoomLevel <= 10) return 16;
+  if (zoomLevel === 11) return 24;
+  if (zoomLevel === 12) return 36;
+  if (zoomLevel === 13) return 48;
+  if (zoomLevel === 14) return 64;
+  if (zoomLevel === 15) return 84;
+  if (zoomLevel === 16) return 110;
+
+  return 140;
 }
 
 export function tileToBounds({ x, y, z }: TileCoordinates): TileBounds {

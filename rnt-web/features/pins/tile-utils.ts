@@ -11,8 +11,36 @@ export interface ViewportBounds {
   west: number;
 }
 
+export const MIN_PIN_ZOOM = 10;
+
 export function tileKey(tile: TileCoordinates) {
   return `${tile.z}/${tile.x}/${tile.y}`;
+}
+
+function getTilesForBounds(
+  bounds: ViewportBounds,
+  zoom: number,
+  padding = 0
+) {
+  const clampedZoom = Math.max(0, Math.floor(zoom));
+  const northWest = latLngToTile(bounds.north, bounds.west, clampedZoom);
+  const southEast = latLngToTile(bounds.south, bounds.east, clampedZoom);
+
+  const maxIndex = 2 ** clampedZoom - 1;
+  const minX = Math.max(0, Math.min(northWest.x, southEast.x) - padding);
+  const maxX = Math.min(maxIndex, Math.max(northWest.x, southEast.x) + padding);
+  const minY = Math.max(0, Math.min(northWest.y, southEast.y) - padding);
+  const maxY = Math.min(maxIndex, Math.max(northWest.y, southEast.y) + padding);
+
+  const tiles: TileCoordinates[] = [];
+
+  for (let x = minX; x <= maxX; x += 1) {
+    for (let y = minY; y <= maxY; y += 1) {
+      tiles.push({ x, y, z: clampedZoom });
+    }
+  }
+
+  return tiles;
 }
 
 export function latLngToTile(lat: number, lng: number, zoom: number): TileCoordinates {
@@ -30,28 +58,24 @@ export function latLngToTile(lat: number, lng: number, zoom: number): TileCoordi
 }
 
 export function getVisibleTiles(bounds: ViewportBounds, zoom: number) {
-  const clampedZoom = Math.max(0, Math.floor(zoom));
-  const northWest = latLngToTile(bounds.north, bounds.west, clampedZoom);
-  const southEast = latLngToTile(bounds.south, bounds.east, clampedZoom);
-
-  const maxIndex = 2 ** clampedZoom - 1;
-  const tiles: TileCoordinates[] = [];
-
-  for (
-    let x = Math.max(0, Math.min(northWest.x, southEast.x));
-    x <= Math.min(maxIndex, Math.max(northWest.x, southEast.x));
-    x += 1
-  ) {
-    for (
-      let y = Math.max(0, Math.min(northWest.y, southEast.y));
-      y <= Math.min(maxIndex, Math.max(northWest.y, southEast.y));
-      y += 1
-    ) {
-      tiles.push({ x, y, z: clampedZoom });
-    }
+  if (zoom < MIN_PIN_ZOOM) {
+    return [];
   }
 
-  return tiles;
+  return getTilesForBounds(bounds, zoom);
+}
+
+export function getPrefetchTiles(bounds: ViewportBounds, zoom: number) {
+  if (zoom < MIN_PIN_ZOOM) {
+    return [];
+  }
+
+  const visibleTiles = getTilesForBounds(bounds, zoom);
+  const visibleKeys = new Set(visibleTiles.map(tileKey));
+
+  return getTilesForBounds(bounds, zoom, 1).filter(
+    (tile) => !visibleKeys.has(tileKey(tile))
+  );
 }
 
 export function getTileBounds(tile: TileCoordinates): ViewportBounds {
@@ -84,4 +108,29 @@ export function isPinInsideTile(
     pin.latitude >= bounds.south &&
     pin.latitude < bounds.north
   );
+}
+
+export function getParentTile(tile: TileCoordinates) {
+  if (tile.z <= 0) {
+    return null;
+  }
+
+  return {
+    x: Math.floor(tile.x / 2),
+    y: Math.floor(tile.y / 2),
+    z: tile.z - 1,
+  };
+}
+
+export function getChildTiles(tile: TileCoordinates) {
+  const nextZoom = tile.z + 1;
+  const baseX = tile.x * 2;
+  const baseY = tile.y * 2;
+
+  return [
+    { x: baseX, y: baseY, z: nextZoom },
+    { x: baseX + 1, y: baseY, z: nextZoom },
+    { x: baseX, y: baseY + 1, z: nextZoom },
+    { x: baseX + 1, y: baseY + 1, z: nextZoom },
+  ];
 }

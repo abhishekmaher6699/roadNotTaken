@@ -1,6 +1,6 @@
 import { getPool } from '../../config/db';
 import { CreatePinInput, TileQueryInput, UpdatePinInput } from './pins.types';
-import { getPinsPerTileLimit, tileToBounds } from './pins.helpers';
+import { getPinsPerTileLimit, getViewportPinLimit, tileToBounds } from './pins.helpers';
 
 const PIN_SELECT_FRAGMENT = `
   id,
@@ -211,6 +211,9 @@ export async function getPinsForTiles({ tiles }: TileQueryInput) {
   }
 
   const pool = getPool();
+  const viewportPinLimit = getViewportPinLimit(
+    Math.max(...tiles.map((tile) => tile.z))
+  );
   const requestedTiles = tiles.map((tile) => {
     const bounds = tileToBounds(tile);
 
@@ -256,6 +259,7 @@ export async function getPinsForTiles({ tiles }: TileQueryInput) {
     FROM ranked_tile_pins
     WHERE tile_rank <= pin_limit
     ORDER BY score DESC NULLS LAST, created_at DESC, id DESC
+    LIMIT ${viewportPinLimit}
     `
   );
 
