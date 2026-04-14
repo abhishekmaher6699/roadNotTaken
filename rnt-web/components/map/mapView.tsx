@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   MapContainer,
   Marker,
   Popup,
   TileLayer,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 import { AddPinProps, MapViewProps } from "@/types/mapTypes";
@@ -38,6 +40,44 @@ function ClearSelectedPin({
   return null;
 }
 
+function ViewportReporter({
+  onViewportChange,
+}: {
+  onViewportChange: MapViewProps["onViewportChange"];
+}) {
+  const map = useMap();
+
+  const reportViewport = () => {
+    const bounds = map.getBounds();
+    const size = map.getSize();
+    const viewport = {
+      north: bounds.getNorth(),
+      south: bounds.getSouth(),
+      east: bounds.getEast(),
+      west: bounds.getWest(),
+      zoom: map.getZoom(),
+    };
+
+    console.log("[mapView] reporting viewport", {
+      ...viewport,
+      width: size.x,
+      height: size.y,
+    });
+    onViewportChange(viewport);
+  };
+
+  useMapEvents({
+    moveend: reportViewport,
+    zoomend: reportViewport,
+  });
+
+  useEffect(() => {
+    reportViewport();
+  }, []);
+
+  return null;
+}
+
 export default function MapView({
   pins,
   mode,
@@ -45,6 +85,7 @@ export default function MapView({
   pendingPin,
   draftPin,
   onAddPin,
+  onViewportChange,
   onSelectPin,
   onClearSelection,
   onConfirmPin,
@@ -53,7 +94,7 @@ export default function MapView({
   return (
     <MapContainer
       center={[18.52, 73.85]}
-      zoom={13}
+      zoom={15}
       className="z-0 h-full w-full"
       zoomControl={false}
       attributionControl={false}
@@ -74,6 +115,8 @@ export default function MapView({
             : "© OpenStreetMap contributors"
         }
       />
+
+      <ViewportReporter onViewportChange={onViewportChange} />
 
       {pins.map((pin) => (
         <Marker

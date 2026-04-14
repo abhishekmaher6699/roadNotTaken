@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePins } from "@/features/pins/hooks";
 import { useAuth } from "@/features/auth/hooks";
@@ -9,11 +9,13 @@ import type {
   BasemapMode,
   MapMode,
   MapSidebarView,
+  MapViewport,
   PendingPin,
 } from "@/types/mapTypes";
+import { getVisibleTiles } from "@/features/pins/tile-utils";
 
 export function useMapPageState() {
-  const { pins, addPin, editPin, removePin } = usePins();
+  const { pins, addPin, editPin, removePin, loadTiles } = usePins();
   const { logout } = useAuth();
   const router = useRouter();
 
@@ -23,6 +25,7 @@ export function useMapPageState() {
   const [draftPin, setDraftPin] = useState<PendingPin | null>(null);
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [sidebarView, setSidebarView] = useState<MapSidebarView>(null);
+  const viewportDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleLogout = async () => {
     await logout();
@@ -67,6 +70,25 @@ export function useMapPageState() {
     setBasemap((current) =>
       current === "standard" ? "imagery" : "standard"
     );
+  };
+
+  const handleViewportChange = (viewport: MapViewport) => {
+    console.log("[map] viewport changed", viewport);
+
+    if (viewportDebounceRef.current) {
+      console.log("[map] clearing pending viewport debounce");
+      clearTimeout(viewportDebounceRef.current);
+    }
+
+    viewportDebounceRef.current = setTimeout(() => {
+      const visibleTiles = getVisibleTiles(viewport, viewport.zoom);
+
+      console.log("[map] loading tiles for viewport", {
+        zoom: viewport.zoom,
+        visibleTileCount: visibleTiles.length,
+      });
+      void loadTiles(visibleTiles);
+    }, 120);
   };
 
   const handleCreatePin = async (values: CreatePinInput) => {
@@ -136,6 +158,7 @@ export function useMapPageState() {
     handleCancelPin,
     handleModeChange,
     handleBasemapToggle,
+    handleViewportChange,
     handleCreatePin,
     handleStartEditPin,
     handleUpdatePin,

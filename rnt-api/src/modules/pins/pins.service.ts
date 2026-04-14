@@ -1,5 +1,24 @@
 import { getPool } from '../../config/db';
-import { CreatePinInput, UpdatePinInput } from './pins.types';
+import { CreatePinInput, TileQueryInput, UpdatePinInput } from './pins.types';
+import { tileToBounds } from './pins.helpers';
+
+const PIN_SELECT_FRAGMENT = `
+  id,
+  user_id,
+  posted_by,
+  latitude,
+  longitude,
+  title,
+  category,
+  address,
+  status,
+  access_level,
+  description,
+  COALESCE(thumbnail_url, image_url) AS thumbnail_url,
+  image_urls,
+  created_at,
+  updated_at
+`;
 
 export async function createPin(data: CreatePinInput) {
   const pool = getPool();
@@ -56,6 +75,21 @@ export async function createPin(data: CreatePinInput) {
   );
 
   return result.rows[0];
+}
+
+export async function getAllPins() {
+  const pool = getPool();
+
+  const result = await pool.query(
+    `
+    SELECT
+      ${PIN_SELECT_FRAGMENT}
+    FROM pins
+    ORDER BY created_at DESC
+    `
+  );
+
+  return result.rows;
 }
 
 export async function deletePinById(id: string, userId: string) {
@@ -148,4 +182,34 @@ export async function updatePinById(
   );
 
   return result.rows[0] ?? null;
+}
+
+export async function getPinsForTiles({ tiles }: TileQueryInput) {
+  if (tiles.length === 0) {
+    return [];
+  }
+
+  const pool = getPool();
+  const values: number[] = [];
+
+  const tileClauses = tiles.map((tile, index) => {
+    const bounds = tileToBounds(tile);
+    const offset = index * 4;
+    values.push(bounds.west, bounds.east, bounds.south, bounds.north);
+
+    return `(longitude >= $${offset + 1} AND longitude < $${offset + 2} AND latitude >= $${offset + 3} AND latitude < $${offset + 4})`;
+  });
+
+  const result = await pool.query(
+    `
+    SELECT DISTINCT
+      ${PIN_SELECT_FRAGMENT}
+    FROM pins
+    WHERE ${tileClauses.join(' OR ')}
+    ORDER BY created_at DESC
+    `,
+    values
+  );
+
+  return result.rows;
 }

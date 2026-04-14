@@ -10,6 +10,14 @@ export interface PendingPin {
   lng: number;
 }
 
+export interface MapViewport {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+  zoom: number;
+}
+
 export type MapSidebarView = "create" | "details" | "edit" | null;
 
 export type AddPinProps = {
@@ -23,6 +31,7 @@ export type MapViewProps = {
   pendingPin: PendingPin | null;
   draftPin: PendingPin | null;
   onAddPin: (latlng: LatLng) => void;
+  onViewportChange: (viewport: MapViewport) => void;
   onSelectPin: (pin: Pin) => void;
   onClearSelection: () => void;
   onConfirmPin: () => void;

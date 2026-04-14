@@ -25,3 +25,11 @@ export interface UpdatePinInput {
   thumbnail_url?: string;
   image_urls?: string[];
 }
+
+export interface TileQueryInput {
+  tiles: Array<{
+    x: number;
+    y: number;
+    z: number;
+  }>;
+}

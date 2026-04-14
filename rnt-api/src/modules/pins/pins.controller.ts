@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { createPin, deletePinById, updatePinById } from './pins.service';
-import { getPool } from '../../config/db';
+import { createPin, deletePinById, getAllPins, getPinsForTiles, updatePinById } from './pins.service';
+import { TileQueryInput } from './pins.types';
 
 export async function createPinHandler(req: any, res: any) {
   try {
@@ -21,33 +21,36 @@ export async function createPinHandler(req: any, res: any) {
 
 export async function getPinsHandler(req: Request, res: Response) {
   try {
-    const pool = getPool();
-
-    const result = await pool.query(`
-      SELECT
-        id,
-        user_id,
-        posted_by,
-        latitude,
-        longitude,
-        title,
-        category,
-        address,
-        status,
-        access_level,
-        description,
-        COALESCE(thumbnail_url, image_url) AS thumbnail_url,
-        image_urls,
-        created_at,
-        updated_at
-      FROM pins
-      ORDER BY created_at DESC
-    `);
-
-    res.json(result.rows);
+    const pins = await getAllPins();
+    res.json(pins);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch pins' });
+  }
+}
+
+export async function getPinsForTilesHandler(req: Request, res: Response) {
+  try {
+    const tiles: TileQueryInput['tiles'] = Array.isArray(req.body?.tiles) ? req.body.tiles : [];
+
+    if (tiles.some((tile) =>
+      !tile ||
+      !Number.isInteger(tile.x) ||
+      !Number.isInteger(tile.y) ||
+      !Number.isInteger(tile.z)
+    )) {
+      return res.status(400).json({ error: 'Invalid tile query' });
+    }
+
+    const pins = await getPinsForTiles({ tiles });
+
+    return res.json({
+      pins,
+      tiles,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to fetch tile pins' });
   }
 }
 

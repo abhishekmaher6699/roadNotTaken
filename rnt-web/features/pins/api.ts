@@ -1,8 +1,21 @@
 import { apiClient } from "@/lib/api-client";
-import { CreatePinInput, Pin, UpdatePinInput } from "./types";
+import {
+  CreatePinInput,
+  Pin,
+  TileCoordinates,
+  TilePinsResponse,
+  UpdatePinInput,
+} from "./types";
 
 export function getPinsApi() {
   return apiClient("/pins") as Promise<Pin[]>;
+}
+
+export function getPinsForTilesApi(tiles: TileCoordinates[]) {
+  return apiClient("/pins/tiles/query", {
+    method: "POST",
+    body: JSON.stringify({ tiles }),
+  }) as Promise<TilePinsResponse>;
 }
 
 export function createPinApi(data: CreatePinInput) {

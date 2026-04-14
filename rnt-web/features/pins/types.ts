@@ -43,3 +43,14 @@ export interface UpdatePinInput {
   image_urls?: string[];
   image_url?: string;
 }
+
+export interface TileCoordinates {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface TilePinsResponse {
+  pins: Pin[];
+  tiles: TileCoordinates[];
+}

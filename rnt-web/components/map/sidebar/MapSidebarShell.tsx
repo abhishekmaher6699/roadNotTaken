@@ -35,9 +35,7 @@ export function MapSidebarShell({
       <div className="flex h-full flex-col">
         <div className="flex items-start justify-between border-b border-neutral-200 px-4 py-3 sm:px-5">
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
-              Sidebar
-            </p>
+
             <h2 className="mt-1 text-base font-semibold text-neutral-950 sm:text-lg">
               {title}
             </h2>

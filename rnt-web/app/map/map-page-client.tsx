@@ -28,6 +28,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleCancelPin,
     handleModeChange,
     handleBasemapToggle,
+    handleViewportChange,
     handleCreatePin,
     handleStartEditPin,
     handleUpdatePin,
@@ -46,6 +47,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         pendingPin={pendingPin}
         draftPin={draftPin}
         onAddPin={handleAddPin}
+        onViewportChange={handleViewportChange}
         onSelectPin={setSelectedPin}
         onClearSelection={handleClearSelection}
         onConfirmPin={handleConfirmPin}
