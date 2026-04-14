@@ -23,6 +23,13 @@ import {
 import type { ViewportBounds } from "./tile-utils";
 
 type TileCache = Record<string, TileCacheEntry>;
+type TileSnapshot = {
+  key: string;
+  entry: TileCacheEntry | undefined;
+};
+const TILE_CACHE_TTL_MS = 10 * 60 * 1000;
+const MIN_PREFETCH_ZOOM = 13;
+const MAX_PREFETCH_VISIBLE_TILES = 9;
 
 const EMPTY_TILE_ENTRY: TileCacheEntry = {
   pins: [],
@@ -32,6 +39,15 @@ const EMPTY_TILE_ENTRY: TileCacheEntry = {
 
 function getTileEntry(cache: TileCache, tile: TileCoordinates) {
   return cache[tileKey(tile)] ?? EMPTY_TILE_ENTRY;
+}
+
+function isTileEntryFresh(entry?: TileCacheEntry) {
+  return (
+    !!entry &&
+    entry.status === "ready" &&
+    entry.fetchedAt !== null &&
+    Date.now() - entry.fetchedAt < TILE_CACHE_TTL_MS
+  );
 }
 
 function mergePinsIntoTiles(
@@ -137,6 +153,17 @@ export function usePins() {
   const [activeTiles, setActiveTiles] = useState<TileCoordinates[]>([]);
   const inFlightTilesRef = useRef<Set<string>>(new Set());
   const tileCacheRef = useRef<TileCache>({});
+  const activeRequestRef = useRef<{
+    controller: AbortController;
+    requestId: number;
+    tileSnapshots: TileSnapshot[];
+  } | null>(null);
+  const requestIdRef = useRef(0);
+  const requestStatsRef = useRef({
+    started: 0,
+    completed: 0,
+    aborted: 0,
+  });
 
   const pins = useMemo(() => {
     const visiblePins = new Map<string, Pin>();
@@ -166,7 +193,15 @@ export function usePins() {
   ) => {
     setActiveTiles(visibleTiles);
 
-    const prefetchTiles = bounds ? getPrefetchTiles(bounds, visibleTiles[0]?.z ?? 0) : [];
+    const shouldPrefetch =
+      !!bounds &&
+      (visibleTiles[0]?.z ?? 0) >= MIN_PREFETCH_ZOOM &&
+      visibleTiles.length <= MAX_PREFETCH_VISIBLE_TILES;
+
+    const prefetchTiles =
+      shouldPrefetch && bounds
+        ? getPrefetchTiles(bounds, visibleTiles[0]?.z ?? 0)
+        : [];
     const requestedTiles = [...visibleTiles, ...prefetchTiles].filter(
       (tile, index, allTiles) =>
         index === allTiles.findIndex((candidate) => tileKey(candidate) === tileKey(tile))
@@ -195,13 +230,51 @@ export function usePins() {
       const key = tileKey(tile);
       const entry = tileCacheRef.current[key];
 
-      return (!entry || entry.status === "idle" || entry.status === "error") &&
+      return (!isTileEntryFresh(entry) || entry.status === "error") &&
         !inFlightTilesRef.current.has(key);
     });
 
     if (missingTiles.length === 0) {
       return;
     }
+
+    if (activeRequestRef.current) {
+      activeRequestRef.current.controller.abort();
+      activeRequestRef.current.tileSnapshots.forEach(({ key }) => {
+        inFlightTilesRef.current.delete(key);
+      });
+      activeRequestRef.current = null;
+      requestStatsRef.current.aborted += 1;
+      console.info("[pins] tile request aborted", {
+        started: requestStatsRef.current.started,
+        completed: requestStatsRef.current.completed,
+        aborted: requestStatsRef.current.aborted,
+      });
+    }
+
+    const controller = new AbortController();
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    const tileSnapshots = missingTiles.map((tile) => {
+      const key = tileKey(tile);
+      return {
+        key,
+        entry: tileCacheRef.current[key],
+      };
+    });
+    activeRequestRef.current = {
+      controller,
+      requestId,
+      tileSnapshots,
+    };
+    requestStatsRef.current.started += 1;
+    console.info("[pins] tile request started", {
+      requestId,
+      tileCount: missingTiles.length,
+      started: requestStatsRef.current.started,
+      completed: requestStatsRef.current.completed,
+      aborted: requestStatsRef.current.aborted,
+    });
 
     setTileCache((current) => {
       const nextCache = { ...current };
@@ -224,7 +297,10 @@ export function usePins() {
     missingTiles.forEach((tile) => inFlightTilesRef.current.add(tileKey(tile)));
 
     try {
-      const response = await getPinsForTilesApi(missingTiles);
+      const response = await getPinsForTilesApi(missingTiles, controller.signal);
+      if (!activeRequestRef.current || activeRequestRef.current.requestId !== requestId) {
+        return;
+      }
       const fetchedTiles = response.tiles ?? missingTiles;
 
       setTileCache((current) => {
@@ -232,7 +308,31 @@ export function usePins() {
         tileCacheRef.current = nextCache;
         return nextCache;
       });
-    } catch {
+      requestStatsRef.current.completed += 1;
+      console.info("[pins] tile request completed", {
+        requestId,
+        tileCount: fetchedTiles.length,
+        pinCount: response.pins?.length ?? 0,
+        started: requestStatsRef.current.started,
+        completed: requestStatsRef.current.completed,
+        aborted: requestStatsRef.current.aborted,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        setTileCache((current) => {
+          const nextCache = { ...current };
+
+          tileSnapshots.forEach(({ key, entry }) => {
+            nextCache[key] = entry ?? EMPTY_TILE_ENTRY;
+          });
+
+          tileCacheRef.current = nextCache;
+          return nextCache;
+        });
+
+        return;
+      }
+
       setTileCache((current) => {
         const nextCache = { ...current };
 
@@ -252,6 +352,9 @@ export function usePins() {
       });
     } finally {
       missingTiles.forEach((tile) => inFlightTilesRef.current.delete(tileKey(tile)));
+      if (activeRequestRef.current?.requestId === requestId) {
+        activeRequestRef.current = null;
+      }
     }
   };
 

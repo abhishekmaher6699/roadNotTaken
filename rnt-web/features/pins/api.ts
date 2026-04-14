@@ -11,9 +11,13 @@ export function getPinsApi() {
   return apiClient("/pins") as Promise<Pin[]>;
 }
 
-export function getPinsForTilesApi(tiles: TileCoordinates[]) {
+export function getPinsForTilesApi(
+  tiles: TileCoordinates[],
+  signal?: AbortSignal
+) {
   return apiClient("/pins/tiles/query", {
     method: "POST",
+    signal,
     body: JSON.stringify({ tiles }),
   }) as Promise<TilePinsResponse>;
 }
