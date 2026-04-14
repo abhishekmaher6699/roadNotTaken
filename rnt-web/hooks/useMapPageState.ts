@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePins } from "@/features/pins/hooks";
 import { useAuth } from "@/features/auth/hooks";
-import type { CreatePinInput, Pin } from "@/features/pins/types";
+import type { CreatePinInput, Pin, UpdatePinInput } from "@/features/pins/types";
 import type {
   BasemapMode,
   MapMode,
@@ -13,7 +13,7 @@ import type {
 } from "@/types/mapTypes";
 
 export function useMapPageState() {
-  const { pins, addPin, removePin } = usePins();
+  const { pins, addPin, editPin, removePin } = usePins();
   const { logout } = useAuth();
   const router = useRouter();
 
@@ -83,8 +83,23 @@ export function useMapPageState() {
     setSidebarView(null);
   };
 
+  const handleStartEditPin = () => {
+    if (!selectedPin) {
+      return;
+    }
+
+    setSidebarView("edit");
+  };
+
+  const handleUpdatePin = async (pinId: string, values: UpdatePinInput) => {
+    const updatedPin = await editPin(pinId, values);
+    setSelectedPin(updatedPin);
+    setSidebarView("details");
+    setMode("view");
+  };
+
   const handleClearSelection = () => {
-    if (sidebarView === "details") {
+    if (sidebarView === "details" || sidebarView === "edit") {
       return;
     }
 
@@ -94,6 +109,9 @@ export function useMapPageState() {
   const handleCloseSidebar = () => {
     if (sidebarView === "details") {
       setSelectedPin(null);
+    } else if (sidebarView === "edit") {
+      setSidebarView("details");
+      return;
     }
     setSidebarView(null);
     setDraftPin(null);
@@ -119,6 +137,8 @@ export function useMapPageState() {
     handleModeChange,
     handleBasemapToggle,
     handleCreatePin,
+    handleStartEditPin,
+    handleUpdatePin,
     handleDeletePin,
     handleClearSelection,
     handleCloseSidebar,

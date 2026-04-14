@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { getPinsApi, createPinApi, deletePinApi } from "./api";
-import { CreatePinInput, Pin } from "./types";
+import { getPinsApi, createPinApi, deletePinApi, updatePinApi } from "./api";
+import { CreatePinInput, Pin, UpdatePinInput } from "./types";
 
 export function usePins() {
   const [pins, setPins] = useState<Pin[]>([]);
@@ -24,5 +24,13 @@ export function usePins() {
     setPins((prev) => prev.filter((pin) => pin.id !== id));
   };
 
-  return { pins, addPin, removePin };
+  const editPin = async (id: string, data: UpdatePinInput) => {
+    const updatedPin = await updatePinApi(id, data);
+    setPins((prev) =>
+      prev.map((pin) => (pin.id === id ? { ...pin, ...updatedPin } : pin))
+    );
+    return updatedPin;
+  };
+
+  return { pins, addPin, editPin, removePin };
 }

@@ -1,36 +1,36 @@
 "use client";
 
-import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useCloudinaryUpload } from "@/features/uploads/hooks";
-import type { CreatePinInput } from "@/features/pins/types";
-import type { CreatePinFormController, CreatePinFormState } from "./types";
-import { createPinSchema } from "./validation";
+import type { CreatePinInput, UpdatePinInput } from "@/features/pins/types";
+import type {
+  PinFormController,
+  PinFormFieldKey,
+  PinFormState,
+  UsePinFormOptions,
+} from "./types";
+import { pinFormSchema } from "./validation";
 
 const MAX_IMAGES = 10;
 
-const initialFormState: CreatePinFormState = {
+const initialFormState: PinFormState = {
   title: "",
   category: "general",
+  address: "",
+  status: "active",
+  accessLevel: "public",
   description: "",
   imageUrls: [],
   thumbnailIndex: null,
 };
 
-interface UseCreatePinFormOptions {
-  latitude?: number;
-  longitude?: number;
-  onClose: () => void;
-  onSubmit: (values: CreatePinInput) => Promise<void>;
-}
-
-function buildCreatePinPayload(
-  values: CreatePinFormState,
-  latitude: number,
-  longitude: number
-): CreatePinInput {
-  const parsed = createPinSchema.safeParse({
+function parseFormValues(values: PinFormState) {
+  const parsed = pinFormSchema.safeParse({
     title: values.title,
     category: values.category,
+    address: values.address,
+    status: values.status,
+    accessLevel: values.accessLevel,
     description: values.description || undefined,
     imageUrls: values.imageUrls,
     thumbnailIndex: values.thumbnailIndex ?? undefined,
@@ -45,26 +45,59 @@ function buildCreatePinPayload(
       ? parsed.data.imageUrls[parsed.data.thumbnailIndex]
       : undefined;
 
+  return { parsed: parsed.data, thumbnailUrl };
+}
+
+function buildCreatePinPayload(
+  values: PinFormState,
+  latitude: number,
+  longitude: number
+): CreatePinInput {
+  const { parsed, thumbnailUrl } = parseFormValues(values);
+
   return {
-    title: parsed.data.title,
-    category: parsed.data.category,
+    title: parsed.title,
+    category: parsed.category,
+    address: parsed.address,
+    status: parsed.status,
+    access_level: parsed.accessLevel,
     latitude,
     longitude,
-    description: parsed.data.description || undefined,
-    image_urls: parsed.data.imageUrls,
+    description: parsed.description || undefined,
+    image_urls: parsed.imageUrls,
     thumbnail_url: thumbnailUrl,
     image_url: thumbnailUrl,
   };
 }
 
-export function useCreatePinForm({
+function buildUpdatePinPayload(values: PinFormState): UpdatePinInput {
+  const { parsed, thumbnailUrl } = parseFormValues(values);
+
+  return {
+    title: parsed.title,
+    category: parsed.category,
+    address: parsed.address,
+    status: parsed.status,
+    access_level: parsed.accessLevel,
+    description: parsed.description || undefined,
+    image_urls: parsed.imageUrls,
+    thumbnail_url: thumbnailUrl,
+    image_url: thumbnailUrl,
+  };
+}
+
+export function usePinForm({
   latitude,
   longitude,
+  initialValues,
   onClose,
   onSubmit,
-}: UseCreatePinFormOptions): CreatePinFormController {
+}: UsePinFormOptions): PinFormController {
   const { uploadImage } = useCloudinaryUpload();
-  const [form, setForm] = useState<CreatePinFormState>(initialFormState);
+  const [form, setForm] = useState<PinFormState>({
+    ...initialFormState,
+    ...initialValues,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,21 +110,27 @@ export function useCreatePinForm({
     [form.imageUrls.length]
   );
 
+  useEffect(() => {
+    setForm({
+      ...initialFormState,
+      ...initialValues,
+    });
+    setError(null);
+  }, [initialValues]);
+
   const resetForm = () => {
     setError(null);
-    setForm(initialFormState);
+    setForm({
+      ...initialFormState,
+      ...initialValues,
+    });
   };
 
-  const updateTitle = (title: string) => {
-    setForm((current) => ({ ...current, title }));
-  };
-
-  const updateDescription = (description: string) => {
-    setForm((current) => ({ ...current, description }));
-  };
-
-  const updateCategory = (category: string) => {
-    setForm((current) => ({ ...current, category }));
+  const updateField = <K extends PinFormFieldKey>(
+    field: K,
+    value: PinFormState[K]
+  ) => {
+    setForm((current) => ({ ...current, [field]: value }));
   };
 
   const selectThumbnail = (index: number) => {
@@ -161,19 +200,18 @@ export function useCreatePinForm({
   const submitForm = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (latitude === undefined || longitude === undefined) {
-      return;
-    }
-
     try {
       setError(null);
       setIsSubmitting(true);
-      const payload = buildCreatePinPayload(form, latitude, longitude);
+      const payload =
+        latitude !== undefined && longitude !== undefined
+          ? buildCreatePinPayload(form, latitude, longitude)
+          : buildUpdatePinPayload(form);
       await onSubmit(payload);
       resetForm();
     } catch (submitError) {
       setError(
-        submitError instanceof Error ? submitError.message : "Failed to create pin"
+        submitError instanceof Error ? submitError.message : "Failed to save pin"
       );
     } finally {
       setIsSubmitting(false);
@@ -192,9 +230,7 @@ export function useCreatePinForm({
     isUploading,
     selectedCountLabel,
     thumbnailUrl,
-    updateTitle,
-    updateCategory,
-    updateDescription,
+    updateField,
     selectThumbnail,
     removeImage,
     submitForm,

@@ -5,5 +5,6 @@ export interface PinDetailsSidebarProps {
   pin: Pin | null;
   currentUserId: string;
   onClose: () => void;
+  onEdit: () => void;
   onDelete: (pinId: string) => Promise<void>;
 }

@@ -1,8 +1,11 @@
 import { z } from "zod";
 
-export const createPinSchema = z.object({
+export const pinFormSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   category: z.string().trim().min(1, "Category is required"),
+  address: z.string().trim().min(1, "Address is required"),
+  status: z.string().trim().min(1, "Status is required"),
+  accessLevel: z.string().trim().min(1, "Access level is required"),
   description: z.string().trim().optional(),
   imageUrls: z
     .array(z.url("Uploaded image URL is invalid"))
@@ -14,4 +17,4 @@ export const createPinSchema = z.object({
     .optional(),
 });
 
-export type CreatePinFormValues = z.infer<typeof createPinSchema>;
+export type PinFormValues = z.infer<typeof pinFormSchema>;
