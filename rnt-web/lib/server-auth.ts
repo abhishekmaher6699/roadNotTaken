@@ -15,18 +15,23 @@ export async function getServerAuthUser() {
     return null;
   }
 
-  const response = await fetch(`${API_URL}/auth/me`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: "no-store",
-  });
+  try {
+    const response = await fetch(`${API_URL}/auth/me`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json()) as { user: ServerAuthUser };
+    return data.user;
+  } catch (error) {
+    console.error("Failed to reach auth API from Next server:", error);
     return null;
   }
-
-  const data = (await response.json()) as { user: ServerAuthUser };
-  return data.user;
 }

@@ -10,6 +10,8 @@ export interface PendingPin {
   lng: number;
 }
 
+export type MapSidebarView = "create" | "details" | "edit" | null;
+
 export type AddPinProps = {
   onAdd: (latlng: LatLng) => void;
 };
@@ -19,7 +21,6 @@ export type MapViewProps = {
   mode: MapMode;
   basemap: BasemapMode;
   pendingPin: PendingPin | null;
-  selectedPin: Pin | null;
   onAddPin: (latlng: LatLng) => void;
   onSelectPin: (pin: Pin) => void;
   onConfirmPin: () => void;
@@ -34,6 +35,7 @@ export interface MapPageOverlayProps extends MapPageClientProps {
   mode: MapMode;
   basemap: BasemapMode;
   selectedPin: Pin | null;
+  onViewDetails: () => void;
   onModeChange: (mode: MapMode) => void;
   onBasemapToggle: () => void;
   onLogout: () => Promise<void>;

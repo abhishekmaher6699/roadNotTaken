@@ -33,7 +33,6 @@ export default function MapView({
   mode,
   basemap,
   pendingPin,
-  selectedPin,
   onAddPin,
   onSelectPin,
   onConfirmPin,
@@ -75,18 +74,7 @@ export default function MapView({
               }
             },
           }}
-        >
-          {selectedPin?.id === pin.id && (
-            <Popup>
-              <div className="space-y-1">
-                <p className="text-sm font-semibold">{pin.title}</p>
-                <p className="text-xs text-neutral-500">
-                  {pin.latitude.toFixed(5)}, {pin.longitude.toFixed(5)}
-                </p>
-              </div>
-            </Popup>
-          )}
-        </Marker>
+        />
       ))}
 
       {pendingPin && (

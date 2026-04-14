@@ -24,7 +24,14 @@ export async function getPinsHandler(req: Request, res: Response) {
     const pool = getPool();
 
     const result = await pool.query(`
-      SELECT id, latitude, longitude, title
+      SELECT
+        id,
+        latitude,
+        longitude,
+        title,
+        description,
+        COALESCE(thumbnail_url, image_url) AS thumbnail_url,
+        image_urls
       FROM pins
       ORDER BY created_at DESC
     `);

@@ -4,10 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePins } from "@/features/pins/hooks";
 import { useAuth } from "@/features/auth/hooks";
-import type { Pin } from "@/features/pins/types";
+import type { CreatePinInput, Pin } from "@/features/pins/types";
 import type {
   BasemapMode,
   MapMode,
+  MapSidebarView,
   PendingPin,
 } from "@/types/mapTypes";
 
@@ -19,7 +20,9 @@ export function useMapPageState() {
   const [mode, setMode] = useState<MapMode>("view");
   const [basemap, setBasemap] = useState<BasemapMode>("standard");
   const [pendingPin, setPendingPin] = useState<PendingPin | null>(null);
+  const [draftPin, setDraftPin] = useState<PendingPin | null>(null);
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
+  const [sidebarView, setSidebarView] = useState<MapSidebarView>(null);
 
   const handleLogout = async () => {
     await logout();
@@ -37,27 +40,23 @@ export function useMapPageState() {
   };
 
   const handleConfirmPin = async () => {
-    if (!pendingPin) {
-      return;
+    if (pendingPin) {
+      setDraftPin(pendingPin);
+      setPendingPin(null);
+      setSidebarView("create");
     }
-
-    await addPin({
-      title: "New Pin",
-      latitude: pendingPin.lat,
-      longitude: pendingPin.lng,
-    });
-
-    setPendingPin(null);
-    setMode("view");
   };
 
   const handleCancelPin = () => {
     setPendingPin(null);
+    setSidebarView(null);
   };
 
   const handleModeChange = (nextMode: MapMode) => {
     setMode(nextMode);
     setPendingPin(null);
+    setDraftPin(null);
+    setSidebarView(null);
 
     if (nextMode === "edit") {
       setSelectedPin(null);
@@ -70,12 +69,31 @@ export function useMapPageState() {
     );
   };
 
+  const handleCreatePin = async (values: CreatePinInput) => {
+    await addPin(values);
+    setPendingPin(null);
+    setDraftPin(null);
+    setSidebarView(null);
+    setMode("view");
+  };
+
+  const handleCloseSidebar = () => {
+    setSidebarView(null);
+    setDraftPin(null);
+  };
+
+  const handleViewDetails = () => {
+    setSidebarView("details");
+  };
+
   return {
     pins,
     mode,
     basemap,
     pendingPin,
+    draftPin,
     selectedPin,
+    sidebarView,
     setSelectedPin,
     handleLogout,
     handleAddPin,
@@ -83,5 +101,8 @@ export function useMapPageState() {
     handleCancelPin,
     handleModeChange,
     handleBasemapToggle,
+    handleCreatePin,
+    handleCloseSidebar,
+    handleViewDetails,
   };
 }

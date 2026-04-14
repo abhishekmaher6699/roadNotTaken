@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { MapOverlay } from "@/components/map/MapOverlay";
+import { CreatePinSidebar } from "@/components/map/sidebar/create-pin/CreatePinSidebar";
 import { useMapPageState } from "@/hooks/useMapPageState";
 import type { MapPageClientProps } from "@/types/mapTypes";
 
@@ -15,7 +16,9 @@ export function MapPageClient({ user }: MapPageClientProps) {
     mode,
     basemap,
     pendingPin,
+    draftPin,
     selectedPin,
+    sidebarView,
     setSelectedPin,
     handleLogout,
     handleAddPin,
@@ -23,6 +26,9 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleCancelPin,
     handleModeChange,
     handleBasemapToggle,
+    handleCreatePin,
+    handleCloseSidebar,
+    handleViewDetails,
   } = useMapPageState();
 
   return (
@@ -32,7 +38,6 @@ export function MapPageClient({ user }: MapPageClientProps) {
         mode={mode}
         basemap={basemap}
         pendingPin={pendingPin}
-        selectedPin={selectedPin}
         onAddPin={handleAddPin}
         onSelectPin={setSelectedPin}
         onConfirmPin={handleConfirmPin}
@@ -44,9 +49,19 @@ export function MapPageClient({ user }: MapPageClientProps) {
         mode={mode}
         basemap={basemap}
         selectedPin={selectedPin}
+        onViewDetails={handleViewDetails}
         onModeChange={handleModeChange}
         onBasemapToggle={handleBasemapToggle}
         onLogout={handleLogout}
+      />
+
+      <CreatePinSidebar
+        open={sidebarView === "create"}
+        pendingPin={draftPin}
+        previewPin={selectedPin}
+        onClose={handleCloseSidebar}
+        onSubmit={handleCreatePin}
+        onViewDetails={handleViewDetails}
       />
     </div>
   );

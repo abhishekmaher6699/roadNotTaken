@@ -5,6 +5,7 @@ import { getPool } from './config/db';
 
 import pinsRoutes from "./modules/pins/pins.routes"
 import authRoutes from "./modules/auth/auth.routes"
+import uploadsRoutes from "./modules/uploads/uploads.routes"
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use(express.json());
 
 app.use('/pins', pinsRoutes)
 app.use('/auth', authRoutes)
+app.use('/uploads', uploadsRoutes)
 
 
 app.get('/', (req, res) => {

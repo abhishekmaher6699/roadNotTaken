@@ -11,6 +11,7 @@ export function MapOverlay({
   mode,
   basemap,
   selectedPin,
+  onViewDetails,
   onModeChange,
   onBasemapToggle,
   onLogout,
@@ -31,7 +32,11 @@ export function MapOverlay({
       </div>
 
       <div className="pointer-events-auto absolute bottom-4 left-4 w-[calc(100%-2rem)] max-w-sm">
-        <PinInfoCard pin={selectedPin} mode={mode} />
+        <PinInfoCard
+          pin={selectedPin}
+          mode={mode}
+          onViewDetails={onViewDetails}
+        />
       </div>
     </div>
   );
