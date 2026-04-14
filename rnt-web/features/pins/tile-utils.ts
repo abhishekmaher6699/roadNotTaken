@@ -11,7 +11,24 @@ export interface ViewportBounds {
   west: number;
 }
 
-export const MIN_PIN_ZOOM = 10;
+export const MIN_PIN_ZOOM = 7;
+
+export function getPinsPerTileLimit(zoom: number) {
+  const zoomLevel = Math.max(0, Math.floor(zoom));
+
+  if (zoomLevel <= 4) return 1;
+  if (zoomLevel <= 6) return 1;
+  if (zoomLevel <= 8) return 2;
+  if (zoomLevel <= 10) return 3;
+  if (zoomLevel === 11) return 4;
+  if (zoomLevel === 12) return 6;
+  if (zoomLevel === 13) return 8;
+  if (zoomLevel === 14) return 10;
+  if (zoomLevel === 15) return 12;
+  if (zoomLevel === 16) return 16;
+
+  return 20;
+}
 
 export function tileKey(tile: TileCoordinates) {
   return `${tile.z}/${tile.x}/${tile.y}`;

@@ -15,6 +15,7 @@ import type {
 import {
   getChildTiles,
   getParentTile,
+  getPinsPerTileLimit,
   getPrefetchTiles,
   isPinInsideTile,
   tileKey,
@@ -87,10 +88,55 @@ function collectChildPins(cache: TileCache, tile: TileCoordinates) {
   return Array.from(uniquePins.values()).filter((pin) => isPinInsideTile(pin, tile));
 }
 
+function comparePinsForRanking(a: Pin, b: Pin) {
+  const scoreDifference = (b.score ?? 0) - (a.score ?? 0);
+  if (scoreDifference !== 0) {
+    return scoreDifference;
+  }
+
+  const createdAtDifference =
+    new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
+  if (createdAtDifference !== 0) {
+    return createdAtDifference;
+  }
+
+  return String(b.id).localeCompare(String(a.id));
+}
+
+function deriveParentTileEntryFromChildren(cache: TileCache, tile: TileCoordinates) {
+  const childTiles = getChildTiles(tile);
+  const childEntries = childTiles.map((childTile) => getTileEntry(cache, childTile));
+
+  if (childEntries.some((entry) => entry.status !== "ready")) {
+    return null;
+  }
+
+  const uniquePins = new Map<string, Pin>();
+
+  childEntries.forEach((entry) => {
+    entry.pins.forEach((pin) => {
+      if (isPinInsideTile(pin, tile)) {
+        uniquePins.set(pin.id, pin);
+      }
+    });
+  });
+
+  const rankedPins = Array.from(uniquePins.values())
+    .sort(comparePinsForRanking)
+    .slice(0, getPinsPerTileLimit(tile.z));
+
+  return {
+    pins: rankedPins,
+    status: "ready" as const,
+    fetchedAt: Date.now(),
+  };
+}
+
 export function usePins() {
   const [tileCache, setTileCache] = useState<TileCache>({});
   const [activeTiles, setActiveTiles] = useState<TileCoordinates[]>([]);
   const inFlightTilesRef = useRef<Set<string>>(new Set());
+  const tileCacheRef = useRef<TileCache>({});
 
   const pins = useMemo(() => {
     const visiblePins = new Map<string, Pin>();
@@ -126,9 +172,28 @@ export function usePins() {
         index === allTiles.findIndex((candidate) => tileKey(candidate) === tileKey(tile))
     );
 
+    setTileCache((current) => {
+      const nextCache = { ...current };
+
+      requestedTiles.forEach((tile) => {
+        const key = tileKey(tile);
+
+        if (!nextCache[key] || nextCache[key].status === "idle" || nextCache[key].status === "error") {
+          const derivedEntry = deriveParentTileEntryFromChildren(nextCache, tile);
+
+          if (derivedEntry) {
+            nextCache[key] = derivedEntry;
+          }
+        }
+      });
+
+      tileCacheRef.current = nextCache;
+      return nextCache;
+    });
+
     const missingTiles = requestedTiles.filter((tile) => {
       const key = tileKey(tile);
-      const entry = tileCache[key];
+      const entry = tileCacheRef.current[key];
 
       return (!entry || entry.status === "idle" || entry.status === "error") &&
         !inFlightTilesRef.current.has(key);
@@ -152,6 +217,7 @@ export function usePins() {
         };
       });
 
+      tileCacheRef.current = nextCache;
       return nextCache;
     });
 
@@ -161,7 +227,11 @@ export function usePins() {
       const response = await getPinsForTilesApi(missingTiles);
       const fetchedTiles = response.tiles ?? missingTiles;
 
-      setTileCache((current) => mergePinsIntoTiles(current, fetchedTiles, response.pins ?? []));
+      setTileCache((current) => {
+        const nextCache = mergePinsIntoTiles(current, fetchedTiles, response.pins ?? []);
+        tileCacheRef.current = nextCache;
+        return nextCache;
+      });
     } catch {
       setTileCache((current) => {
         const nextCache = { ...current };
@@ -177,6 +247,7 @@ export function usePins() {
           };
         });
 
+        tileCacheRef.current = nextCache;
         return nextCache;
       });
     } finally {
@@ -199,6 +270,7 @@ export function usePins() {
         };
       });
 
+      tileCacheRef.current = nextCache;
       return nextCache;
     });
   };
@@ -214,6 +286,7 @@ export function usePins() {
         };
       });
 
+      tileCacheRef.current = nextCache;
       return nextCache;
     });
   };
