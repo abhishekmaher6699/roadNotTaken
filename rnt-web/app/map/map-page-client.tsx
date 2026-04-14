@@ -15,6 +15,7 @@ const MapView = dynamic(() => import("@/components/map/mapView"), {
 export function MapPageClient({ user }: MapPageClientProps) {
   const {
     pins,
+    tileSummaries,
     mode,
     basemap,
     pendingPin,
@@ -42,6 +43,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     <div className="relative h-screen overflow-hidden bg-neutral-100">
       <MapView
         pins={pins}
+        tileSummaries={tileSummaries}
         mode={mode}
         basemap={basemap}
         pendingPin={pendingPin}

@@ -265,3 +265,52 @@ export async function getPinsForTiles({ tiles }: TileQueryInput) {
 
   return result.rows;
 }
+
+export async function getPinSummariesForTiles({ tiles }: TileQueryInput) {
+  if (tiles.length === 0) {
+    return [];
+  }
+
+  const pool = getPool();
+  const requestedTiles = tiles.map((tile) => {
+    const bounds = tileToBounds(tile);
+
+    return {
+      ...tile,
+      ...bounds,
+    };
+  });
+
+  const tileValuesSql = requestedTiles
+    .map(
+      (tile) =>
+        `(${tile.x}, ${tile.y}, ${tile.z}, ${tile.west}, ${tile.east}, ${tile.south}, ${tile.north})`
+    )
+    .join(', ');
+
+  const result = await pool.query(
+    `
+    WITH requested_tiles (x, y, z, west, east, south, north) AS (
+      VALUES ${tileValuesSql}
+    )
+    SELECT
+      requested_tiles.x,
+      requested_tiles.y,
+      requested_tiles.z,
+      AVG(pins.latitude)::double precision AS latitude,
+      AVG(pins.longitude)::double precision AS longitude,
+      COUNT(pins.id)::integer AS pin_count,
+      MAX(pins.score) AS top_score
+    FROM requested_tiles
+    JOIN pins
+      ON pins.longitude >= requested_tiles.west
+     AND pins.longitude < requested_tiles.east
+     AND pins.latitude >= requested_tiles.south
+     AND pins.latitude < requested_tiles.north
+    GROUP BY requested_tiles.x, requested_tiles.y, requested_tiles.z
+    ORDER BY pin_count DESC, top_score DESC NULLS LAST, requested_tiles.z DESC
+    `
+  );
+
+  return result.rows;
+}

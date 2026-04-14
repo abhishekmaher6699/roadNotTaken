@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import L from "leaflet";
 import {
   MapContainer,
   Marker,
@@ -11,6 +12,51 @@ import {
 } from "react-leaflet";
 import { AddPinProps, MapViewProps } from "@/types/mapTypes";
 import { getPinIcon, getPreviewPinIcon } from "./mapIcons";
+
+const summaryIconCache = new Map<number, L.DivIcon>();
+
+function getSummaryMarkerSize(pinCount: number) {
+  if (pinCount >= 50) return 52;
+  if (pinCount >= 20) return 46;
+  if (pinCount >= 10) return 40;
+
+  return 34;
+}
+
+function getSummaryIcon(pinCount: number) {
+  const size = getSummaryMarkerSize(pinCount);
+  const cached = summaryIconCache.get(size);
+
+  if (cached) {
+    return cached;
+  }
+
+  const icon = L.divIcon({
+    className: "map-summary-marker",
+    html: `
+      <div style="
+        width:${size}px;
+        height:${size}px;
+        border-radius:999px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:rgba(15,23,42,0.92);
+        color:#fff;
+        border:2px solid rgba(255,255,255,0.95);
+        box-shadow:0 12px 30px rgba(15,23,42,0.22);
+        font-size:${size >= 46 ? "13px" : "12px"};
+        font-weight:700;
+      ">${pinCount}</div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+
+  summaryIconCache.set(size, icon);
+
+  return icon;
+}
 
 function AddPin({ onAdd }: AddPinProps) {
   useMapEvents({
@@ -74,6 +120,7 @@ function ViewportReporter({
 
 export default function MapView({
   pins,
+  tileSummaries,
   mode,
   basemap,
   pendingPin,
@@ -125,6 +172,16 @@ export default function MapView({
               }
             },
           }}
+        />
+      ))}
+
+      {tileSummaries.map((summary) => (
+        <Marker
+          key={`${summary.z}-${summary.x}-${summary.y}`}
+          position={[summary.latitude, summary.longitude]}
+          icon={getSummaryIcon(summary.pin_count)}
+          interactive={false}
+          bubblingMouseEvents={false}
         />
       ))}
 

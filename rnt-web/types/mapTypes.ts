@@ -1,5 +1,5 @@
 import { LatLng } from "leaflet";
-import { Pin } from "@/features/pins/types";
+import { Pin, TileSummary } from "@/features/pins/types";
 import { ServerAuthUser } from "@/lib/server-auth";
 
 export type MapMode = "view" | "edit";
@@ -26,6 +26,7 @@ export type AddPinProps = {
 
 export type MapViewProps = {
   pins: Pin[];
+  tileSummaries: TileSummary[];
   mode: MapMode;
   basemap: BasemapMode;
   pendingPin: PendingPin | null;

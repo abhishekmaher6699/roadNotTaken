@@ -63,3 +63,24 @@ export interface TilePinsResponse {
   pins: Pin[];
   tiles: TileCoordinates[];
 }
+
+export interface TileSummary {
+  x: number;
+  y: number;
+  z: number;
+  latitude: number;
+  longitude: number;
+  pin_count: number;
+  top_score?: number | null;
+}
+
+export interface TileSummaryCacheEntry {
+  summary: TileSummary | null;
+  status: TileCacheStatus;
+  fetchedAt: number | null;
+}
+
+export interface TileSummariesResponse {
+  summaries: TileSummary[];
+  tiles: TileCoordinates[];
+}

@@ -34,7 +34,7 @@ export function tileKey(tile: TileCoordinates) {
   return `${tile.z}/${tile.x}/${tile.y}`;
 }
 
-function getTilesForBounds(
+export function getVisibleMapTiles(
   bounds: ViewportBounds,
   zoom: number,
   padding = 0
@@ -79,7 +79,7 @@ export function getVisibleTiles(bounds: ViewportBounds, zoom: number) {
     return [];
   }
 
-  return getTilesForBounds(bounds, zoom);
+  return getVisibleMapTiles(bounds, zoom);
 }
 
 export function getPrefetchTiles(bounds: ViewportBounds, zoom: number) {
@@ -87,10 +87,10 @@ export function getPrefetchTiles(bounds: ViewportBounds, zoom: number) {
     return [];
   }
 
-  const visibleTiles = getTilesForBounds(bounds, zoom);
+  const visibleTiles = getVisibleMapTiles(bounds, zoom);
   const visibleKeys = new Set(visibleTiles.map(tileKey));
 
-  return getTilesForBounds(bounds, zoom, 1).filter(
+  return getVisibleMapTiles(bounds, zoom, 1).filter(
     (tile) => !visibleKeys.has(tileKey(tile))
   );
 }

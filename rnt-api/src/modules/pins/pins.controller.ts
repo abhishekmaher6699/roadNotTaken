@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createPin, deletePinById, getAllPins, getPinsForTiles, updatePinById } from './pins.service';
+import { createPin, deletePinById, getAllPins, getPinSummariesForTiles, getPinsForTiles, updatePinById } from './pins.service';
 import { TileQueryInput } from './pins.types';
 
 export async function createPinHandler(req: any, res: any) {
@@ -51,6 +51,31 @@ export async function getPinsForTilesHandler(req: Request, res: Response) {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Failed to fetch tile pins' });
+  }
+}
+
+export async function getPinSummariesForTilesHandler(req: Request, res: Response) {
+  try {
+    const tiles: TileQueryInput['tiles'] = Array.isArray(req.body?.tiles) ? req.body.tiles : [];
+
+    if (tiles.some((tile) =>
+      !tile ||
+      !Number.isInteger(tile.x) ||
+      !Number.isInteger(tile.y) ||
+      !Number.isInteger(tile.z)
+    )) {
+      return res.status(400).json({ error: 'Invalid tile query' });
+    }
+
+    const summaries = await getPinSummariesForTiles({ tiles });
+
+    return res.json({
+      summaries,
+      tiles,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to fetch tile summaries' });
   }
 }
 

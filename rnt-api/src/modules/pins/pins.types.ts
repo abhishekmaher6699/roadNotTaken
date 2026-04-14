@@ -33,3 +33,13 @@ export interface TileQueryInput {
     z: number;
   }>;
 }
+
+export interface TileSummary {
+  x: number;
+  y: number;
+  z: number;
+  latitude: number;
+  longitude: number;
+  pin_count: number;
+  top_score: number | null;
+}

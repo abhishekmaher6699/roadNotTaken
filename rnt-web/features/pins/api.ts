@@ -4,6 +4,7 @@ import {
   Pin,
   TileCoordinates,
   TilePinsResponse,
+  TileSummariesResponse,
   UpdatePinInput,
 } from "./types";
 
@@ -20,6 +21,17 @@ export function getPinsForTilesApi(
     signal,
     body: JSON.stringify({ tiles }),
   }) as Promise<TilePinsResponse>;
+}
+
+export function getPinSummariesForTilesApi(
+  tiles: TileCoordinates[],
+  signal?: AbortSignal
+) {
+  return apiClient("/pins/tiles/summary", {
+    method: "POST",
+    signal,
+    body: JSON.stringify({ tiles }),
+  }) as Promise<TileSummariesResponse>;
 }
 
 export function createPinApi(data: CreatePinInput) {
