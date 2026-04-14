@@ -1,6 +1,6 @@
 import { getPool } from '../../config/db';
 import { CreatePinInput, TileQueryInput, UpdatePinInput } from './pins.types';
-import { tileToBounds } from './pins.helpers';
+import { getPinsPerTileLimit, tileToBounds } from './pins.helpers';
 
 const PIN_SELECT_FRAGMENT = `
   id,
@@ -16,6 +16,26 @@ const PIN_SELECT_FRAGMENT = `
   description,
   COALESCE(thumbnail_url, image_url) AS thumbnail_url,
   image_urls,
+  score,
+  created_at,
+  updated_at
+`;
+
+const RANKED_TILE_PIN_SELECT_FRAGMENT = `
+  id,
+  user_id,
+  posted_by,
+  latitude,
+  longitude,
+  title,
+  category,
+  address,
+  status,
+  access_level,
+  description,
+  thumbnail_url,
+  image_urls,
+  score,
   created_at,
   updated_at
 `;
@@ -85,7 +105,7 @@ export async function getAllPins() {
     SELECT
       ${PIN_SELECT_FRAGMENT}
     FROM pins
-    ORDER BY created_at DESC
+    ORDER BY score DESC NULLS LAST, created_at DESC, id DESC
     `
   );
 
@@ -163,6 +183,7 @@ export async function updatePinById(
       description,
       COALESCE(thumbnail_url, image_url) AS thumbnail_url,
       image_urls,
+      score,
       created_at,
       updated_at;
     `,
@@ -190,25 +211,52 @@ export async function getPinsForTiles({ tiles }: TileQueryInput) {
   }
 
   const pool = getPool();
-  const values: number[] = [];
-
-  const tileClauses = tiles.map((tile, index) => {
+  const requestedTiles = tiles.map((tile) => {
     const bounds = tileToBounds(tile);
-    const offset = index * 4;
-    values.push(bounds.west, bounds.east, bounds.south, bounds.north);
 
-    return `(longitude >= $${offset + 1} AND longitude < $${offset + 2} AND latitude >= $${offset + 3} AND latitude < $${offset + 4})`;
+    return {
+      ...tile,
+      ...bounds,
+      pinLimit: getPinsPerTileLimit(tile.z),
+    };
   });
+
+  const tileValuesSql = requestedTiles
+    .map(
+      (tile) =>
+        `(${tile.x}, ${tile.y}, ${tile.z}, ${tile.west}, ${tile.east}, ${tile.south}, ${tile.north}, ${tile.pinLimit})`
+    )
+    .join(', ');
 
   const result = await pool.query(
     `
-    SELECT DISTINCT
-      ${PIN_SELECT_FRAGMENT}
-    FROM pins
-    WHERE ${tileClauses.join(' OR ')}
-    ORDER BY created_at DESC
-    `,
-    values
+    WITH requested_tiles (x, y, z, west, east, south, north, pin_limit) AS (
+      VALUES ${tileValuesSql}
+    ),
+    ranked_tile_pins AS (
+      SELECT
+        requested_tiles.x AS tile_x,
+        requested_tiles.y AS tile_y,
+        requested_tiles.z AS tile_z,
+        requested_tiles.pin_limit,
+        ${PIN_SELECT_FRAGMENT},
+        ROW_NUMBER() OVER (
+          PARTITION BY requested_tiles.x, requested_tiles.y, requested_tiles.z
+          ORDER BY pins.score DESC NULLS LAST, pins.created_at DESC, pins.id DESC
+        ) AS tile_rank
+      FROM requested_tiles
+      JOIN pins
+        ON pins.longitude >= requested_tiles.west
+       AND pins.longitude < requested_tiles.east
+       AND pins.latitude >= requested_tiles.south
+       AND pins.latitude < requested_tiles.north
+    )
+    SELECT
+      ${RANKED_TILE_PIN_SELECT_FRAGMENT}
+    FROM ranked_tile_pins
+    WHERE tile_rank <= pin_limit
+    ORDER BY score DESC NULLS LAST, created_at DESC, id DESC
+    `
   );
 
   return result.rows;

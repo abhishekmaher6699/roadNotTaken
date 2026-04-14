@@ -40,6 +40,7 @@ interface SeedPinInput {
   description: string;
   latitude: number;
   longitude: number;
+  score: number; // 👈 add this
 }
 
 const SAMPLE_USER_ID = '11111111-1111-1111-1111-111111111111';
@@ -284,6 +285,8 @@ const latOffset =
 const lngOffset =
   (titleIndex - 1) * 0.003 + (Math.random() - 0.5) * 0.002;
 
+  const score = Math.floor(Math.random() * 100) + 1;
+
       pins.push({
         title: `${zone.name} ${title}`,
         category: zone.category,
@@ -293,6 +296,7 @@ const lngOffset =
         description: `Sample archive pin near ${zone.name}. This seeded record helps test map movement, tile loading, filters, and ranking without relying only on manually created posts.`,
         latitude: offsetCoordinate(zone.baseLat, latOffset),
         longitude: offsetCoordinate(zone.baseLng, lngOffset),
+        score
       });
     });
   });
@@ -333,10 +337,11 @@ async function seedSamplePins() {
           latitude,
           longitude,
           user_id,
+          score,
           geom
         )
         VALUES (
-          $1, $2, $3, $4, $5, $6, $7, NULL, NULL, ARRAY[]::TEXT[], $8, $9, $10,
+          $1, $2, $3, $4, $5, $6, $7, NULL, NULL, ARRAY[]::TEXT[], $8, $9, $10, $11,
           ST_SetSRID(ST_MakePoint($9, $8), 4326)
         );
         `,
@@ -351,6 +356,7 @@ async function seedSamplePins() {
           pin.latitude,
           pin.longitude,
           SAMPLE_USER_ID,
+          pin.score
         ]
       );
     }

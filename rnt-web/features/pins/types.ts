@@ -12,6 +12,7 @@ export interface Pin {
   thumbnail_url?: string | null;
   image_urls?: string[];
   image_url?: string | null;
+  score?: number | null;
   user_id?: string;
   created_at?: string | null;
   updated_at?: string | null;

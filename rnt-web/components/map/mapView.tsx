@@ -49,7 +49,6 @@ function ViewportReporter({
 
   const reportViewport = () => {
     const bounds = map.getBounds();
-    const size = map.getSize();
     const viewport = {
       north: bounds.getNorth(),
       south: bounds.getSouth(),
@@ -58,11 +57,6 @@ function ViewportReporter({
       zoom: map.getZoom(),
     };
 
-    console.log("[mapView] reporting viewport", {
-      ...viewport,
-      width: size.x,
-      height: size.y,
-    });
     onViewportChange(viewport);
   };
 

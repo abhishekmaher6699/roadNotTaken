@@ -20,53 +20,21 @@ export function usePins() {
       });
     });
 
-    const renderedPins = Array.from(pinMap.values());
-    console.log("[pins] rendered pins summary", {
-      activeTileCount: activeTileKeys.length,
-      renderedPinCount: renderedPins.length,
-      cachedTileCount: Object.keys(tileCache).length,
-    });
-
-    return renderedPins;
+    return Array.from(pinMap.values());
   }, [activeTileKeys, tileCache]);
 
   const loadTiles = async (tiles: TileCoordinates[]) => {
     const nextActiveTileKeys = tiles.map(tileKey);
-    console.log("[pins] visible tiles", {
-      count: nextActiveTileKeys.length,
-      keys: nextActiveTileKeys,
-    });
     setActiveTileKeys(nextActiveTileKeys);
 
     const missingTiles = tiles.filter((tile) => {
       const key = tileKey(tile);
       return !tileCache[key] && !inFlightTilesRef.current.has(key);
     });
-    const cachedVisibleTiles = nextActiveTileKeys.filter((key) => Boolean(tileCache[key]));
-    const inFlightVisibleTiles = nextActiveTileKeys.filter((key) =>
-      inFlightTilesRef.current.has(key)
-    );
-
-    console.log("[pins] tile coverage", {
-      visibleTileCount: nextActiveTileKeys.length,
-      cachedVisibleTileCount: cachedVisibleTiles.length,
-      missingTileCount: missingTiles.length,
-      inFlightVisibleTileCount: inFlightVisibleTiles.length,
-    });
-
-    if (cachedVisibleTiles.length > 0) {
-      console.log("[pins] visible cached tiles", cachedVisibleTiles);
-    }
 
     if (missingTiles.length === 0) {
-      console.log("[pins] all visible tiles served from cache");
       return;
     }
-
-    console.log(
-      "[pins] requesting missing tiles",
-      missingTiles.map((tile) => tileKey(tile))
-    );
 
     missingTiles.forEach((tile) => {
       inFlightTilesRef.current.add(tileKey(tile));
@@ -75,22 +43,6 @@ export function usePins() {
     try {
       const response = await getPinsForTilesApi(missingTiles);
       const requestedTiles = response.tiles ?? missingTiles;
-      const pinCountsByTile = requestedTiles.reduce<Record<string, number>>(
-        (accumulator, tile) => {
-          const key = tileKey(tile);
-          accumulator[key] = (response.pins ?? []).filter((pin) =>
-            isPinInsideTile(pin, tile)
-          ).length;
-          return accumulator;
-        },
-        {}
-      );
-
-      console.log("[pins] tile response", {
-        requestedTiles: requestedTiles.map((tile) => tileKey(tile)),
-        pinCount: response.pins?.length ?? 0,
-        pinCountsByTile,
-      });
 
       setTileCache((current) => {
         const nextCache = { ...current };
@@ -107,9 +59,6 @@ export function usePins() {
     } finally {
       missingTiles.forEach((tile) => {
         inFlightTilesRef.current.delete(tileKey(tile));
-      });
-      console.log("[pins] in-flight tile requests cleared", {
-        remainingInFlightTileCount: inFlightTilesRef.current.size,
       });
     }
   };

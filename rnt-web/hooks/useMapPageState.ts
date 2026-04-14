@@ -73,20 +73,12 @@ export function useMapPageState() {
   };
 
   const handleViewportChange = (viewport: MapViewport) => {
-    console.log("[map] viewport changed", viewport);
-
     if (viewportDebounceRef.current) {
-      console.log("[map] clearing pending viewport debounce");
       clearTimeout(viewportDebounceRef.current);
     }
 
     viewportDebounceRef.current = setTimeout(() => {
       const visibleTiles = getVisibleTiles(viewport, viewport.zoom);
-
-      console.log("[map] loading tiles for viewport", {
-        zoom: viewport.zoom,
-        visibleTileCount: visibleTiles.length,
-      });
       void loadTiles(visibleTiles);
     }, 120);
   };
