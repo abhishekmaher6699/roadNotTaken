@@ -84,8 +84,7 @@ export function PinFormFields({
             <option value="active">Active</option>
             <option value="abandoned">Abandoned</option>
             <option value="ruined">Ruined</option>
-            <option value="destroyed">Destroyed</option>
-            <option value="restored">Restored</option>
+            <option value="destroyed">Degrading</option>
             <option value="unknown">Unknown</option>
           </select>
         </div>

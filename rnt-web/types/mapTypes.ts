@@ -21,6 +21,7 @@ export type MapViewProps = {
   mode: MapMode;
   basemap: BasemapMode;
   pendingPin: PendingPin | null;
+  draftPin: PendingPin | null;
   onAddPin: (latlng: LatLng) => void;
   onSelectPin: (pin: Pin) => void;
   onClearSelection: () => void;

@@ -44,6 +44,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         mode={mode}
         basemap={basemap}
         pendingPin={pendingPin}
+        draftPin={draftPin}
         onAddPin={handleAddPin}
         onSelectPin={setSelectedPin}
         onClearSelection={handleClearSelection}

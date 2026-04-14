@@ -1,6 +1,5 @@
 "use client";
 
-import L from "leaflet";
 import {
   MapContainer,
   Marker,
@@ -9,14 +8,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import { AddPinProps, MapViewProps } from "@/types/mapTypes";
-
-delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+import { getPinIcon, getPreviewPinIcon } from "./mapIcons";
 
 function AddPin({ onAdd }: AddPinProps) {
   useMapEvents({
@@ -51,6 +43,7 @@ export default function MapView({
   mode,
   basemap,
   pendingPin,
+  draftPin,
   onAddPin,
   onSelectPin,
   onClearSelection,
@@ -86,6 +79,7 @@ export default function MapView({
         <Marker
           key={pin.id}
           position={[pin.latitude, pin.longitude]}
+          icon={getPinIcon(pin.category)}
           bubblingMouseEvents={false}
           eventHandlers={{
             click: () => {
@@ -101,6 +95,14 @@ export default function MapView({
         enabled={mode === "view" && !pendingPin}
         onClear={onClearSelection}
       />
+
+      {draftPin && (
+        <Marker
+          position={[draftPin.lat, draftPin.lng]}
+          icon={getPreviewPinIcon()}
+          bubblingMouseEvents={false}
+        />
+      )}
 
       {pendingPin && (
         <Popup
