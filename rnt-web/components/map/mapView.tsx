@@ -28,6 +28,24 @@ function AddPin({ onAdd }: AddPinProps) {
   return null;
 }
 
+function ClearSelectedPin({
+  enabled,
+  onClear,
+}: {
+  enabled: boolean;
+  onClear: () => void;
+}) {
+  useMapEvents({
+    click() {
+      if (enabled) {
+        onClear();
+      }
+    },
+  });
+
+  return null;
+}
+
 export default function MapView({
   pins,
   mode,
@@ -35,6 +53,7 @@ export default function MapView({
   pendingPin,
   onAddPin,
   onSelectPin,
+  onClearSelection,
   onConfirmPin,
   onCancelPin,
 }: MapViewProps) {
@@ -67,6 +86,7 @@ export default function MapView({
         <Marker
           key={pin.id}
           position={[pin.latitude, pin.longitude]}
+          bubblingMouseEvents={false}
           eventHandlers={{
             click: () => {
               if (mode === "view") {
@@ -76,6 +96,11 @@ export default function MapView({
           }}
         />
       ))}
+
+      <ClearSelectedPin
+        enabled={mode === "view" && !pendingPin}
+        onClear={onClearSelection}
+      />
 
       {pendingPin && (
         <Popup

@@ -1,35 +1,45 @@
 "use client";
 
-import { useMemo, useRef } from "react";
-import LightGallery from "lightgallery/react";
-import lgThumbnail from "lightgallery/plugins/thumbnail";
-import lgZoom from "lightgallery/plugins/zoom";
+import { useEffect, useMemo, useState } from "react";
 import type { Pin } from "@/features/pins/types";
-
-interface GalleryRef {
-  openGallery: (index?: number) => void;
-}
+import Lightbox from "yet-another-react-lightbox";
+import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
 
 interface PinDetailsGalleryProps {
   pin: Pin;
 }
 
 export function PinDetailsGallery({ pin }: PinDetailsGalleryProps) {
-  const galleryRef = useRef<GalleryRef | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const galleryItems = useMemo(
+  const gallerySlides = useMemo(
     () =>
       (pin.image_urls ?? [])
         .filter(Boolean)
         .map((imageUrl) => ({
           src: imageUrl,
-          thumb: imageUrl,
-          subHtml: `<h4>${pin.title}</h4>`,
+          alt: pin.title,
         })),
     [pin.image_urls, pin.title]
   );
 
-  if (galleryItems.length === 0) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add("gallery-open");
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.classList.remove("gallery-open");
+        document.body.style.overflow = "";
+      };
+    }
+
+    document.body.classList.remove("gallery-open");
+    document.body.style.overflow = "";
+  }, [isOpen]);
+
+  if (gallerySlides.length === 0) {
     return null;
   }
 
@@ -46,7 +56,10 @@ export function PinDetailsGallery({ pin }: PinDetailsGalleryProps) {
         </div>
         <button
           type="button"
-          onClick={() => galleryRef.current?.openGallery(0)}
+          onClick={() => {
+            setActiveIndex(0);
+            setIsOpen(true);
+          }}
           className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100"
         >
           Open gallery
@@ -54,19 +67,22 @@ export function PinDetailsGallery({ pin }: PinDetailsGalleryProps) {
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        {galleryItems.slice(0, 6).map((item, index) => {
-          const remaining = galleryItems.length - 6;
+        {gallerySlides.slice(0, 6).map((item, index) => {
+          const remaining = gallerySlides.length - 6;
           const showOverflow = index === 5 && remaining > 0;
 
           return (
             <button
               key={`${item.src}-${index}`}
               type="button"
-              onClick={() => galleryRef.current?.openGallery(index)}
+              onClick={() => {
+                setActiveIndex(index);
+                setIsOpen(true);
+              }}
               className="group relative overflow-hidden rounded-2xl border border-neutral-200 text-left"
             >
               <img
-                src={item.thumb}
+                src={item.src}
                 alt={`${pin.title} ${index + 1}`}
                 className="h-28 w-full object-cover transition duration-300 group-hover:scale-[1.03]"
               />
@@ -80,23 +96,13 @@ export function PinDetailsGallery({ pin }: PinDetailsGalleryProps) {
         })}
       </div>
 
-      <div className="hidden">
-        <LightGallery
-          dynamic
-          dynamicEl={galleryItems}
-          container={() => document.body}
-          plugins={[lgZoom, lgThumbnail]}
-          onInit={(detail) => {
-            galleryRef.current = detail.instance as unknown as GalleryRef;
-          }}
-          onBeforeOpen={() => {
-            document.body.style.overflow = "hidden";
-          }}
-          onAfterClose={() => {
-            document.body.style.overflow = "";
-          }}
-        />
-      </div>
+      <Lightbox
+        open={isOpen}
+        close={() => setIsOpen(false)}
+        index={activeIndex}
+        slides={gallerySlides}
+        plugins={[Thumbnails, Zoom]}
+      />
     </div>
   );
 }

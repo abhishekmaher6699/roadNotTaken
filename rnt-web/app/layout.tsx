@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import "leaflet/dist/leaflet.css";
-import "lightgallery/css/lightgallery.css";
-import "lightgallery/css/lg-thumbnail.css";
-import "lightgallery/css/lg-zoom.css";
+import "yet-another-react-lightbox/styles.css";
+import "yet-another-react-lightbox/plugins/thumbnails.css";
 import "./globals.css";
 
 export const metadata: Metadata = {

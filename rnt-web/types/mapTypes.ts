@@ -23,6 +23,7 @@ export type MapViewProps = {
   pendingPin: PendingPin | null;
   onAddPin: (latlng: LatLng) => void;
   onSelectPin: (pin: Pin) => void;
+  onClearSelection: () => void;
   onConfirmPin: () => void;
   onCancelPin: () => void;
 };

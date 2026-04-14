@@ -83,7 +83,18 @@ export function useMapPageState() {
     setSidebarView(null);
   };
 
+  const handleClearSelection = () => {
+    if (sidebarView === "details") {
+      return;
+    }
+
+    setSelectedPin(null);
+  };
+
   const handleCloseSidebar = () => {
+    if (sidebarView === "details") {
+      setSelectedPin(null);
+    }
     setSidebarView(null);
     setDraftPin(null);
   };
@@ -109,6 +120,7 @@ export function useMapPageState() {
     handleBasemapToggle,
     handleCreatePin,
     handleDeletePin,
+    handleClearSelection,
     handleCloseSidebar,
     handleViewDetails,
   };

@@ -1,27 +1,7 @@
 @import "tailwindcss";
 
-.lg-container {
-  z-index: 3200;
-}
-
-.lg-backdrop {
-  z-index: 3190;
-}
-
-.lg-outer {
-  z-index: 3200;
-}
-
-.lg-toolbar,
-.lg-next,
-.lg-prev,
-.lg-components,
-.lg-sub-html {
-  z-index: 3210;
-}
-
-body.lg-on .map-sidebar-shell,
-body.lg-on .map-overlay-shell {
+body.gallery-open .map-sidebar-shell,
+body.gallery-open .map-overlay-shell {
   opacity: 0;
   pointer-events: none;
 }

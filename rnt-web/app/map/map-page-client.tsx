@@ -29,6 +29,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleBasemapToggle,
     handleCreatePin,
     handleDeletePin,
+    handleClearSelection,
     handleCloseSidebar,
     handleViewDetails,
   } = useMapPageState();
@@ -42,6 +43,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         pendingPin={pendingPin}
         onAddPin={handleAddPin}
         onSelectPin={setSelectedPin}
+        onClearSelection={handleClearSelection}
         onConfirmPin={handleConfirmPin}
         onCancelPin={handleCancelPin}
       />
