@@ -8,7 +8,7 @@ export function ModeSwitch({ mode, onChange }: ModeSwitchProps) {
       <button
         type="button"
         onClick={() => onChange("view")}
-        className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+        className={`rounded-full px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
           mode === "view"
             ? "bg-neutral-900 text-white"
             : "text-neutral-700 hover:bg-neutral-100"
@@ -19,7 +19,7 @@ export function ModeSwitch({ mode, onChange }: ModeSwitchProps) {
       <button
         type="button"
         onClick={() => onChange("edit")}
-        className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+        className={`rounded-full px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
           mode === "edit"
             ? "bg-neutral-900 text-white"
             : "text-neutral-700 hover:bg-neutral-100"

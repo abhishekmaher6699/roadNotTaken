@@ -23,13 +23,13 @@ export function UserMenu({ initial, email, onLogout }: UserMenuProps) {
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-900 text-sm font-semibold text-white shadow-lg ring-2 ring-white transition hover:scale-[1.02] active:scale-95"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-900 text-sm font-semibold text-white shadow-lg ring-2 ring-white transition hover:scale-[1.02] active:scale-95 sm:h-12 sm:w-12"
       >
         {initial}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-3 w-56 rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-black/10">
+        <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-black/10 sm:mt-3 sm:w-56">
           <div className="rounded-xl px-3 py-2">
             <p className="text-sm font-semibold text-neutral-900">Profile</p>
             <p className="truncate text-xs text-neutral-500">

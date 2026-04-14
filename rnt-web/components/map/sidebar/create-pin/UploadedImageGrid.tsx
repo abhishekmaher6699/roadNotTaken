@@ -1,6 +1,7 @@
 "use client";
 
 import type { UploadedImageGridProps } from "./types";
+import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 
 export function UploadedImageGrid({
   imageUrls,
@@ -27,7 +28,7 @@ export function UploadedImageGrid({
             }`}
           >
             <img
-              src={imageUrl}
+              src={getOptimizedCloudinaryUrl(imageUrl, "thumbnail") ?? imageUrl}
               alt={`Uploaded ${index + 1}`}
               className="h-24 w-full object-cover"
             />

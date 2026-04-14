@@ -18,11 +18,11 @@ export function MapOverlay({
 }: MapPageOverlayProps) {
   return (
     <div className="map-overlay-shell pointer-events-none absolute inset-0 z-[2000]">
-      <div className="pointer-events-auto absolute left-4 top-4">
+      <div className="pointer-events-auto absolute left-3 top-3 sm:left-4 sm:top-4">
         <ModeSwitch mode={mode} onChange={onModeChange} />
       </div>
 
-      <div className="pointer-events-auto absolute right-4 top-4 flex flex-col items-end gap-3">
+      <div className="pointer-events-auto absolute right-3 top-3 flex flex-col items-end gap-2 sm:right-4 sm:top-4 sm:gap-3">
         <UserMenu
           initial={(user.email?.[0] ?? "U").toUpperCase()}
           email={user.email}
@@ -31,7 +31,7 @@ export function MapOverlay({
         <BasemapToggle basemap={basemap} onToggle={onBasemapToggle} />
       </div>
 
-      <div className="pointer-events-auto absolute bottom-4 left-4 w-[calc(100%-2rem)] max-w-sm">
+      <div className="pointer-events-auto absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-auto sm:w-[calc(100%-2rem)] sm:max-w-sm">
         <PinInfoCard
           pin={selectedPin}
           mode={mode}

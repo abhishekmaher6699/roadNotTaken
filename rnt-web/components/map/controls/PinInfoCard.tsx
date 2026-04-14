@@ -1,15 +1,18 @@
 "use client";
 
 import type { PinInfoCardProps } from "./types";
+import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 
 export function PinInfoCard({
   pin,
   mode,
   onViewDetails,
 }: PinInfoCardProps) {
+  const previewImageUrl = getOptimizedCloudinaryUrl(pin?.thumbnail_url, "card");
+
   if (!pin) {
     return (
-      <div className="rounded-3xl bg-white/95 p-5 shadow-xl ring-1 ring-black/10 backdrop-blur">
+      <div className="rounded-3xl bg-white/95 p-4 shadow-xl ring-1 ring-black/10 backdrop-blur sm:p-5">
         <p className="text-sm font-semibold text-neutral-900">
           {mode === "view" ? "Pin details" : "Edit mode"}
         </p>
@@ -24,23 +27,20 @@ export function PinInfoCard({
 
   return (
     <div className="overflow-hidden rounded-3xl bg-white/95 shadow-xl ring-1 ring-black/10 backdrop-blur">
-      
-
-      {pin.thumbnail_url && (
+      {previewImageUrl && (
         <img
-          src={pin.thumbnail_url}
+          src={previewImageUrl}
           alt={pin.title}
-          className="h-40 w-full object-cover"
+          className="h-32 w-full object-cover sm:h-40"
         />
       )}
 
-      {/* 🔽 Content section with padding */}
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
           Selected Pin
         </p>
 
-        <h2 className="mt-2 text-lg font-semibold text-neutral-950">
+        <h2 className="mt-2 text-base font-semibold text-neutral-950 sm:text-lg">
           {pin.title}
         </h2>
 
@@ -57,7 +57,7 @@ export function PinInfoCard({
         <button
           type="button"
           onClick={onViewDetails}
-          className="mt-4 rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100"
+          className="mt-4 w-full rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100 sm:w-auto"
         >
           View details
         </button>

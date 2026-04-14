@@ -1,6 +1,7 @@
 "use client";
 
 import type { Pin } from "@/features/pins/types";
+import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 
 function formatCategory(category?: string | null) {
   if (!category) {
@@ -19,11 +20,13 @@ interface PinDetailsHeroProps {
 }
 
 export function PinDetailsHero({ pin }: PinDetailsHeroProps) {
+  const heroImageUrl = getOptimizedCloudinaryUrl(pin.thumbnail_url, "hero");
+
   return (
     <div className="relative overflow-hidden rounded-4xl bg-neutral-950 text-white ring-1 ring-black/10">
-      {pin.thumbnail_url ? (
+      {heroImageUrl ? (
         <img
-          src={pin.thumbnail_url}
+          src={heroImageUrl}
           alt={pin.title}
           className="h-72 w-full object-cover"
         />

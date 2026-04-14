@@ -37,14 +37,14 @@ export function ConfirmDialog({
       : "bg-neutral-900 text-white hover:bg-neutral-800";
 
   return (
-    <div className="absolute inset-0 z-2300 flex items-center justify-center bg-neutral-950/35 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-black/10">
+    <div className="absolute inset-0 z-[2300] flex items-end justify-center bg-neutral-950/35 p-3 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="w-full max-w-md rounded-[2rem] bg-white p-5 shadow-2xl ring-1 ring-black/10 sm:rounded-3xl sm:p-6">
         <h3 className="text-lg font-semibold text-neutral-950">{title}</h3>
         <p className="mt-2 text-sm leading-6 text-neutral-600">{description}</p>
 
         {children && <div className="mt-4">{children}</div>}
 
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onCancel}

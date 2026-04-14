@@ -43,10 +43,10 @@ export function PinDetailsSidebar({
         onClose={onClose}
         size="wide"
       >
-        <div className="space-y-6">
+        <div className="space-y-5 pb-4 sm:space-y-6">
           <PinDetailsHero pin={pin} />
 
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+          <div className="flex flex-col gap-3 rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.16em] text-neutral-500">
               <span>Pin overview</span>
               <span className="h-1 w-1 rounded-full bg-neutral-300" />
@@ -56,11 +56,11 @@ export function PinDetailsSidebar({
             </div>
 
             {isOwner && (
-              <div className="flex gap-2">
+              <div className="flex w-full gap-2 sm:w-auto">
                 <button
                   type="button"
                   disabled
-                  className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-400"
+                  className="flex-1 rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-400 sm:flex-none"
                   title="Edit form comes next"
                 >
                   Edit
@@ -68,7 +68,7 @@ export function PinDetailsSidebar({
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+                  className="flex-1 rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 sm:flex-none"
                 >
                   Delete
                 </button>
@@ -77,7 +77,7 @@ export function PinDetailsSidebar({
           </div>
 
           {pin.description && (
-            <section className="rounded-3xl border border-neutral-200 bg-white px-5 py-4">
+            <section className="rounded-3xl border border-neutral-200 bg-white px-4 py-4 sm:px-5">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
                 Description
               </p>
@@ -89,7 +89,7 @@ export function PinDetailsSidebar({
 
           {gallery.length > 0 && <PinDetailsGallery pin={pin} />}
 
-          <section className="rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-5 py-5">
+          <section className="rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-5 sm:px-5">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
               Community Space
             </p>

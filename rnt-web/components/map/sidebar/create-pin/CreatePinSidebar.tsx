@@ -43,7 +43,7 @@ export function CreatePinSidebar({
       description="Add a new location to the map."
       onClose={handleClose}
     >
-      <form className="space-y-4" onSubmit={submitForm}>
+      <form className="space-y-4 pb-4" onSubmit={submitForm}>
         {previewPin && (
           <CreatePinPreviewCard
             pin={previewPin}
@@ -79,7 +79,7 @@ export function CreatePinSidebar({
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-neutral-800">Latitude</label>
             <input
@@ -146,7 +146,7 @@ export function CreatePinSidebar({
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row">
           <button
             type="submit"
             disabled={isSubmitting || isUploading}

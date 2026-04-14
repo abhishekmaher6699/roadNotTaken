@@ -1,19 +1,22 @@
 "use client";
 
 import type { CreatePinPreviewCardProps } from "./types";
+import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 
 export function CreatePinPreviewCard({
   pin,
   onViewDetails,
 }: CreatePinPreviewCardProps) {
-  if (!pin.thumbnail_url) {
+  const previewImageUrl = getOptimizedCloudinaryUrl(pin.thumbnail_url, "card");
+
+  if (!previewImageUrl) {
     return null;
   }
 
   return (
     <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
       <img
-        src={pin.thumbnail_url}
+        src={previewImageUrl}
         alt={pin.title}
         className="h-36 w-full object-cover"
       />
