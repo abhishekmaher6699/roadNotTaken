@@ -9,5 +9,5 @@ export default async function MapPage() {
     redirect("/login");
   }
 
-  return <MapPageClient />;
+  return <MapPageClient user={user} />;
 }
