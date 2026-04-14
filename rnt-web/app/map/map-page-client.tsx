@@ -2,7 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { MapOverlay } from "@/components/map/MapOverlay";
-import { CreatePinSidebar } from "@/components/map/sidebar/create-pin/CreatePinSidebar";
+import { CreatePinSidebar } from "@/components/map/sidebar/create-pin";
+import { PinDetailsSidebar } from "@/components/map/sidebar/pin-details";
 import { useMapPageState } from "@/hooks/useMapPageState";
 import type { MapPageClientProps } from "@/types/mapTypes";
 
@@ -27,6 +28,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleModeChange,
     handleBasemapToggle,
     handleCreatePin,
+    handleDeletePin,
     handleCloseSidebar,
     handleViewDetails,
   } = useMapPageState();
@@ -62,6 +64,14 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onClose={handleCloseSidebar}
         onSubmit={handleCreatePin}
         onViewDetails={handleViewDetails}
+      />
+
+      <PinDetailsSidebar
+        open={sidebarView === "details"}
+        pin={selectedPin}
+        currentUserId={user.id}
+        onClose={handleCloseSidebar}
+        onDelete={handleDeletePin}
       />
     </div>
   );

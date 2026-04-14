@@ -17,7 +17,7 @@ export function MapOverlay({
   onLogout,
 }: MapPageOverlayProps) {
   return (
-    <div className="pointer-events-none absolute inset-0 z-[2000]">
+    <div className="map-overlay-shell pointer-events-none absolute inset-0 z-[2000]">
       <div className="pointer-events-auto absolute left-4 top-4">
         <ModeSwitch mode={mode} onChange={onModeChange} />
       </div>

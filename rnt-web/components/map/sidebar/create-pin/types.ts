@@ -13,6 +13,7 @@ export interface CreatePinSidebarProps {
 
 export interface CreatePinFormState {
   title: string;
+  category: string;
   description: string;
   imageUrls: string[];
   thumbnailIndex: number | null;
@@ -26,6 +27,7 @@ export interface CreatePinFormController {
   selectedCountLabel: string;
   thumbnailUrl: string | null;
   updateTitle: (title: string) => void;
+  updateCategory: (category: string) => void;
   updateDescription: (description: string) => void;
   selectThumbnail: (index: number) => void;
   removeImage: (index: number) => void;

@@ -8,6 +8,7 @@ interface MapSidebarShellProps {
   description: string;
   onClose: () => void;
   children: ReactNode;
+  size?: "default" | "wide";
 }
 
 export function MapSidebarShell({
@@ -16,10 +17,16 @@ export function MapSidebarShell({
   description,
   onClose,
   children,
+  size = "default",
 }: MapSidebarShellProps) {
+  const widthClass =
+    size === "wide"
+      ? "w-[min(38rem,calc(100%-2rem))] xl:w-[min(42rem,calc(100%-2rem))]"
+      : "w-[min(25rem,calc(100%-2rem))]";
+
   return (
     <div
-      className={`absolute left-4 top-20 z-[2100] h-[calc(100%-6rem)] w-[min(26rem,calc(100%-2rem))] rounded-3xl bg-white/97 shadow-2xl ring-1 ring-black/10 backdrop-blur transition duration-200 ${
+      className={`map-sidebar-shell absolute left-4 top-20 z-2100 h-[calc(100%-6rem)] ${widthClass} rounded-3xl bg-white/97 shadow-2xl ring-1 ring-black/10 backdrop-blur transition duration-200 ${       
         open
           ? "translate-x-0 opacity-100"
           : "pointer-events-none -translate-x-6 opacity-0"

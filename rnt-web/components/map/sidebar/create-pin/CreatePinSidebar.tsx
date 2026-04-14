@@ -22,6 +22,7 @@ export function CreatePinSidebar({
     selectedCountLabel,
     thumbnailUrl,
     updateTitle,
+    updateCategory,
     updateDescription,
     selectThumbnail,
     removeImage,
@@ -59,6 +60,23 @@ export function CreatePinSidebar({
             className="w-full rounded-xl border border-neutral-300 px-3 py-2 outline-none transition focus:border-neutral-900"
             placeholder="Give this pin a name"
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-neutral-800">Category</label>
+          <select
+            value={form.category}
+            onChange={(event) => updateCategory(event.target.value)}
+            className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 outline-none transition focus:border-neutral-900"
+          >
+            <option value="general">General</option>
+            <option value="food">Food</option>
+            <option value="nature">Nature</option>
+            <option value="history">History</option>
+            <option value="culture">Culture</option>
+            <option value="architecture">Architecture</option>
+            <option value="viewpoint">Viewpoint</option>
+          </select>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

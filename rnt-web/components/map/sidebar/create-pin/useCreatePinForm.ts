@@ -10,6 +10,7 @@ const MAX_IMAGES = 10;
 
 const initialFormState: CreatePinFormState = {
   title: "",
+  category: "general",
   description: "",
   imageUrls: [],
   thumbnailIndex: null,
@@ -29,6 +30,7 @@ function buildCreatePinPayload(
 ): CreatePinInput {
   const parsed = createPinSchema.safeParse({
     title: values.title,
+    category: values.category,
     description: values.description || undefined,
     imageUrls: values.imageUrls,
     thumbnailIndex: values.thumbnailIndex ?? undefined,
@@ -45,6 +47,7 @@ function buildCreatePinPayload(
 
   return {
     title: parsed.data.title,
+    category: parsed.data.category,
     latitude,
     longitude,
     description: parsed.data.description || undefined,
@@ -85,6 +88,10 @@ export function useCreatePinForm({
 
   const updateDescription = (description: string) => {
     setForm((current) => ({ ...current, description }));
+  };
+
+  const updateCategory = (category: string) => {
+    setForm((current) => ({ ...current, category }));
   };
 
   const selectThumbnail = (index: number) => {
@@ -186,6 +193,7 @@ export function useCreatePinForm({
     selectedCountLabel,
     thumbnailUrl,
     updateTitle,
+    updateCategory,
     updateDescription,
     selectThumbnail,
     removeImage,

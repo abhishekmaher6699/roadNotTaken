@@ -1,6 +1,7 @@
 export interface Pin {
   id: string;
   title: string;
+  category?: string | null;
   latitude: number;
   longitude: number;
   description?: string | null;
@@ -12,6 +13,7 @@ export interface Pin {
 
 export interface CreatePinInput {
   title: string;
+  category?: string;
   latitude: number;
   longitude: number;
   description?: string;

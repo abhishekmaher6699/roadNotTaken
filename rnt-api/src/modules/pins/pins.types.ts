@@ -1,5 +1,6 @@
 export interface CreatePinInput {
   title: string;
+  category?: string;
   description?: string;
   image_url?: string;
   thumbnail_url?: string;

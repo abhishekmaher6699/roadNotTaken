@@ -13,7 +13,7 @@ import type {
 } from "@/types/mapTypes";
 
 export function useMapPageState() {
-  const { pins, addPin } = usePins();
+  const { pins, addPin, removePin } = usePins();
   const { logout } = useAuth();
   const router = useRouter();
 
@@ -77,6 +77,12 @@ export function useMapPageState() {
     setMode("view");
   };
 
+  const handleDeletePin = async (pinId: string) => {
+    await removePin(pinId);
+    setSelectedPin((current) => (current?.id === pinId ? null : current));
+    setSidebarView(null);
+  };
+
   const handleCloseSidebar = () => {
     setSidebarView(null);
     setDraftPin(null);
@@ -102,6 +108,7 @@ export function useMapPageState() {
     handleModeChange,
     handleBasemapToggle,
     handleCreatePin,
+    handleDeletePin,
     handleCloseSidebar,
     handleViewDetails,
   };

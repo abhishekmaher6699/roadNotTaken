@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createPin } from './pins.service';
+import { createPin, deletePinById } from './pins.service';
 import { getPool } from '../../config/db';
 
 export async function createPinHandler(req: any, res: any) {
@@ -26,9 +26,11 @@ export async function getPinsHandler(req: Request, res: Response) {
     const result = await pool.query(`
       SELECT
         id,
+        user_id,
         latitude,
         longitude,
         title,
+        category,
         description,
         COALESCE(thumbnail_url, image_url) AS thumbnail_url,
         image_urls
@@ -40,5 +42,22 @@ export async function getPinsHandler(req: Request, res: Response) {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch pins' });
+  }
+}
+
+export async function deletePinHandler(req: any, res: Response) {
+  try {
+    const user = req.user;
+    const pinId = req.params.id;
+
+    const deletedPin = await deletePinById(pinId, user.id);
+
+    if (!deletedPin) {
+      return res.status(404).json({ error: 'Pin not found or not owned by user' });
+    }
+
+    return res.status(200).json({ id: deletedPin.id });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to delete pin' });
   }
 }

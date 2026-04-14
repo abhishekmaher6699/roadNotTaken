@@ -6,6 +6,7 @@ export async function createPin(data: CreatePinInput) {
 
   const {
     title,
+    category,
     description,
     image_url,
     thumbnail_url,
@@ -25,16 +26,17 @@ export async function createPin(data: CreatePinInput) {
   const result = await pool.query(
     `
     INSERT INTO pins (
-      title, description, image_url, thumbnail_url, image_urls, latitude, longitude, user_id, geom
+      title, category, description, image_url, thumbnail_url, image_urls, latitude, longitude, user_id, geom
     )
     VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8,
-      ST_SetSRID(ST_MakePoint($7, $6), 4326)
+      $1, $2, $3, $4, $5, $6, $7, $8, $9,
+      ST_SetSRID(ST_MakePoint($8, $7), 4326)
     )
     RETURNING *;
     `,
     [
       title,
+      category ?? 'general',
       description,
       resolvedThumbnail,
       resolvedThumbnail,
@@ -46,4 +48,19 @@ export async function createPin(data: CreatePinInput) {
   );
 
   return result.rows[0];
+}
+
+export async function deletePinById(id: string, userId: string) {
+  const pool = getPool();
+
+  const result = await pool.query(
+    `
+    DELETE FROM pins
+    WHERE id = $1 AND user_id = $2
+    RETURNING id;
+    `,
+    [id, userId]
+  );
+
+  return result.rows[0] ?? null;
 }

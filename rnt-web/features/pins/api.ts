@@ -11,3 +11,9 @@ export function createPinApi(data: CreatePinInput) {
     body: JSON.stringify(data),
   }) as Promise<Pin>;
 }
+
+export function deletePinApi(id: string) {
+  return apiClient(`/pins/${id}`, {
+    method: "DELETE",
+  }) as Promise<{ id: string }>;
+}
