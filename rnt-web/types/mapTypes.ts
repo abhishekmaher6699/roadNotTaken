@@ -29,3 +29,12 @@ export type MapViewProps = {
 export interface MapPageClientProps {
   user: ServerAuthUser;
 }
+
+export interface MapPageOverlayProps extends MapPageClientProps {
+  mode: MapMode;
+  basemap: BasemapMode;
+  selectedPin: Pin | null;
+  onModeChange: (mode: MapMode) => void;
+  onBasemapToggle: () => void;
+  onLogout: () => Promise<void>;
+}

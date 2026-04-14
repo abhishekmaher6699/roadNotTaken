@@ -1,11 +1,6 @@
 "use client";
 
-import { BasemapMode } from "@/types/mapTypes";
-
-interface BasemapToggleProps {
-  basemap: BasemapMode;
-  onToggle: () => void;
-}
+import type { BasemapToggleProps } from "./types";
 
 export function BasemapToggle({ basemap, onToggle }: BasemapToggleProps) {
   return (

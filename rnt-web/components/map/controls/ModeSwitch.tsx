@@ -1,11 +1,6 @@
 "use client";
 
-import { MapMode } from "@/types/mapTypes";
-
-interface ModeSwitchProps {
-  mode: MapMode;
-  onChange: (mode: MapMode) => void;
-}
+import type { ModeSwitchProps } from "./types";
 
 export function ModeSwitch({ mode, onChange }: ModeSwitchProps) {
   return (

@@ -46,12 +46,16 @@ export default function MapView({
       className="z-0 h-full w-full"
       zoomControl={false}
       attributionControl={false}
+      zoomDelta={0.5}
+      zoomSnap={0.25}
+      inertia={true}
+      inertiaDeceleration={3000}
     >
       <TileLayer
         url={
           basemap === "imagery"
             ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            : "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
         }
         attribution={
           basemap === "imagery"
@@ -91,7 +95,11 @@ export default function MapView({
           closeButton={false}
           closeOnClick={false}
         >
-          <div className="space-y-2 px-1 py-1">
+          <div
+            className="space-y-2 px-1 py-1"
+            onClick={(event) => event.stopPropagation()}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
             <p className="text-sm font-medium text-neutral-900">
               Confirm this location?
             </p>
@@ -101,14 +109,20 @@ export default function MapView({
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={onConfirmPin}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onConfirmPin();
+                }}
                 className="rounded bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white"
               >
                 Confirm
               </button>
               <button
                 type="button"
-                onClick={onCancelPin}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCancelPin();
+                }}
                 className="rounded border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700"
               >
                 Cancel

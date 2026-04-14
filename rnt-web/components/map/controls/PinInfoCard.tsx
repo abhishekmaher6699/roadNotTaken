@@ -1,12 +1,6 @@
 "use client";
 
-import type { Pin } from "@/features/pins/types";
-import type { MapMode } from "@/types/mapTypes";
-
-interface PinInfoCardProps {
-  pin: Pin | null;
-  mode: MapMode;
-}
+import type { PinInfoCardProps } from "./types";
 
 export function PinInfoCard({ pin, mode }: PinInfoCardProps) {
   if (!pin) {

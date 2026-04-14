@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-interface UserMenuProps {
-  initial: string;
-  email?: string;
-  onLogout: () => Promise<void>;
-}
+import type { UserMenuProps } from "./types";
 
 export function UserMenu({ initial, email, onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false);
