@@ -1,5 +1,19 @@
-import { getSupabaseClient } from "../../config/supabase"
+import { getSupabaseClient } from "../../config/supabase";
 
+export interface AuthSessionResult {
+  user: {
+    id: string;
+    email?: string;
+  } | null;
+  session: {
+    access_token: string;
+    refresh_token?: string;
+  } | null;
+}
+
+const DEFAULT_WEB_URL = "http://localhost:3000";
+
+// Creates a confirmed email/password user in Supabase admin auth.
 export async function signupUser(email: string, password: string) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.auth.admin.createUser({
@@ -15,6 +29,7 @@ export async function signupUser(email: string, password: string) {
   return data.user;
 }
 
+// Signs in a user and returns the Supabase session payload.
 export async function loginUser(email: string, password: string) {
   const supabase = getSupabaseClient();
 
@@ -25,9 +40,10 @@ export async function loginUser(email: string, password: string) {
 
   if (error) throw new Error(error.message);
 
-  return data;
+  return data as AuthSessionResult;
 }
 
+// Verifies an access token and returns the matching Supabase user.
 export async function getUserFromAccessToken(accessToken: string) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.auth.getUser(accessToken);
@@ -39,6 +55,7 @@ export async function getUserFromAccessToken(accessToken: string) {
   return data.user;
 }
 
+// Revokes the current Supabase session.
 export async function logoutUser(token: string) {
   const supabase = getSupabaseClient();
   const { error } = await supabase.auth.admin.signOut(token);
@@ -48,12 +65,13 @@ export async function logoutUser(token: string) {
   }
 }
 
+// Builds the Google auth URL on the server so the frontend only needs to redirect to it.
 export function getGoogleAuthUrl() {
   if (!process.env.SUPABASE_URL) {
     throw new Error("SUPABASE_URL is not defined");
   }
 
-  const webUrl = process.env.WEB_URL || "http://localhost:3000";
+  const webUrl = process.env.WEB_URL || DEFAULT_WEB_URL;
   const callbackUrl = new URL("/auth/callback", webUrl);
   const authorizeUrl = new URL("/auth/v1/authorize", process.env.SUPABASE_URL);
 

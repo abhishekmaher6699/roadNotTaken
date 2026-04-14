@@ -5,6 +5,7 @@ const REFRESH_TOKEN_COOKIE = "refresh_token";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+// Parses the raw Cookie header into a simple key/value object.
 function parseCookies(req: Request) {
   const rawCookie = req.headers.cookie;
 
@@ -24,6 +25,7 @@ function parseCookies(req: Request) {
   }, {});
 }
 
+// Prefers an Authorization header, then falls back to the access_token cookie.
 export function getAccessTokenFromRequest(req: Request) {
   const authHeader = req.headers.authorization;
 
@@ -37,6 +39,7 @@ export function getAccessTokenFromRequest(req: Request) {
   return parseCookies(req)[ACCESS_TOKEN_COOKIE] ?? null;
 }
 
+// Writes the access and refresh tokens into HttpOnly cookies for server-side auth.
 export function setAuthCookies(
   res: Response,
   accessToken: string,
@@ -61,6 +64,7 @@ export function setAuthCookies(
   }
 }
 
+// Clears both auth cookies during logout or session reset.
 export function clearAuthCookies(res: Response) {
   res.clearCookie(ACCESS_TOKEN_COOKIE, {
     httpOnly: true,

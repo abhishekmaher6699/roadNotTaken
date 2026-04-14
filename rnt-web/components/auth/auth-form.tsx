@@ -9,6 +9,7 @@ import {
 } from "@/features/auth/validation";
 import type { AuthFormProps, FieldErrors } from "./types";
 
+// Converts Zod's field error arrays into the single-message shape the form renders.
 function getErrorMap(error: {
   flatten: () => { fieldErrors: Record<string, string[]> };
 }) {
@@ -39,7 +40,8 @@ export function AuthForm(props: AuthFormProps) {
     setSubmitError(null);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  // Validates the active form mode before handing control back to the auth page.
+  const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitError(null);
 
@@ -51,19 +53,7 @@ export function AuthForm(props: AuthFormProps) {
         return;
       }
 
-      setErrors({});
-      setIsSubmitting(true);
-
-      try {
-        await props.onSubmit(parsed.data);
-      } catch (error) {
-        setSubmitError(
-          error instanceof Error ? error.message : "Something went wrong"
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-
+      await runSubmit(() => props.onSubmit(parsed.data));
       return;
     }
 
@@ -77,11 +67,16 @@ export function AuthForm(props: AuthFormProps) {
       return;
     }
 
+    await runSubmit(() => props.onSubmit(parsed.data));
+  };
+
+  // Centralizes loading and API error handling for both login and signup submits.
+  const runSubmit = async (action: () => Promise<void>) => {
     setErrors({});
     setIsSubmitting(true);
 
     try {
-      await props.onSubmit(parsed.data);
+      await action();
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : "Something went wrong"
@@ -91,6 +86,7 @@ export function AuthForm(props: AuthFormProps) {
     }
   };
 
+  // Starts the Google OAuth redirect and surfaces any pre-redirect failure in the form.
   const handleGoogleAuth = async () => {
     setSubmitError(null);
     setIsGoogleSubmitting(true);
