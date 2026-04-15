@@ -12,6 +12,7 @@ import { SearchResultsPanel } from "@/components/search/SearchResultsPanel";
 import { useMapPageState } from "@/hooks/map/useMapPageState";
 import { useSearch } from "@/hooks/search/useSearch";
 import { useDisplayedPins } from "@/hooks/pins/useDisplayedPins";
+import { usePinFilters } from "@/hooks/pins/usePinFilters";
 import { loadLocation } from "@/components/map/controls/LocateButton";
 import type { MapPageClientProps, MapViewport } from "@/types/mapTypes";
 import type { Pin } from "@/features/pins/types";
@@ -66,8 +67,22 @@ export function MapPageClient({ user }: MapPageClientProps) {
 
   const search = useSearch(mapRef);
 
+  const {
+    filters,
+    activeFilterCount,
+    isFiltersActive,
+    applyFilters,
+    clearFilters,
+    toggleCategory,
+    toggleStatus,
+    toggleAccessLevel,
+  } = usePinFilters();
+
+  // When filters are active, apply them before displaying; otherwise show all tile pins.
+  const filteredPins = isFiltersActive ? applyFilters(pins) : pins;
+
   const displayedPins = useDisplayedPins(
-    pins,
+    filteredPins,
     search.results,
     search.isResultsPanelOpen,
     viewportRef.current
@@ -126,6 +141,14 @@ export function MapPageClient({ user }: MapPageClientProps) {
           search: search.search,
           clear: search.clear,
           onSelectPin: handleSearchSelectPin,
+        }}
+        filter={{
+          filters,
+          activeFilterCount,
+          onToggleCategory: toggleCategory,
+          onToggleStatus: toggleStatus,
+          onToggleAccessLevel: toggleAccessLevel,
+          onClearFilters: clearFilters,
         }}
         onViewDetails={handleViewDetails}
         onModeChange={handleModeChange}

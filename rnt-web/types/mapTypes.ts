@@ -2,6 +2,7 @@ import type L from "leaflet";
 import { LatLng } from "leaflet";
 import { Pin, TileSummary } from "@/features/pins/types";
 import { ServerAuthUser } from "@/lib/server-auth";
+import type { PinFilters } from "@/hooks/pins/usePinFilters";
 
 export type MapMode = "view" | "edit";
 export type BasemapMode = "standard" | "imagery";
@@ -60,12 +61,22 @@ export interface SearchOverlayProps {
   onSelectPin: (pin: Pin) => void;
 }
 
+export interface FilterOverlayProps {
+  filters: PinFilters;
+  activeFilterCount: number;
+  onToggleCategory: (value: string) => void;
+  onToggleStatus: (value: string) => void;
+  onToggleAccessLevel: (value: string) => void;
+  onClearFilters: () => void;
+}
+
 // onLocate is called by the LocateButton after getting the browser GPS position.
 export interface MapPageOverlayProps extends MapPageClientProps {
   mode: MapMode;
   basemap: BasemapMode;
   selectedPin: Pin | null;
   search: SearchOverlayProps;
+  filter: FilterOverlayProps;
   onViewDetails: () => void;
   onModeChange: (mode: MapMode) => void;
   onBasemapToggle: () => void;

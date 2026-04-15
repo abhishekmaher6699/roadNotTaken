@@ -1,6 +1,7 @@
 "use client";
 
 import { BasemapToggle } from "@/components/map/controls/BasemapToggle";
+import { FilterButton } from "@/components/map/controls/FilterButton";
 import { LocateButton } from "@/components/map/controls/LocateButton";
 import { ModeSwitch } from "@/components/map/controls/ModeSwitch";
 import { PinInfoCard } from "@/components/map/controls/PinInfoCard";
@@ -14,6 +15,7 @@ export function MapOverlay({
   basemap,
   selectedPin,
   search,
+  filter,
   onViewDetails,
   onModeChange,
   onBasemapToggle,
@@ -26,18 +28,30 @@ export function MapOverlay({
         <ModeSwitch mode={mode} onChange={onModeChange} />
       </div>
 
-      {/* Search bar — top-centre */}
-      <div className="pointer-events-auto absolute left-1/2 top-3 w-full max-w-sm -translate-x-1/2 px-4 sm:top-4 sm:max-w-md">
-        <SearchBar
-          query={search.query}
-          suggestions={search.suggestions}
-          isSearching={search.isSearching}
-          isResultsPanelOpen={search.isResultsPanelOpen}
-          onQueryChange={search.setQuery}
-          onSearch={search.search}
-          onSelectPin={search.onSelectPin}
-          onClear={search.clear}
-        />
+      {/* Search bar + Filter button — top-centre */}
+      <div className="pointer-events-auto absolute left-1/2 top-3 flex w-full max-w-sm -translate-x-1/2 items-start gap-2 px-4 sm:top-4 sm:max-w-md">
+        <div className="min-w-0 flex-1">
+          <SearchBar
+            query={search.query}
+            suggestions={search.suggestions}
+            isSearching={search.isSearching}
+            isResultsPanelOpen={search.isResultsPanelOpen}
+            onQueryChange={search.setQuery}
+            onSearch={search.search}
+            onSelectPin={search.onSelectPin}
+            onClear={search.clear}
+          />
+        </div>
+        <div className="shrink-0 pt-0.5">
+          <FilterButton
+            filters={filter.filters}
+            activeFilterCount={filter.activeFilterCount}
+            onToggleCategory={filter.onToggleCategory}
+            onToggleStatus={filter.onToggleStatus}
+            onToggleAccessLevel={filter.onToggleAccessLevel}
+            onClear={filter.onClearFilters}
+          />
+        </div>
       </div>
 
       <div className="pointer-events-auto absolute right-3 top-3 flex flex-col items-end gap-2 sm:right-4 sm:top-4 sm:gap-3">

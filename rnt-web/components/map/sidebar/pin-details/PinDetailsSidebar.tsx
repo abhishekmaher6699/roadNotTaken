@@ -5,6 +5,7 @@ import { ConfirmDialog } from "../../../ui/ConfirmDialog";
 import { MapSidebarShell } from "../MapSidebarShell";
 import { PinDetailsGallery } from "./PinDetailsGallery";
 import { PinDetailsHero } from "./PinDetailsHero";
+import { CommentsSection } from "./CommentsSection";
 import type { PinDetailsSidebarProps } from "./types";
 
 function DetailItem({
@@ -48,6 +49,8 @@ export function PinDetailsSidebar({
 }: PinDetailsSidebarProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const pinId = pin ? parseInt(pin.id) : null;
 
   if (!pin) {
     return null;
@@ -149,15 +152,7 @@ export function PinDetailsSidebar({
 
           {gallery.length > 0 && <PinDetailsGallery pin={pin} />}
 
-          <section className="rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-5 sm:px-5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
-              Community Space
-            </p>
-            <p className="mt-2 text-sm leading-6 text-neutral-600">
-              This area is ready for comments, replies, reactions, saves, and
-              future social activity without needing to rework the layout later.
-            </p>
-          </section>
+          <CommentsSection pinId={pinId} />
         </div>
       </MapSidebarShell>
 
