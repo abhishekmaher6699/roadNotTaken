@@ -1,16 +1,17 @@
 "use client";
 
-import type L from "leaflet";
-
 import { useRef, useState } from "react";
+import type L from "leaflet";
 import dynamic from "next/dynamic";
+
 import { MapOverlay } from "@/components/map/MapOverlay";
 import { CreatePinSidebar } from "@/components/map/sidebar/create-pin";
 import { EditPinSidebar } from "@/components/map/sidebar/edit-pin";
 import { PinDetailsSidebar } from "@/components/map/sidebar/pin-details";
 import { SearchResultsPanel } from "@/components/search/SearchResultsPanel";
-import { useMapPageState } from "@/hooks/useMapPageState";
-import { useSearch } from "@/features/search/useSearch";
+import { useMapPageState } from "@/hooks/map/useMapPageState";
+import { useSearch } from "@/hooks/search/useSearch";
+import { useDisplayedPins } from "@/hooks/pins/useDisplayedPins";
 import { loadLocation } from "@/components/map/controls/LocateButton";
 import type { MapPageClientProps, MapViewport } from "@/types/mapTypes";
 import type { Pin } from "@/features/pins/types";
@@ -31,9 +32,8 @@ export function MapPageClient({ user }: MapPageClientProps) {
   // Computed once at mount — MapContainer only reads center on first render.
   const [initialCenter] = useState<[number, number]>(getInitialCenter);
 
-  // A ref so the search hook can read the latest viewport without causing re-renders.
-  const viewportRef = useRef<MapViewport | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const viewportRef = useRef<MapViewport | null>(null);
 
   // flyToTarget is set by search selection or locate button; FlyToController reacts to it.
   const [flyToTarget, setFlyToTarget] = useState<{ lat: number; lng: number } | null>(null);
@@ -66,18 +66,24 @@ export function MapPageClient({ user }: MapPageClientProps) {
 
   const search = useSearch(mapRef);
 
-  // Intercept viewport changes so we can keep the ref up-to-date for the search hook.
+  const displayedPins = useDisplayedPins(
+    pins,
+    search.results,
+    search.isResultsPanelOpen,
+    viewportRef.current
+  );
+  const displayedSummaries = search.isResultsPanelOpen ? [] : tileSummaries;
+
+  // Keep viewportRef in sync for useDisplayedPins without triggering re-renders.
   function handleViewportChangeWithRef(vp: MapViewport) {
     viewportRef.current = vp;
     handleViewportChange(vp);
   }
 
-  // LocateButton callback — fly the map to the user's GPS position.
   function handleLocate(lat: number, lng: number) {
     setFlyToTarget({ lat, lng });
   }
 
-  // When a pin is selected from search: fly the map to it, then open the sidebar.
   function handleSearchSelectPin(pin: Pin | null) {
     if (!pin) return;
     setFlyToTarget({ lat: pin.latitude, lng: pin.longitude });
@@ -85,21 +91,6 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleViewDetails();
     search.clear();
   }
-
-  // When the user has an active search, only render matching pins visible in the viewport.
-  const displayedPins = (() => {
-    if (!search.isResultsPanelOpen) return pins;
-    const vp = viewportRef.current;
-    if (!vp) return search.results;
-    return search.results.filter(
-      (p) =>
-        p.latitude >= vp.south &&
-        p.latitude <= vp.north &&
-        p.longitude >= vp.west &&
-        p.longitude <= vp.east
-    );
-  })();
-  const displayedSummaries = search.isResultsPanelOpen ? [] : tileSummaries;
 
   return (
     <div className="relative h-screen overflow-hidden bg-neutral-100">

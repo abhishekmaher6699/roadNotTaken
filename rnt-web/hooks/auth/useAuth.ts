@@ -4,7 +4,7 @@ import {
   loginApi,
   logoutApi,
   signupApi,
-} from "./api";
+} from "../../features/auth/api";
 import { getOAuthHashParams } from "@/lib/auth";
 
 export function useAuth() {

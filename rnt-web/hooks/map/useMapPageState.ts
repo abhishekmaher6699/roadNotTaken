@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { usePins } from "@/features/pins/hooks";
-import { useAuth } from "@/features/auth/hooks";
+import { usePins } from "@/hooks/pins/usePins";
+import { useAuth } from "@/hooks/auth/useAuth";
 import type { CreatePinInput, Pin, UpdatePinInput } from "@/features/pins/types";
 import type {
   BasemapMode,

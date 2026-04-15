@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
-import { useAuth } from "@/features/auth/hooks";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { type SignupFormValues } from "@/features/auth/validation";
 
 export function SignupPageClient() {

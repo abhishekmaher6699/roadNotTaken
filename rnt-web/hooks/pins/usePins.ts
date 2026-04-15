@@ -3,22 +3,22 @@ import {
   createPinApi,
   deletePinApi,
   updatePinApi,
-} from "./api";
+} from "../../features/pins/api";
 import type {
   CreatePinInput,
   Pin,
   TileCoordinates,
   UpdatePinInput,
-} from "./types";
-import { isPinInsideTile } from "./tile-utils";
-import type { ViewportBounds } from "./tile-utils";
+} from "../../features/pins/types";
+import { isPinInsideTile } from "../../features/pins/tile-utils";
+import type { ViewportBounds } from "../../features/pins/tile-utils";
 import {
   TileCache,
   TileSummaryCache,
   TileSnapshot,
   TileSummarySnapshot,
-} from "./tile-cache";
-import { selectVisiblePins, selectVisibleTileSummaries } from "./tile-selectors";
+} from "../../features/pins/tile-cache";
+import { selectVisiblePins, selectVisibleTileSummaries } from "../../features/pins/tile-selectors";
 import {
   fetchRawTiles,
   fetchSummaryTiles,
@@ -26,8 +26,8 @@ import {
   getMissingSummaryTiles,
   getRequestedTiles,
   primeDerivedParentTiles,
-} from "./tile-requests";
-import { tileKey } from "./tile-utils";
+} from "../../features/pins/tile-requests";
+import { tileKey } from "../../features/pins/tile-utils";
 
 export function usePins() {
   const [tileCache, setTileCache] = useState<TileCache>({});
@@ -38,18 +38,22 @@ export function usePins() {
   const inFlightSummaryTilesRef = useRef<Set<string>>(new Set());
   const tileCacheRef = useRef<TileCache>({});
   const summaryCacheRef = useRef<TileSummaryCache>({});
+  
   const activeRequestRef = useRef<{
     controller: AbortController;
     requestId: number;
     tileSnapshots: TileSnapshot[];
   } | null>(null);
+
   const activeSummaryRequestRef = useRef<{
     controller: AbortController;
     requestId: number;
     tileSnapshots: TileSummarySnapshot[];
   } | null>(null);
+  
   const requestIdRef = useRef(0);
   const summaryRequestIdRef = useRef(0);
+  
   const requestStatsRef = useRef({
     started: 0,
     completed: 0,

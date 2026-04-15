@@ -2,7 +2,7 @@
 
 import { MapSidebarShell } from "@/components/map/sidebar/MapSidebarShell";
 import { Pin } from "@/features/pins/types";
-import { highlight } from "@/features/search/highlight";
+import { highlight } from "@/components/search/highlight";
 
 interface SearchResultsPanelProps {
   open: boolean;

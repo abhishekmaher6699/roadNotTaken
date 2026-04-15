@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Pin } from "@/features/pins/types";
-import { highlight } from "@/features/search/highlight";
+import { highlight } from "@/components/search/highlight";
 
 const CATEGORY_COLORS: Record<string, string> = {
   general: "#6b7280",

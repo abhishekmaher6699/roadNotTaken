@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
-import { useAuth } from "@/features/auth/hooks";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { type LoginFormValues } from "@/features/auth/validation";
 
 export function LoginPageClient() {
