@@ -123,26 +123,27 @@ export async function updatePinHandler(req: any, res: Response) {
 
 export async function searchPinsHandler(req: Request, res: Response) {
   try {
-    const query = typeof req.query.q === 'string' ? req.query.q : '';
+    const query = typeof req.query.q === "string" ? req.query.q : "";
+
     const limitParam = parseInt(req.query.limit as string, 10);
-    const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 6;
+    const limit =
+      Number.isFinite(limitParam) && limitParam > 0
+        ? Math.min(limitParam, 100)
+        : 6;
 
-    // Optional viewport bounds for proximity-biased ordering.
-    const north = parseFloat(req.query.north as string);
-    const south = parseFloat(req.query.south as string);
-    const east  = parseFloat(req.query.east as string);
-    const west  = parseFloat(req.query.west as string);
+    const lat = parseFloat(req.query.lat as string);
+    const lng = parseFloat(req.query.lng as string);
 
-    const bounds =
-      Number.isFinite(north) && Number.isFinite(south) &&
-      Number.isFinite(east) && Number.isFinite(west)
-        ? { north, south, east, west }
-        : null;
+    const center =
+      Number.isFinite(lat) && Number.isFinite(lng)
+        ? { lat, lng }
+        : undefined;
 
-    const pins = await searchPins({ query, limit, bounds });
+    const pins = await searchPins({ query, limit, center });
+
     return res.json(pins);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Failed to search pins' });
+    return res.status(500).json({ error: "Failed to search pins" });
   }
 }

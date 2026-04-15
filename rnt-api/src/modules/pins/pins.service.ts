@@ -318,7 +318,7 @@ export async function getPinSummariesForTiles({ tiles }: TileQueryInput) {
 export async function searchPins({
   query,
   limit = 6,
-  bounds,
+  center,
 }: SearchPinsInput) {
   const pool = getPool();
 
@@ -328,94 +328,113 @@ export async function searchPins({
     return [];
   }
 
-  // 🔥 Dynamic fuzziness (important)
-  const threshold = term.includes(" ") ? 0.15 : 0.2;
+  const threshold = term.includes(" ") ? 0.25 : 0.3;
   await pool.query(`SELECT set_limit(${threshold});`);
 
+  const hasCenter = center && center.lat && center.lng;
+
   const params: (string | number)[] = [
-    term,           // $1
-    `%${term}%`,    // $2
-    limit,          // $3
+    term,        // $1
+    `%${term}%`, // $2
+    limit,       // $3
   ];
 
-  let proximityClause = "0";
-
-  if (bounds) {
-    params.push(bounds.south, bounds.north, bounds.west, bounds.east);
-
-    const s = params.length - 3;
-
-    proximityClause = `
-      CASE
-        WHEN latitude  BETWEEN $${s}::float AND $${s + 1}::float
-         AND longitude BETWEEN $${s + 2}::float AND $${s + 3}::float
-        THEN 1 ELSE 0
-      END
-    `;
+  if (hasCenter) {
+    params.push(center.lng, center.lat); // $4, $5
   }
+
+  const distanceScore = hasCenter
+    ? `LEAST(1.0, EXP(-ST_Distance(
+          ST_MakePoint(longitude, latitude)::geography,
+          ST_MakePoint($4, $5)::geography
+        ) / 8000.0))`
+    : `0`;
 
   const result = await pool.query(
     `
     SELECT
       ${PIN_SELECT_FRAGMENT},
 
-      -- 🔥 Relevance scoring
+      ${
+        hasCenter
+          ? `ST_Distance(
+              ST_MakePoint(longitude, latitude)::geography,
+              ST_MakePoint($4, $5)::geography
+            ) AS distance,`
+          : `NULL AS distance,`
+      }
+
       (
-        similarity(title, $1) * 2 +
-        similarity(address, $1) * 1.2 +
+        -- Position-independent word match against title
+        -- "India Gate..." and "Gateway of India..." both score 1.0 for "india"
+        -- "cafe prem" and "hauz khas cafe cluster" both score 1.0 for "cafe"
+        COALESCE((
+          SELECT MAX(similarity(LOWER($1), word))
+          FROM unnest(string_to_array(LOWER(title), ' ')) AS word
+          WHERE LENGTH(word) >= LENGTH($1) - 1
+        ), 0) * 3.0
 
-        -- word-level boost (title + address)
-        (
-          SELECT COALESCE(MAX(GREATEST(
-            similarity(title, word),
-            similarity(address, word)
-          )), 0)
-          FROM unnest(string_to_array($1, ' ')) AS word
-        ) * 1.5 +
+        -- Address similarity (whole string fine here, addresses are structured)
+        + similarity(address, $1) * 1.2
 
-        -- phonetic boost
-        (GREATEST(
-          difference(title, $1),
-          difference(address, $1)
-        ) / 4.0)
-      ) AS relevance,
+        -- Multi-word query: best per-word match across title words
+        -- Helps "hauz khas" match "Hauz Khas Cafe Cluster"
+        + COALESCE((
+            SELECT MAX(
+              (
+                SELECT MAX(similarity(LOWER(qword), tword))
+                FROM unnest(string_to_array(LOWER(title), ' ')) AS tword
+              )
+            )
+            FROM unnest(string_to_array(LOWER($1), ' ')) AS qword
+            WHERE LENGTH(qword) >= 3
+          ), 0) * 1.0
 
-      ${proximityClause} AS proximity
+        -- Phonetic tiebreaker (very small, just catches "pune" -> "poon" type typos)
+        + (GREATEST(
+            difference(title, $1),
+            difference(address, $1)
+          ) / 4.0) * 0.2
+
+        -- Distance: decisive for equal text scores, near-zero across cities
+        -- 8km half-life: within city scores high, other cities score ~0
+        + ${distanceScore} * 3.0
+
+        -- Popularity: tiny tiebreaker only
+        + LOG(GREATEST(score, 0) + 1) * 0.05
+      ) AS relevance
 
     FROM pins
     WHERE status != 'deleted'
       AND (
-        -- ✅ Exact / partial
+        -- Exact substring (always include, high recall)
         title ILIKE $2
         OR address ILIKE $2
         OR posted_by ILIKE $2
         OR category ILIKE $2
 
-        -- ✅ Trigram fuzzy
+        -- Word-level containment: query word found inside title
+        OR $1 <% title
+
+        -- Whole-string trigram fuzzy (controlled by set_limit)
         OR title % $1
         OR address % $1
-        OR posted_by % $1
 
-        -- ✅ Word-level fuzzy
+        -- Per-word fuzzy: each word of query matched against title/address
+        -- Enables "haz khas" -> "hauz khas" without matching unrelated pins
         OR EXISTS (
           SELECT 1
           FROM unnest(string_to_array($1, ' ')) AS q(word)
-          WHERE
-            title % word
-            OR address % word
+          WHERE LENGTH(word) >= 3
+            AND (word % title OR word % address)
         )
 
-        -- ✅ Phonetic
-        OR difference(title, $1) > 2
-        OR difference(address, $1) > 2
+        -- Phonetic: only strong matches (> 3 filters out loose soundex hits)
+        OR difference(title, $1) > 3
+        OR difference(address, $1) > 3
       )
 
-    ORDER BY
-      proximity DESC,          -- 🗺️ inside viewport first
-      relevance DESC,          -- 🔍 best match next
-      score DESC NULLS LAST,   -- ⭐ quality
-      created_at DESC
-
+    ORDER BY relevance DESC, score DESC NULLS LAST, created_at DESC
     LIMIT $3;
     `,
     params

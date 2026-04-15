@@ -1,6 +1,7 @@
 "use client";
 
 import { BasemapToggle } from "@/components/map/controls/BasemapToggle";
+import { LocateButton } from "@/components/map/controls/LocateButton";
 import { ModeSwitch } from "@/components/map/controls/ModeSwitch";
 import { PinInfoCard } from "@/components/map/controls/PinInfoCard";
 import { UserMenu } from "@/components/map/controls/UserMenu";
@@ -16,6 +17,7 @@ export function MapOverlay({
   onViewDetails,
   onModeChange,
   onBasemapToggle,
+  onLocate,
   onLogout,
 }: MapPageOverlayProps) {
   return (
@@ -45,6 +47,7 @@ export function MapOverlay({
           onLogout={onLogout}
         />
         <BasemapToggle basemap={basemap} onToggle={onBasemapToggle} />
+        <LocateButton onLocate={onLocate} />
       </div>
 
       <div className="pointer-events-auto absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-auto sm:w-[calc(100%-2rem)] sm:max-w-sm">

@@ -1,5 +1,7 @@
 "use client";
 
+import type L from "leaflet";
+
 import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { MapOverlay } from "@/components/map/MapOverlay";
@@ -9,6 +11,7 @@ import { PinDetailsSidebar } from "@/components/map/sidebar/pin-details";
 import { SearchResultsPanel } from "@/components/search/SearchResultsPanel";
 import { useMapPageState } from "@/hooks/useMapPageState";
 import { useSearch } from "@/features/search/useSearch";
+import { loadLocation } from "@/components/map/controls/LocateButton";
 import type { MapPageClientProps, MapViewport } from "@/types/mapTypes";
 import type { Pin } from "@/features/pins/types";
 
@@ -16,11 +19,23 @@ const MapView = dynamic(() => import("@/components/map/mapView"), {
   ssr: false,
 });
 
+// Default map center — Pune. Overridden by saved location if available.
+const DEFAULT_CENTER: [number, number] = [18.52, 73.85];
+
+function getInitialCenter(): [number, number] {
+  const saved = loadLocation();
+  return saved ? [saved.lat, saved.lng] : DEFAULT_CENTER;
+}
+
 export function MapPageClient({ user }: MapPageClientProps) {
+  // Computed once at mount — MapContainer only reads center on first render.
+  const [initialCenter] = useState<[number, number]>(getInitialCenter);
+
   // A ref so the search hook can read the latest viewport without causing re-renders.
   const viewportRef = useRef<MapViewport | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
 
-  // flyToTarget is set by search selection; MapView's FlyToController reacts to it.
+  // flyToTarget is set by search selection or locate button; FlyToController reacts to it.
   const [flyToTarget, setFlyToTarget] = useState<{ lat: number; lng: number } | null>(null);
 
   const {
@@ -49,7 +64,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleViewDetails,
   } = useMapPageState();
 
-  const search = useSearch(viewportRef);
+  const search = useSearch(mapRef);
 
   // Intercept viewport changes so we can keep the ref up-to-date for the search hook.
   function handleViewportChangeWithRef(vp: MapViewport) {
@@ -57,9 +72,21 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleViewportChange(vp);
   }
 
-  // When the user has an active search, only render matching pins that are
-  // currently inside the visible viewport. Pins outside the view are still in
-  // the results panel list — they just don't waste Leaflet marker DOM nodes.
+  // LocateButton callback — fly the map to the user's GPS position.
+  function handleLocate(lat: number, lng: number) {
+    setFlyToTarget({ lat, lng });
+  }
+
+  // When a pin is selected from search: fly the map to it, then open the sidebar.
+  function handleSearchSelectPin(pin: Pin | null) {
+    if (!pin) return;
+    setFlyToTarget({ lat: pin.latitude, lng: pin.longitude });
+    setSelectedPin(pin);
+    handleViewDetails();
+    search.clear();
+  }
+
+  // When the user has an active search, only render matching pins visible in the viewport.
   const displayedPins = (() => {
     if (!search.isResultsPanelOpen) return pins;
     const vp = viewportRef.current;
@@ -74,18 +101,10 @@ export function MapPageClient({ user }: MapPageClientProps) {
   })();
   const displayedSummaries = search.isResultsPanelOpen ? [] : tileSummaries;
 
-  // When a pin is selected from search: fly the map to it, then open the sidebar.
-  function handleSearchSelectPin(pin: Pin | null) {
-    if (!pin) return;
-    setFlyToTarget({ lat: pin.latitude, lng: pin.longitude });
-    setSelectedPin(pin);
-    handleViewDetails();
-    search.clear();
-  }
-
   return (
     <div className="relative h-screen overflow-hidden bg-neutral-100">
       <MapView
+        mapRef={mapRef}
         pins={displayedPins}
         tileSummaries={displayedSummaries}
         mode={mode}
@@ -93,6 +112,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         pendingPin={pendingPin}
         draftPin={draftPin}
         flyToTarget={flyToTarget}
+        initialCenter={initialCenter}
         onAddPin={handleAddPin}
         onViewportChange={handleViewportChangeWithRef}
         onSelectPin={setSelectedPin}
@@ -119,6 +139,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onViewDetails={handleViewDetails}
         onModeChange={handleModeChange}
         onBasemapToggle={handleBasemapToggle}
+        onLocate={handleLocate}
         onLogout={handleLogout}
       />
 

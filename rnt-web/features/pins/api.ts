@@ -57,15 +57,18 @@ export function updatePinApi(id: string, data: UpdatePinInput) {
 export function searchPinsApi(
   query: string,
   limit: number = 6,
-  viewport?: { north: number; south: number; east: number; west: number } | null,
+  center?: { lat: number; lng: number },
   signal?: AbortSignal
 ) {
-  const params = new URLSearchParams({ q: query, limit: String(limit) });
-  if (viewport) {
-    params.set("north", String(viewport.north));
-    params.set("south", String(viewport.south));
-    params.set("east", String(viewport.east));
-    params.set("west", String(viewport.west));
+  const params = new URLSearchParams({
+    q: query,
+    limit: String(limit),
+  });
+
+  if (center) {
+    params.append("lat", String(center.lat));
+    params.append("lng", String(center.lng));
   }
+
   return apiClient(`/pins/search?${params}`, { signal }) as Promise<Pin[]>;
 }

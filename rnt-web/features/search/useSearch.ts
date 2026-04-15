@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import type L from "leaflet";
 import { Pin } from "@/features/pins/types";
 import { searchPinsApi } from "@/features/pins/api";
-import type { MapViewport } from "@/types/mapTypes";
 
 export interface UseSearchReturn {
   query: string;
@@ -16,8 +16,17 @@ export interface UseSearchReturn {
   clear: () => void;
 }
 
-// viewportRef is passed as a ref so changing the viewport doesn't re-render this hook.
-export function useSearch(viewportRef: React.RefObject<MapViewport | null>): UseSearchReturn {
+// 🔥 Get real map center from Leaflet
+function getCenter(map: L.Map | null) {
+  if (!map) return undefined;
+
+  const c = map.getCenter();
+  return { lat: c.lat, lng: c.lng };
+}
+
+export function useSearch(
+  mapRef: React.RefObject<L.Map | null>
+): UseSearchReturn {
   const [query, setQueryState] = useState("");
   const [suggestions, setSuggestions] = useState<Pin[]>([]);
   const [results, setResults] = useState<Pin[]>([]);
@@ -27,15 +36,21 @@ export function useSearch(viewportRef: React.RefObject<MapViewport | null>): Use
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const setQuery = useCallback((q: string) => {
-    setQueryState(q);
-    if (isResultsPanelOpen) {
-      setIsResultsPanelOpen(false);
-      setResults([]);
-    }
-  }, [isResultsPanelOpen]);
+  // Update query
+  const setQuery = useCallback(
+    (q: string) => {
+      setQueryState(q);
 
-  // Debounced suggestion fetch — fires 300ms after the user stops typing.
+      // Close results panel when user types again
+      if (isResultsPanelOpen) {
+        setIsResultsPanelOpen(false);
+        setResults([]);
+      }
+    },
+    [isResultsPanelOpen]
+  );
+
+  // 🔎 Suggestions (debounced)
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (abortRef.current) abortRef.current.abort();
@@ -51,7 +66,16 @@ export function useSearch(viewportRef: React.RefObject<MapViewport | null>): Use
 
       try {
         setIsSearching(true);
-        const pins = await searchPinsApi(query, 6, viewportRef.current, controller.signal);
+
+        const center = getCenter(mapRef.current);
+
+        const pins = await searchPinsApi(
+          query,
+          6,
+          center,
+          controller.signal
+        );
+
         setSuggestions(pins);
       } catch (err: any) {
         if (err?.name !== "AbortError") {
@@ -66,11 +90,12 @@ export function useSearch(viewportRef: React.RefObject<MapViewport | null>): Use
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, viewportRef]);
+  }, [query, mapRef]);
 
-  // Full search — fetches up to 100 results with viewport proximity boost.
+  // 🔍 Full search
   const search = useCallback(async () => {
     if (!query.trim() || query.trim().length < 2) return;
+
     if (abortRef.current) abortRef.current.abort();
 
     const controller = new AbortController();
@@ -79,13 +104,22 @@ export function useSearch(viewportRef: React.RefObject<MapViewport | null>): Use
     try {
       setIsSearching(true);
 
-      // Show suggestions immediately while full results load (no flicker).
+      // Show suggestions immediately (no flicker)
       if (suggestions.length > 0) {
         setResults(suggestions);
       }
 
       setIsResultsPanelOpen(true);
-      const pins = await searchPinsApi(query, 100, viewportRef.current, controller.signal);
+
+      const center = getCenter(mapRef.current);
+
+      const pins = await searchPinsApi(
+        query,
+        100,
+        center,
+        controller.signal
+      );
+
       setResults(pins);
     } catch (err: any) {
       if (err?.name !== "AbortError") {
@@ -95,11 +129,13 @@ export function useSearch(viewportRef: React.RefObject<MapViewport | null>): Use
     } finally {
       setIsSearching(false);
     }
-  }, [query, suggestions, viewportRef]);
+  }, [query, suggestions, mapRef]);
 
+  // 🧹 Clear search
   const clear = useCallback(() => {
     if (abortRef.current) abortRef.current.abort();
     if (debounceRef.current) clearTimeout(debounceRef.current);
+
     setQueryState("");
     setSuggestions([]);
     setResults([]);

@@ -144,6 +144,7 @@ function ViewportReporter({
 }
 
 export default function MapView({
+  mapRef,
   pins,
   tileSummaries,
   mode,
@@ -151,6 +152,7 @@ export default function MapView({
   pendingPin,
   draftPin,
   flyToTarget,
+  initialCenter,
   onAddPin,
   onViewportChange,
   onSelectPin,
@@ -159,8 +161,9 @@ export default function MapView({
   onCancelPin,
 }: MapViewProps) {
   return (
-    <MapContainer
-      center={[18.52, 73.85]}
+  <MapContainer
+      ref={mapRef}
+      center={initialCenter}
       zoom={15}
       className="z-0 h-full w-full"
       zoomControl={false}

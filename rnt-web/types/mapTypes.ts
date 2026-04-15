@@ -1,3 +1,4 @@
+import type L from "leaflet";
 import { LatLng } from "leaflet";
 import { Pin, TileSummary } from "@/features/pins/types";
 import { ServerAuthUser } from "@/lib/server-auth";
@@ -25,6 +26,7 @@ export type AddPinProps = {
 };
 
 export type MapViewProps = {
+  mapRef: React.RefObject<L.Map | null>;
   pins: Pin[];
   tileSummaries: TileSummary[];
   mode: MapMode;
@@ -32,6 +34,7 @@ export type MapViewProps = {
   pendingPin: PendingPin | null;
   draftPin: PendingPin | null;
   flyToTarget: { lat: number; lng: number } | null;
+  initialCenter: [number, number];
   onAddPin: (latlng: LatLng) => void;
   onViewportChange: (viewport: MapViewport) => void;
   onSelectPin: (pin: Pin) => void;
@@ -57,6 +60,7 @@ export interface SearchOverlayProps {
   onSelectPin: (pin: Pin) => void;
 }
 
+// onLocate is called by the LocateButton after getting the browser GPS position.
 export interface MapPageOverlayProps extends MapPageClientProps {
   mode: MapMode;
   basemap: BasemapMode;
@@ -65,5 +69,6 @@ export interface MapPageOverlayProps extends MapPageClientProps {
   onViewDetails: () => void;
   onModeChange: (mode: MapMode) => void;
   onBasemapToggle: () => void;
+  onLocate: (lat: number, lng: number) => void;
   onLogout: () => Promise<void>;
 }
