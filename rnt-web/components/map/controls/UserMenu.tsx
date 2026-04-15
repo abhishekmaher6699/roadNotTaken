@@ -19,7 +19,7 @@ export function UserMenu({ initial, email, onLogout }: UserMenuProps) {
   }, []);
 
   return (
-    <div ref={menuRef} className="relative z-[2200]">
+    <div ref={menuRef} className="relative z-2200">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
