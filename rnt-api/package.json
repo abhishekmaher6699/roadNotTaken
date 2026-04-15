@@ -8,20 +8,21 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "seed:sample-pins": "tsx src/scripts/seed-sample-pins.ts"
+    "seed:sample-pins": "tsx src/scripts/seed-sample-pins.ts",
+    "migrate": "node-pg-migrate --migration-filename-format timestamp",
+    "migrate:up": "npm run migrate up"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@prisma/client": "^7.7.0",
     "@supabase/supabase-js": "^2.103.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "pg": "^8.20.0",
-    "prisma": "^7.7.0"
+    "node-pg-migrate": "^8.0.4",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

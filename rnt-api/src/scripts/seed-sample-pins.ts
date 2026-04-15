@@ -265,7 +265,6 @@ async function seedSamplePins() {
           posted_by,
           access_level,
           description,
-          image_url,
           thumbnail_url,
           image_urls,
           latitude,
@@ -275,7 +274,7 @@ async function seedSamplePins() {
           geom
         )
         VALUES (
-          $1, $2, $3, $4, $5, $6, $7, NULL, NULL, ARRAY[]::TEXT[], $8, $9, $10, $11,
+          $1, $2, $3, $4, $5, $6, $7, NULL, ARRAY[]::TEXT[], $8, $9, $10, $11,
           ST_SetSRID(ST_MakePoint($9, $8), 4326)
         );
         `,

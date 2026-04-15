@@ -20,7 +20,7 @@ const PIN_SELECT_FRAGMENT = `
   status,
   access_level,
   description,
-  COALESCE(thumbnail_url, image_url) AS thumbnail_url,
+  thumbnail_url,
   image_urls,
   score,
   created_at,
@@ -57,7 +57,6 @@ export async function createPin(data: CreatePinInput) {
     posted_by,
     access_level,
     description,
-    image_url,
     thumbnail_url,
     image_urls,
     latitude,
@@ -65,7 +64,7 @@ export async function createPin(data: CreatePinInput) {
     user_id,
   } = data;
 
-  const resolvedThumbnail = thumbnail_url ?? image_url ?? null;
+  const resolvedThumbnail = thumbnail_url ?? null;
   const resolvedImages = image_urls && image_urls.length > 0
     ? image_urls
     : resolvedThumbnail
@@ -75,11 +74,11 @@ export async function createPin(data: CreatePinInput) {
   const result = await pool.query(
     `
     INSERT INTO pins (
-      title, category, address, status, posted_by, access_level, description, image_url, thumbnail_url, image_urls, latitude, longitude, user_id, geom
+      title, category, address, status, posted_by, access_level, description, thumbnail_url, image_urls, latitude, longitude, user_id, geom
     )
     VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-      ST_SetSRID(ST_MakePoint($12, $11), 4326)
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+      ST_SetSRID(ST_MakePoint($11, $10), 4326)
     )
     RETURNING *;
     `,
@@ -91,7 +90,6 @@ export async function createPin(data: CreatePinInput) {
       posted_by ?? null,
       access_level ?? 'public',
       description,
-      resolvedThumbnail,
       resolvedThumbnail,
       resolvedImages,
       latitude,
@@ -147,12 +145,11 @@ export async function updatePinById(
     status,
     access_level,
     description,
-    image_url,
     thumbnail_url,
     image_urls,
   } = data;
 
-  const resolvedThumbnail = thumbnail_url ?? image_url ?? null;
+  const resolvedThumbnail = thumbnail_url ?? null;
   const resolvedImages =
     image_urls && image_urls.length > 0
       ? image_urls
@@ -170,9 +167,8 @@ export async function updatePinById(
       status = $6,
       access_level = $7,
       description = $8,
-      image_url = $9,
-      thumbnail_url = $10,
-      image_urls = $11,
+      thumbnail_url = $9,
+      image_urls = $10,
       updated_at = NOW()
     WHERE id = $1 AND user_id = $2
     RETURNING
@@ -187,7 +183,7 @@ export async function updatePinById(
       status,
       access_level,
       description,
-      COALESCE(thumbnail_url, image_url) AS thumbnail_url,
+      thumbnail_url,
       image_urls,
       score,
       created_at,
@@ -202,7 +198,6 @@ export async function updatePinById(
       status ?? 'active',
       access_level ?? 'public',
       description ?? null,
-      resolvedThumbnail,
       resolvedThumbnail,
       resolvedImages,
     ]
