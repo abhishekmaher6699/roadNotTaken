@@ -2,6 +2,7 @@
 
 import { MapSidebarShell } from "@/components/map/sidebar/MapSidebarShell";
 import { Pin } from "@/features/pins/types";
+import { highlight } from "@/features/search/highlight";
 
 interface SearchResultsPanelProps {
   open: boolean;
@@ -73,11 +74,23 @@ export function SearchResultsPanel({
                 <div className="flex w-full items-start justify-between gap-3">
                   <div className="flex min-w-0 flex-1 flex-col">
                     <p className="truncate text-base font-semibold text-neutral-900 group-hover:text-neutral-950">
-                      {pin.title}
+                      {highlight(pin.title, query).map((seg, idx) =>
+                        seg.highlight ? (
+                          <mark key={idx} className="bg-amber-100 font-bold text-neutral-950 rounded px-0.5">{seg.text}</mark>
+                        ) : (
+                          <span key={idx}>{seg.text}</span>
+                        )
+                      )}
                     </p>
                     {pin.address && (
                       <p className="mt-0.5 truncate text-sm text-neutral-500">
-                        {pin.address}
+                        {highlight(pin.address, query).map((seg, idx) =>
+                          seg.highlight ? (
+                            <mark key={idx} className="bg-amber-50 font-semibold text-neutral-600 rounded px-0.5">{seg.text}</mark>
+                          ) : (
+                            <span key={idx}>{seg.text}</span>
+                          )
+                        )}
                       </p>
                     )}
                   </div>

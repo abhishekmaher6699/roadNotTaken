@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Pin } from "@/features/pins/types";
+import { highlight } from "@/features/search/highlight";
 
 const CATEGORY_COLORS: Record<string, string> = {
   general: "#6b7280",
@@ -115,10 +116,24 @@ export function SearchSuggestions({
 
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-neutral-900">
-              {pin.title}
+              {highlight(pin.title, query).map((seg, idx) =>
+                seg.highlight ? (
+                  <mark key={idx} className="bg-transparent font-bold text-neutral-950">{seg.text}</mark>
+                ) : (
+                  <span key={idx}>{seg.text}</span>
+                )
+              )}
             </p>
             {pin.address && (
-              <p className="truncate text-xs text-neutral-400">{pin.address}</p>
+              <p className="truncate text-xs text-neutral-400">
+                {highlight(pin.address, query).map((seg, idx) =>
+                  seg.highlight ? (
+                    <mark key={idx} className="bg-transparent font-semibold text-neutral-600">{seg.text}</mark>
+                  ) : (
+                    <span key={idx}>{seg.text}</span>
+                  )
+                )}
+              </p>
             )}
           </div>
 
