@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import {
   MapContainer,
@@ -57,6 +57,30 @@ function getSummaryIcon(pinCount: number) {
 
   return icon;
 }
+
+function FlyToController({ target }: { target: { lat: number; lng: number } | null }) {
+  const map = useMap();
+  // Use a ref to avoid running the effect on every render—only when target identity changes.
+  const prevTarget = useRef<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (!target) return;
+    if (
+      prevTarget.current?.lat === target.lat &&
+      prevTarget.current?.lng === target.lng
+    ) {
+      return;
+    }
+    prevTarget.current = target;
+    // flyTo at a readable zoom level so the pin is clearly visible.
+    map.flyTo([target.lat, target.lng], Math.max(map.getZoom(), 15), {
+      duration: 1.2,
+    });
+  }, [target, map]);
+
+  return null;
+}
+
 
 function AddPin({ onAdd }: AddPinProps) {
   useMapEvents({
@@ -126,6 +150,7 @@ export default function MapView({
   basemap,
   pendingPin,
   draftPin,
+  flyToTarget,
   onAddPin,
   onViewportChange,
   onSelectPin,
@@ -159,6 +184,7 @@ export default function MapView({
       />
 
       <ViewportReporter onViewportChange={onViewportChange} />
+      <FlyToController target={flyToTarget ?? null} />
 
       {pins.map((pin) => (
         <Marker

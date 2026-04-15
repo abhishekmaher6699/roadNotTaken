@@ -53,3 +53,19 @@ export function updatePinApi(id: string, data: UpdatePinInput) {
     body: JSON.stringify(data),
   }) as Promise<Pin>;
 }
+
+export function searchPinsApi(
+  query: string,
+  limit: number = 6,
+  viewport?: { north: number; south: number; east: number; west: number } | null,
+  signal?: AbortSignal
+) {
+  const params = new URLSearchParams({ q: query, limit: String(limit) });
+  if (viewport) {
+    params.set("north", String(viewport.north));
+    params.set("south", String(viewport.south));
+    params.set("east", String(viewport.east));
+    params.set("west", String(viewport.west));
+  }
+  return apiClient(`/pins/search?${params}`, { signal }) as Promise<Pin[]>;
+}

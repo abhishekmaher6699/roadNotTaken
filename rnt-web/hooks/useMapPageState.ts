@@ -25,6 +25,7 @@ export function useMapPageState() {
   const [draftPin, setDraftPin] = useState<PendingPin | null>(null);
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [sidebarView, setSidebarView] = useState<MapSidebarView>(null);
+  const [viewport, setViewport] = useState<MapViewport | null>(null);
   const viewportDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleLogout = async () => {
@@ -72,23 +73,23 @@ export function useMapPageState() {
     );
   };
 
-  const handleViewportChange = (viewport: MapViewport) => {
+  const handleViewportChange = (vp: MapViewport) => {
     if (viewportDebounceRef.current) {
       clearTimeout(viewportDebounceRef.current);
     }
 
     viewportDebounceRef.current = setTimeout(() => {
-      if (viewport.zoom < MIN_PIN_ZOOM) {
-        // At low zooms we show tile summaries so users can still discover active areas.
-        void loadTileSummaries(getVisibleMapTiles(viewport, viewport.zoom));
-        void loadTiles([], viewport);
+      setViewport(vp);
+
+      if (vp.zoom < MIN_PIN_ZOOM) {
+        void loadTileSummaries(getVisibleMapTiles(vp, vp.zoom));
+        void loadTiles([], vp);
         return;
       }
 
-      // Once we are zoomed in enough, we stop summary markers and switch back to raw pins.
       void loadTileSummaries([]);
-      const visibleTiles = getVisibleTiles(viewport, viewport.zoom);
-      void loadTiles(visibleTiles, viewport);
+      const visibleTiles = getVisibleTiles(vp, vp.zoom);
+      void loadTiles(visibleTiles, vp);
     }, 120);
   };
 
@@ -153,6 +154,7 @@ export function useMapPageState() {
     draftPin,
     selectedPin,
     sidebarView,
+    viewport,
     setSelectedPin,
     handleLogout,
     handleAddPin,

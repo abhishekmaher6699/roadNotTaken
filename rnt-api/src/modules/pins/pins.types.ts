@@ -45,4 +45,5 @@ export interface TileSummary {
 export interface SearchPinsInput {
   query: string;
   limit?: number;
+  bounds?: { north: number; south: number; east: number; west: number } | null;
 }

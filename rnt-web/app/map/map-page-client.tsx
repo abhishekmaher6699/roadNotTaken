@@ -1,18 +1,28 @@
 "use client";
 
+import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { MapOverlay } from "@/components/map/MapOverlay";
 import { CreatePinSidebar } from "@/components/map/sidebar/create-pin";
 import { EditPinSidebar } from "@/components/map/sidebar/edit-pin";
 import { PinDetailsSidebar } from "@/components/map/sidebar/pin-details";
+import { SearchResultsPanel } from "@/components/search/SearchResultsPanel";
 import { useMapPageState } from "@/hooks/useMapPageState";
-import type { MapPageClientProps } from "@/types/mapTypes";
+import { useSearch } from "@/features/search/useSearch";
+import type { MapPageClientProps, MapViewport } from "@/types/mapTypes";
+import type { Pin } from "@/features/pins/types";
 
 const MapView = dynamic(() => import("@/components/map/mapView"), {
   ssr: false,
 });
 
 export function MapPageClient({ user }: MapPageClientProps) {
+  // A ref so the search hook can read the latest viewport without causing re-renders.
+  const viewportRef = useRef<MapViewport | null>(null);
+
+  // flyToTarget is set by search selection; MapView's FlyToController reacts to it.
+  const [flyToTarget, setFlyToTarget] = useState<{ lat: number; lng: number } | null>(null);
+
   const {
     pins,
     tileSummaries,
@@ -39,6 +49,23 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleViewDetails,
   } = useMapPageState();
 
+  const search = useSearch(viewportRef);
+
+  // Intercept viewport changes so we can keep the ref up-to-date for the search hook.
+  function handleViewportChangeWithRef(vp: MapViewport) {
+    viewportRef.current = vp;
+    handleViewportChange(vp);
+  }
+
+  // When a pin is selected from search: fly the map to it, then open the sidebar.
+  function handleSearchSelectPin(pin: Pin | null) {
+    if (!pin) return;
+    setFlyToTarget({ lat: pin.latitude, lng: pin.longitude });
+    setSelectedPin(pin);
+    handleViewDetails();
+    search.clear();
+  }
+
   return (
     <div className="relative h-screen overflow-hidden bg-neutral-100">
       <MapView
@@ -48,8 +75,9 @@ export function MapPageClient({ user }: MapPageClientProps) {
         basemap={basemap}
         pendingPin={pendingPin}
         draftPin={draftPin}
+        flyToTarget={flyToTarget}
         onAddPin={handleAddPin}
-        onViewportChange={handleViewportChange}
+        onViewportChange={handleViewportChangeWithRef}
         onSelectPin={setSelectedPin}
         onClearSelection={handleClearSelection}
         onConfirmPin={handleConfirmPin}
@@ -61,6 +89,16 @@ export function MapPageClient({ user }: MapPageClientProps) {
         mode={mode}
         basemap={basemap}
         selectedPin={selectedPin}
+        search={{
+          query: search.query,
+          suggestions: search.suggestions,
+          isSearching: search.isSearching,
+          isResultsPanelOpen: search.isResultsPanelOpen,
+          setQuery: search.setQuery,
+          search: search.search,
+          clear: search.clear,
+          onSelectPin: handleSearchSelectPin,
+        }}
         onViewDetails={handleViewDetails}
         onModeChange={handleModeChange}
         onBasemapToggle={handleBasemapToggle}
@@ -90,6 +128,15 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onClose={handleCloseSidebar}
         onEdit={handleStartEditPin}
         onDelete={handleDeletePin}
+      />
+
+      <SearchResultsPanel
+        open={search.isResultsPanelOpen}
+        query={search.query}
+        results={search.results}
+        isSearching={search.isSearching}
+        onSelect={handleSearchSelectPin}
+        onClose={search.clear}
       />
     </div>
   );

@@ -1,12 +1,17 @@
-import { getPool } from '../../config/db';
-import { CreatePinInput, SearchPinsInput, TileQueryInput, UpdatePinInput } from './pins.types';
-import { getViewportPinLimit } from './pins.helpers';
+import { getPool } from "../../config/db";
+import {
+  CreatePinInput,
+  SearchPinsInput,
+  TileQueryInput,
+  UpdatePinInput,
+} from "./pins.types";
+import { getViewportPinLimit } from "./pins.helpers";
 import {
   buildRankedRequestedTiles,
   buildRankedTileValuesSql,
   buildSummaryRequestedTiles,
   buildSummaryTileValuesSql,
-} from './pins.tile-queries';
+} from "./pins.tile-queries";
 
 const PIN_SELECT_FRAGMENT = `
   id,
@@ -65,11 +70,12 @@ export async function createPin(data: CreatePinInput) {
   } = data;
 
   const resolvedThumbnail = thumbnail_url ?? null;
-  const resolvedImages = image_urls && image_urls.length > 0
-    ? image_urls
-    : resolvedThumbnail
-      ? [resolvedThumbnail]
-      : [];
+  const resolvedImages =
+    image_urls && image_urls.length > 0
+      ? image_urls
+      : resolvedThumbnail
+        ? [resolvedThumbnail]
+        : [];
 
   const result = await pool.query(
     `
@@ -84,18 +90,18 @@ export async function createPin(data: CreatePinInput) {
     `,
     [
       title,
-      category ?? 'general',
+      category ?? "general",
       address ?? null,
-      status ?? 'active',
+      status ?? "active",
       posted_by ?? null,
-      access_level ?? 'public',
+      access_level ?? "public",
       description,
       resolvedThumbnail,
       resolvedImages,
       latitude,
       longitude,
       user_id,
-    ]
+    ],
   );
 
   return result.rows[0];
@@ -110,7 +116,7 @@ export async function getAllPins() {
       ${PIN_SELECT_FRAGMENT}
     FROM pins
     ORDER BY score DESC NULLS LAST, created_at DESC, id DESC
-    `
+    `,
   );
 
   return result.rows;
@@ -125,7 +131,7 @@ export async function deletePinById(id: string, userId: string) {
     WHERE id = $1 AND user_id = $2
     RETURNING id;
     `,
-    [id, userId]
+    [id, userId],
   );
 
   return result.rows[0] ?? null;
@@ -134,7 +140,7 @@ export async function deletePinById(id: string, userId: string) {
 export async function updatePinById(
   id: string,
   userId: string,
-  data: UpdatePinInput
+  data: UpdatePinInput,
 ) {
   const pool = getPool();
 
@@ -193,14 +199,14 @@ export async function updatePinById(
       id,
       userId,
       title,
-      category ?? 'general',
+      category ?? "general",
       address ?? null,
-      status ?? 'active',
-      access_level ?? 'public',
+      status ?? "active",
+      access_level ?? "public",
       description ?? null,
       resolvedThumbnail,
       resolvedImages,
-    ]
+    ],
   );
 
   return result.rows[0] ?? null;
@@ -217,7 +223,7 @@ export async function getPinsForTiles({ tiles }: TileQueryInput) {
   // - Prepare every requested tile with geographic bounds and a per-tile pin limit.
   // - Turn those prepared tiles into one SQL VALUES table.
   const viewportPinLimit = getViewportPinLimit(
-    Math.max(...tiles.map((tile) => tile.z))
+    Math.max(...tiles.map((tile) => tile.z)),
   );
   const requestedTiles = buildRankedRequestedTiles(tiles);
   const tileValuesSql = buildRankedTileValuesSql(requestedTiles);
@@ -258,7 +264,7 @@ export async function getPinsForTiles({ tiles }: TileQueryInput) {
     WHERE tile_rank <= pin_limit
     ORDER BY score DESC NULLS LAST, created_at DESC, id DESC
     LIMIT ${viewportPinLimit}
-    `
+    `,
   );
 
   return result.rows;
@@ -303,22 +309,40 @@ export async function getPinSummariesForTiles({ tiles }: TileQueryInput) {
      AND pins.latitude < requested_tiles.north
     GROUP BY requested_tiles.x, requested_tiles.y, requested_tiles.z
     ORDER BY pin_count DESC, top_score DESC NULLS LAST, requested_tiles.z DESC
-    `
+    `,
   );
 
   return result.rows;
 }
 
-export async function searchPins({ query, limit = 6 }: SearchPinsInput) {
+export async function searchPins({ query, limit = 6, bounds }: SearchPinsInput) {
   const pool = getPool();
 
-  // Trim and fall back to empty string so wildcard still matches everything.
   const term = query?.trim() ?? '';
 
+  if (term.length < 2) {
+    return [];
+  }
+
   // How:
-  // - Wrap with % to do a case-insensitive substring match on the most useful columns.
-  // - score DESC pushes the highest-quality pins to the top of suggestions.
-  // - LIMIT is caller-controlled: 6 for dropdown suggestions, 100 for full search results.
+  // - Only search columns with pg_trgm GIN indexes (title, address, posted_by) or B-Tree (category).
+  // - If viewport bounds are provided, pins INSIDE the current view get a proximity bonus in ORDER BY.
+  //   This makes the search context-aware: searching "ruins" while looking at Rome surfaces Rome pins first.
+  // - Fallback ordering is score DESC so the best-quality pins still win globally.
+  const params: (string | number)[] = [`%${term}%`, limit];
+
+  let proximityClause = '0'; // default: no boost
+  if (bounds) {
+    params.push(bounds.south, bounds.north, bounds.west, bounds.east);
+    const s = params.length - 3;
+    proximityClause = `
+      CASE
+        WHEN latitude  BETWEEN $${s}::float AND $${s + 1}::float
+         AND longitude BETWEEN $${s + 2}::float AND $${s + 3}::float
+        THEN 1 ELSE 0
+      END`;
+  }
+
   const result = await pool.query(
     `
     SELECT
@@ -326,16 +350,18 @@ export async function searchPins({ query, limit = 6 }: SearchPinsInput) {
     FROM pins
     WHERE status != 'deleted'
       AND (
-        title       ILIKE $1
-        OR address  ILIKE $1
-        OR description ILIKE $1
-        OR posted_by   ILIKE $1
-        OR category    ILIKE $1
+        title      ILIKE $1
+        OR address ILIKE $1
+        OR posted_by ILIKE $1
+        OR category  ILIKE $1
       )
-    ORDER BY score DESC NULLS LAST, created_at DESC
+    ORDER BY
+      ${proximityClause} DESC,
+      score DESC NULLS LAST,
+      created_at DESC
     LIMIT $2;
     `,
-    [`%${term}%`, limit]
+    params
   );
 
   return result.rows;

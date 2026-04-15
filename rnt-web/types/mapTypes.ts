@@ -31,6 +31,7 @@ export type MapViewProps = {
   basemap: BasemapMode;
   pendingPin: PendingPin | null;
   draftPin: PendingPin | null;
+  flyToTarget: { lat: number; lng: number } | null;
   onAddPin: (latlng: LatLng) => void;
   onViewportChange: (viewport: MapViewport) => void;
   onSelectPin: (pin: Pin) => void;
@@ -43,10 +44,24 @@ export interface MapPageClientProps {
   user: ServerAuthUser;
 }
 
+// Props passed down from the map page into the overlay so the search bar
+// can fire selections that flow back up through the same onSelectPin handler.
+export interface SearchOverlayProps {
+  query: string;
+  suggestions: Pin[];
+  isSearching: boolean;
+  isResultsPanelOpen: boolean;
+  setQuery: (q: string) => void;
+  search: () => void;
+  clear: () => void;
+  onSelectPin: (pin: Pin) => void;
+}
+
 export interface MapPageOverlayProps extends MapPageClientProps {
   mode: MapMode;
   basemap: BasemapMode;
   selectedPin: Pin | null;
+  search: SearchOverlayProps;
   onViewDetails: () => void;
   onModeChange: (mode: MapMode) => void;
   onBasemapToggle: () => void;

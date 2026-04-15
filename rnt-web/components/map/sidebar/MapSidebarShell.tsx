@@ -26,7 +26,7 @@ export function MapSidebarShell({
 
   return (
     <div
-      className={`map-sidebar-shell absolute inset-x-0 bottom-0 top-auto z-[2100] h-[min(82vh,42rem)] ${widthClass} rounded-t-[1.75rem] bg-white shadow-xl ring-1 ring-black/8 transition-[transform,opacity] duration-150 ease-out will-change-transform sm:inset-x-auto sm:bottom-auto sm:left-4 sm:top-20 sm:h-[calc(100%-6rem)] sm:rounded-[1.75rem] ${
+      className={`map-sidebar-shell absolute inset-x-0 bottom-0 top-auto z-[2000] h-[min(82vh,42rem)] ${widthClass} rounded-t-[1.75rem] bg-white shadow-xl ring-1 ring-black/8 transition-[transform,opacity] duration-150 ease-out will-change-transform sm:inset-x-auto sm:bottom-auto sm:left-4 sm:top-20 sm:h-[calc(100%-6rem)] sm:rounded-[1.75rem] ${
         open
           ? "translate-y-0 opacity-100 sm:translate-x-0"
           : "pointer-events-none translate-y-full opacity-0 sm:-translate-x-4 sm:translate-y-0"

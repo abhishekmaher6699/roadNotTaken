@@ -125,10 +125,21 @@ export async function searchPinsHandler(req: Request, res: Response) {
   try {
     const query = typeof req.query.q === 'string' ? req.query.q : '';
     const limitParam = parseInt(req.query.limit as string, 10);
-    // Use 6 for suggestions, 100 for full results — fall back to 6 if missing or invalid.
     const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 6;
 
-    const pins = await searchPins({ query, limit });
+    // Optional viewport bounds for proximity-biased ordering.
+    const north = parseFloat(req.query.north as string);
+    const south = parseFloat(req.query.south as string);
+    const east  = parseFloat(req.query.east as string);
+    const west  = parseFloat(req.query.west as string);
+
+    const bounds =
+      Number.isFinite(north) && Number.isFinite(south) &&
+      Number.isFinite(east) && Number.isFinite(west)
+        ? { north, south, east, west }
+        : null;
+
+    const pins = await searchPins({ query, limit, bounds });
     return res.json(pins);
   } catch (err) {
     console.error(err);
