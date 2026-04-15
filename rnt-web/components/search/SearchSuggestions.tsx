@@ -79,7 +79,7 @@ export function SearchSuggestions({
   return createPortal(
     <div
       ref={containerRef}
-      className="pointer-events-auto rounded-2xl border border-white/20 bg-white/90 shadow-2xl backdrop-blur-xl z-[4000]"
+      className="pointer-events-auto rounded-2xl border border-white/20 bg-white/90 shadow-2xl backdrop-blur-xl z-4000"
       style={{
         position: "absolute",
         top: rect.bottom + 8,
@@ -110,7 +110,7 @@ export function SearchSuggestions({
           }`}
         >
           <span
-            className="mt-0.5 h-2.5 w-2.5 flex-shrink-0 rounded-full"
+            className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full"
             style={{ background: getCategoryColor(pin.category) }}
           />
 
@@ -139,7 +139,7 @@ export function SearchSuggestions({
 
           {pin.category && (
             <span
-              className="flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
+              className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
               style={{ background: getCategoryColor(pin.category) }}
             >
               {pin.category}

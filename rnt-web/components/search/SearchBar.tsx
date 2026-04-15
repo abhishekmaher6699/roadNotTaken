@@ -47,7 +47,7 @@ export function SearchBar({
       <div className="flex items-center gap-2 rounded-full border border-white/25 bg-white/80 px-4 py-2.5 shadow-xl backdrop-blur-xl transition-all focus-within:border-white/50 focus-within:bg-white/95 focus-within:shadow-2xl">
         {/* Search icon */}
         <svg
-          className="h-4 w-4 flex-shrink-0 text-neutral-400"
+          className="h-4 w-4 shrink-0 text-neutral-400"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -75,7 +75,7 @@ export function SearchBar({
 
         {/* Spinner while fetching */}
         {isSearching && (
-          <div className="h-4 w-4 flex-shrink-0 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
+          <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
         )}
 
         {/* Clear button */}
@@ -84,7 +84,7 @@ export function SearchBar({
             type="button"
             onClick={onClear}
             aria-label="Clear search"
-            className="flex-shrink-0 rounded-full p-0.5 text-neutral-400 transition-colors hover:text-neutral-700"
+            className="shrink-0 rounded-full p-0.5 text-neutral-400 transition-colors hover:text-neutral-700"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -97,7 +97,7 @@ export function SearchBar({
           type="button"
           onClick={onSearch}
           aria-label="Run search"
-          className="flex-shrink-0 rounded-full bg-neutral-900 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-neutral-700"
+          className="shrink-0 rounded-full bg-neutral-900 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-neutral-700"
         >
           Search
         </button>
