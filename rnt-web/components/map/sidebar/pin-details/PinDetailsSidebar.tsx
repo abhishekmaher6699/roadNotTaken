@@ -78,7 +78,7 @@ export function PinDetailsSidebar({
         <div className="space-y-4 pb-4 sm:space-y-5">
           <PinDetailsHero pin={pin} />
 
-          <div className="flex flex-col gap-3 rounded-[1.5rem] border border-neutral-200 bg-neutral-50 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-neutral-500">
               <span>Overview</span>
               <span className="h-1 w-1 rounded-full bg-neutral-300" />
@@ -107,7 +107,7 @@ export function PinDetailsSidebar({
             )}
           </div>
 
-          <section className="space-y-3 rounded-[1.5rem] border border-neutral-200 bg-white px-4 py-4 sm:px-5">
+          <section className="space-y-3 rounded-3xl border border-neutral-200 bg-white px-4 py-4 sm:px-5">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
                 Place data
@@ -137,7 +137,7 @@ export function PinDetailsSidebar({
           </section>
 
           {pin.description && (
-            <section className="rounded-[1.5rem] border border-neutral-200 bg-white px-4 py-4 sm:px-5">
+            <section className="rounded-3xl border border-neutral-200 bg-white px-4 py-4 sm:px-5">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
                 Description
               </p>
@@ -149,7 +149,7 @@ export function PinDetailsSidebar({
 
           {gallery.length > 0 && <PinDetailsGallery pin={pin} />}
 
-          <section className="rounded-[1.5rem] border border-dashed border-neutral-300 bg-neutral-50 px-4 py-5 sm:px-5">
+          <section className="rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-5 sm:px-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
               Community Space
             </p>
