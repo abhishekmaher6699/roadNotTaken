@@ -1,5 +1,5 @@
 import { getPool } from '../../config/db';
-import { CreatePinInput, TileQueryInput, UpdatePinInput } from './pins.types';
+import { CreatePinInput, SearchPinsInput, TileQueryInput, UpdatePinInput } from './pins.types';
 import { getViewportPinLimit } from './pins.helpers';
 import {
   buildRankedRequestedTiles,
@@ -304,6 +304,38 @@ export async function getPinSummariesForTiles({ tiles }: TileQueryInput) {
     GROUP BY requested_tiles.x, requested_tiles.y, requested_tiles.z
     ORDER BY pin_count DESC, top_score DESC NULLS LAST, requested_tiles.z DESC
     `
+  );
+
+  return result.rows;
+}
+
+export async function searchPins({ query, limit = 6 }: SearchPinsInput) {
+  const pool = getPool();
+
+  // Trim and fall back to empty string so wildcard still matches everything.
+  const term = query?.trim() ?? '';
+
+  // How:
+  // - Wrap with % to do a case-insensitive substring match on the most useful columns.
+  // - score DESC pushes the highest-quality pins to the top of suggestions.
+  // - LIMIT is caller-controlled: 6 for dropdown suggestions, 100 for full search results.
+  const result = await pool.query(
+    `
+    SELECT
+      ${PIN_SELECT_FRAGMENT}
+    FROM pins
+    WHERE status != 'deleted'
+      AND (
+        title       ILIKE $1
+        OR address  ILIKE $1
+        OR description ILIKE $1
+        OR posted_by   ILIKE $1
+        OR category    ILIKE $1
+      )
+    ORDER BY score DESC NULLS LAST, created_at DESC
+    LIMIT $2;
+    `,
+    [`%${term}%`, limit]
   );
 
   return result.rows;

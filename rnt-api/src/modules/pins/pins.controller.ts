@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createPin, deletePinById, getAllPins, getPinSummariesForTiles, getPinsForTiles, updatePinById } from './pins.service';
+import { createPin, deletePinById, getAllPins, getPinSummariesForTiles, getPinsForTiles, searchPins, updatePinById } from './pins.service';
 import { TileQueryInput } from './pins.types';
 
 export async function createPinHandler(req: any, res: any) {
@@ -118,5 +118,20 @@ export async function updatePinHandler(req: any, res: Response) {
     return res.status(200).json(updatedPin);
   } catch (error) {
     return res.status(500).json({ error: 'Failed to update pin' });
+  }
+}
+
+export async function searchPinsHandler(req: Request, res: Response) {
+  try {
+    const query = typeof req.query.q === 'string' ? req.query.q : '';
+    const limitParam = parseInt(req.query.limit as string, 10);
+    // Use 6 for suggestions, 100 for full results — fall back to 6 if missing or invalid.
+    const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 6;
+
+    const pins = await searchPins({ query, limit });
+    return res.json(pins);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to search pins' });
   }
 }

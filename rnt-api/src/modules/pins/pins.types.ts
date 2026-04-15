@@ -41,3 +41,8 @@ export interface TileSummary {
   pin_count: number;
   top_score: number | null;
 }
+
+export interface SearchPinsInput {
+  query: string;
+  limit?: number;
+}

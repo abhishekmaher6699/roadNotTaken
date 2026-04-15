@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ConfirmDialog } from "../../../ui/ConfirmDialog";
 import { MapSidebarShell } from "../MapSidebarShell";
 import { PinDetailsGallery } from "./PinDetailsGallery";
 import { PinDetailsHero } from "./PinDetailsHero";
