@@ -57,6 +57,23 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleViewportChange(vp);
   }
 
+  // When the user has an active search, only render matching pins that are
+  // currently inside the visible viewport. Pins outside the view are still in
+  // the results panel list — they just don't waste Leaflet marker DOM nodes.
+  const displayedPins = (() => {
+    if (!search.isResultsPanelOpen) return pins;
+    const vp = viewportRef.current;
+    if (!vp) return search.results;
+    return search.results.filter(
+      (p) =>
+        p.latitude >= vp.south &&
+        p.latitude <= vp.north &&
+        p.longitude >= vp.west &&
+        p.longitude <= vp.east
+    );
+  })();
+  const displayedSummaries = search.isResultsPanelOpen ? [] : tileSummaries;
+
   // When a pin is selected from search: fly the map to it, then open the sidebar.
   function handleSearchSelectPin(pin: Pin | null) {
     if (!pin) return;
@@ -69,8 +86,8 @@ export function MapPageClient({ user }: MapPageClientProps) {
   return (
     <div className="relative h-screen overflow-hidden bg-neutral-100">
       <MapView
-        pins={pins}
-        tileSummaries={tileSummaries}
+        pins={displayedPins}
+        tileSummaries={displayedSummaries}
         mode={mode}
         basemap={basemap}
         pendingPin={pendingPin}

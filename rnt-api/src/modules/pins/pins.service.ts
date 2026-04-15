@@ -315,51 +315,108 @@ export async function getPinSummariesForTiles({ tiles }: TileQueryInput) {
   return result.rows;
 }
 
-export async function searchPins({ query, limit = 6, bounds }: SearchPinsInput) {
+export async function searchPins({
+  query,
+  limit = 6,
+  bounds,
+}: SearchPinsInput) {
   const pool = getPool();
 
-  const term = query?.trim() ?? '';
+  const term = query?.trim() ?? "";
 
   if (term.length < 2) {
     return [];
   }
 
-  // How:
-  // - Only search columns with pg_trgm GIN indexes (title, address, posted_by) or B-Tree (category).
-  // - If viewport bounds are provided, pins INSIDE the current view get a proximity bonus in ORDER BY.
-  //   This makes the search context-aware: searching "ruins" while looking at Rome surfaces Rome pins first.
-  // - Fallback ordering is score DESC so the best-quality pins still win globally.
-  const params: (string | number)[] = [`%${term}%`, limit];
+  // 🔥 Dynamic fuzziness (important)
+  const threshold = term.includes(" ") ? 0.15 : 0.2;
+  await pool.query(`SELECT set_limit(${threshold});`);
 
-  let proximityClause = '0'; // default: no boost
+  const params: (string | number)[] = [
+    term,           // $1
+    `%${term}%`,    // $2
+    limit,          // $3
+  ];
+
+  let proximityClause = "0";
+
   if (bounds) {
     params.push(bounds.south, bounds.north, bounds.west, bounds.east);
+
     const s = params.length - 3;
+
     proximityClause = `
       CASE
         WHEN latitude  BETWEEN $${s}::float AND $${s + 1}::float
          AND longitude BETWEEN $${s + 2}::float AND $${s + 3}::float
         THEN 1 ELSE 0
-      END`;
+      END
+    `;
   }
 
   const result = await pool.query(
     `
     SELECT
-      ${PIN_SELECT_FRAGMENT}
+      ${PIN_SELECT_FRAGMENT},
+
+      -- 🔥 Relevance scoring
+      (
+        similarity(title, $1) * 2 +
+        similarity(address, $1) * 1.2 +
+
+        -- word-level boost (title + address)
+        (
+          SELECT COALESCE(MAX(GREATEST(
+            similarity(title, word),
+            similarity(address, word)
+          )), 0)
+          FROM unnest(string_to_array($1, ' ')) AS word
+        ) * 1.5 +
+
+        -- phonetic boost
+        (GREATEST(
+          difference(title, $1),
+          difference(address, $1)
+        ) / 4.0)
+      ) AS relevance,
+
+      ${proximityClause} AS proximity
+
     FROM pins
     WHERE status != 'deleted'
       AND (
-        title      ILIKE $1
-        OR address ILIKE $1
-        OR posted_by ILIKE $1
-        OR category  ILIKE $1
+        -- ✅ Exact / partial
+        title ILIKE $2
+        OR address ILIKE $2
+        OR posted_by ILIKE $2
+        OR category ILIKE $2
+
+        -- ✅ Trigram fuzzy
+        OR title % $1
+        OR address % $1
+        OR posted_by % $1
+
+        -- ✅ Word-level fuzzy
+        OR EXISTS (
+          SELECT 1
+          FROM unnest(string_to_array($1, ' ')) AS q(word)
+          WHERE
+            title % word
+            OR address % word
+        )
+
+        -- ✅ Phonetic
+        OR difference(title, $1) > 2
+        OR difference(address, $1) > 2
       )
+
     ORDER BY
-      ${proximityClause} DESC,
-      score DESC NULLS LAST,
+      proximity DESC,          -- 🗺️ inside viewport first
+      relevance DESC,          -- 🔍 best match next
+      score DESC NULLS LAST,   -- ⭐ quality
       created_at DESC
-    LIMIT $2;
+
+    LIMIT $3;
     `,
     params
   );
