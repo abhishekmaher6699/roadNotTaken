@@ -11,7 +11,12 @@ export interface TileBounds {
   north: number;
 }
 
+// These caps control how many ranked pins we allow inside one tile at a given zoom.
 export function getPinsPerTileLimit(zoom: number) {
+  // How:
+  // - Normalize the incoming zoom to an integer.
+  // - Match that zoom against the cap ladder.
+  // - Return the max number of pins one tile may contribute at that zoom.
   const zoomLevel = Math.max(0, Math.floor(zoom));
 
   if (zoomLevel <= 4) return 1;
@@ -28,7 +33,12 @@ export function getPinsPerTileLimit(zoom: number) {
   return 20;
 }
 
+// A second viewport cap stops many visible tiles from flooding the whole screen at once.
 export function getViewportPinLimit(zoom: number) {
+  // How:
+  // - Use the highest zoom from the current request batch.
+  // - Match it against the viewport-wide cap ladder.
+  // - Apply that number later as the final SQL LIMIT after per-tile ranking.
   const zoomLevel = Math.max(0, Math.floor(zoom));
 
   if (zoomLevel <= 4) return 4;
@@ -45,7 +55,12 @@ export function getViewportPinLimit(zoom: number) {
   return 140;
 }
 
+// Backend tile queries use the same slippy-map z/x/y math as the frontend.
 export function tileToBounds({ x, y, z }: TileCoordinates): TileBounds {
+  // How:
+  // - Convert tile x into west/east longitude edges.
+  // - Convert tile y and y+1 into north/south Mercator latitude edges.
+  // - Return the geographic rectangle Postgres will use for point-in-box matching.
   const n = 2 ** z;
   const west = (x / n) * 360 - 180;
   const east = ((x + 1) / n) * 360 - 180;

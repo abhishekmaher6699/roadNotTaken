@@ -1,6 +1,12 @@
 import { getPool } from '../../config/db';
 import { CreatePinInput, TileQueryInput, UpdatePinInput } from './pins.types';
-import { getPinsPerTileLimit, getViewportPinLimit, tileToBounds } from './pins.helpers';
+import { getViewportPinLimit } from './pins.helpers';
+import {
+  buildRankedRequestedTiles,
+  buildRankedTileValuesSql,
+  buildSummaryRequestedTiles,
+  buildSummaryTileValuesSql,
+} from './pins.tile-queries';
 
 const PIN_SELECT_FRAGMENT = `
   id,
@@ -211,28 +217,24 @@ export async function getPinsForTiles({ tiles }: TileQueryInput) {
   }
 
   const pool = getPool();
+  // How:
+  // - Use the highest zoom from the request batch to choose the final viewport cap.
+  // - Prepare every requested tile with geographic bounds and a per-tile pin limit.
+  // - Turn those prepared tiles into one SQL VALUES table.
   const viewportPinLimit = getViewportPinLimit(
     Math.max(...tiles.map((tile) => tile.z))
   );
-  const requestedTiles = tiles.map((tile) => {
-    const bounds = tileToBounds(tile);
-
-    return {
-      ...tile,
-      ...bounds,
-      pinLimit: getPinsPerTileLimit(tile.z),
-    };
-  });
-
-  const tileValuesSql = requestedTiles
-    .map(
-      (tile) =>
-        `(${tile.x}, ${tile.y}, ${tile.z}, ${tile.west}, ${tile.east}, ${tile.south}, ${tile.north}, ${tile.pinLimit})`
-    )
-    .join(', ');
+  const requestedTiles = buildRankedRequestedTiles(tiles);
+  const tileValuesSql = buildRankedTileValuesSql(requestedTiles);
 
   const result = await pool.query(
     `
+    -- Each request tile becomes a geographic box with its own zoom-aware pin cap.
+    -- How:
+    -- 1. requested_tiles is an inline table of the incoming tile boxes.
+    -- 2. ranked_tile_pins joins every matching pin against those boxes.
+    -- 3. ROW_NUMBER ranks pins independently inside each tile.
+    -- 4. The outer query keeps only the top pins per tile and then applies one final viewport cap.
     WITH requested_tiles (x, y, z, west, east, south, north, pin_limit) AS (
       VALUES ${tileValuesSql}
     ),
@@ -257,6 +259,7 @@ export async function getPinsForTiles({ tiles }: TileQueryInput) {
     SELECT
       ${RANKED_TILE_PIN_SELECT_FRAGMENT}
     FROM ranked_tile_pins
+    -- Hybrid limiting: first cap per tile, then cap the combined viewport result.
     WHERE tile_rank <= pin_limit
     ORDER BY score DESC NULLS LAST, created_at DESC, id DESC
     LIMIT ${viewportPinLimit}
@@ -272,27 +275,23 @@ export async function getPinSummariesForTiles({ tiles }: TileQueryInput) {
   }
 
   const pool = getPool();
-  const requestedTiles = tiles.map((tile) => {
-    const bounds = tileToBounds(tile);
-
-    return {
-      ...tile,
-      ...bounds,
-    };
-  });
-
-  const tileValuesSql = requestedTiles
-    .map(
-      (tile) =>
-        `(${tile.x}, ${tile.y}, ${tile.z}, ${tile.west}, ${tile.east}, ${tile.south}, ${tile.north})`
-    )
-    .join(', ');
+  // How:
+  // - Prepare each incoming tile with its geographic bounds.
+  // - Turn those tiles into one inline SQL table.
+  // - Aggregate pins per tile instead of returning them individually.
+  const requestedTiles = buildSummaryRequestedTiles(tiles);
+  const tileValuesSql = buildSummaryTileValuesSql(requestedTiles);
 
   const result = await pool.query(
     `
     WITH requested_tiles (x, y, z, west, east, south, north) AS (
       VALUES ${tileValuesSql}
     )
+    -- Low zooms use summaries so the map still signals where activity exists.
+    -- How:
+    -- 1. Join pins to requested tile boxes by latitude/longitude range.
+    -- 2. Group by tile key.
+    -- 3. Compute one centroid marker with AVG(lat/lng), plus count and top_score.
     SELECT
       requested_tiles.x,
       requested_tiles.y,

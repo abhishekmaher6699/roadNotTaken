@@ -79,11 +79,13 @@ export function useMapPageState() {
 
     viewportDebounceRef.current = setTimeout(() => {
       if (viewport.zoom < MIN_PIN_ZOOM) {
+        // At low zooms we show tile summaries so users can still discover active areas.
         void loadTileSummaries(getVisibleMapTiles(viewport, viewport.zoom));
         void loadTiles([], viewport);
         return;
       }
 
+      // Once we are zoomed in enough, we stop summary markers and switch back to raw pins.
       void loadTileSummaries([]);
       const visibleTiles = getVisibleTiles(viewport, viewport.zoom);
       void loadTiles(visibleTiles, viewport);

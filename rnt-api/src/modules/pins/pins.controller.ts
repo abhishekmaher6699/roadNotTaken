@@ -33,6 +33,9 @@ export async function getPinsForTilesHandler(req: Request, res: Response) {
   try {
     const tiles: TileQueryInput['tiles'] = Array.isArray(req.body?.tiles) ? req.body.tiles : [];
 
+    // How:
+    // - The client always sends an array of z/x/y tiles in the request body.
+    // - We validate that every tile has integer coordinates before touching the service layer.
     if (tiles.some((tile) =>
       !tile ||
       !Number.isInteger(tile.x) ||
@@ -42,6 +45,7 @@ export async function getPinsForTilesHandler(req: Request, res: Response) {
       return res.status(400).json({ error: 'Invalid tile query' });
     }
 
+    // Raw pin tiles are used only once the client is zoomed in enough to show individual places.
     const pins = await getPinsForTiles({ tiles });
 
     return res.json({
@@ -58,6 +62,9 @@ export async function getPinSummariesForTilesHandler(req: Request, res: Response
   try {
     const tiles: TileQueryInput['tiles'] = Array.isArray(req.body?.tiles) ? req.body.tiles : [];
 
+    // How:
+    // - Same validation path as raw tiles.
+    // - The only difference is that the service returns one aggregate marker per tile instead of raw pins.
     if (tiles.some((tile) =>
       !tile ||
       !Number.isInteger(tile.x) ||
@@ -67,6 +74,7 @@ export async function getPinSummariesForTilesHandler(req: Request, res: Response
       return res.status(400).json({ error: 'Invalid tile query' });
     }
 
+    // Summary tiles power the zoomed-out discovery layer without flooding the map with pins.
     const summaries = await getPinSummariesForTiles({ tiles });
 
     return res.json({

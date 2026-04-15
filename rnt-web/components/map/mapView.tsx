@@ -94,6 +94,7 @@ function ViewportReporter({
   const map = useMap();
 
   const reportViewport = () => {
+    // Tile loading is driven entirely by the current visible bounds plus the current zoom level.
     const bounds = map.getBounds();
     const viewport = {
       north: bounds.getNorth(),
@@ -180,6 +181,7 @@ export default function MapView({
           key={`${summary.z}-${summary.x}-${summary.y}`}
           position={[summary.latitude, summary.longitude]}
           icon={getSummaryIcon(summary.pin_count)}
+          // Low zoom markers are discovery hints, not interactive place markers.
           interactive={false}
           bubblingMouseEvents={false}
         />
