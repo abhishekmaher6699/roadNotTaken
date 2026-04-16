@@ -8,14 +8,13 @@ import { MapOverlay } from "@/components/map/MapOverlay";
 import { CreatePinSidebar } from "@/components/map/sidebar/create-pin";
 import { EditPinSidebar } from "@/components/map/sidebar/edit-pin";
 import { PinDetailsSidebar } from "@/components/map/sidebar/pin-details";
-import { SearchResultsPanel } from "@/components/search/SearchResultsPanel";
-import { useMapPageState } from "@/hooks/map/useMapPageState";
-import { useSearch } from "@/hooks/search/useSearch";
-import { useDisplayedPins } from "@/hooks/pins/useDisplayedPins";
-import { usePinFilters } from "@/hooks/pins/usePinFilters";
-import { loadLocation } from "@/components/map/controls/LocateButton";
+import { SearchResultsPanel } from "@/components/search";
+import { useMapPageState } from "@/features/map/hooks";
+import { useSearch } from "@/features/search";
+import { useDisplayedPins, type Pin } from "@/features/pins";
+import { usePinFilters } from "@/features/filter";
+import { loadLocation } from "@/components/map/controls";
 import type { MapPageClientProps, MapViewport } from "@/types/mapTypes";
-import type { Pin } from "@/features/pins/types";
 
 const MapView = dynamic(() => import("@/components/map/mapView"), {
   ssr: false,

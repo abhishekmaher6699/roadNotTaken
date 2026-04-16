@@ -1,11 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Pin } from "@/features/pins/types";
-
-export interface PinFilters {
-  categories: string[];
-  statuses: string[];
-  accessLevels: string[];
-}
+import type { PinFilters } from "./types";
 
 const EMPTY_FILTERS: PinFilters = {
   categories: [],
@@ -50,12 +45,6 @@ export function usePinFilters() {
     []
   );
 
-  /**
-   * Applies active filters to a pin list.
-   * Within each group: OR logic (pin matches any selected value).
-   * Across groups: AND logic (pin must satisfy every active group).
-   * When no filters are active the original list is returned untouched.
-   */
   const applyFilters = useCallback(
     (pins: Pin[]): Pin[] => {
       if (!isFiltersActive) return pins;

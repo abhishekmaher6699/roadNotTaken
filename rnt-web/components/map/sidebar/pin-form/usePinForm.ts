@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useCloudinaryUpload } from "@/features/uploads/hooks";
-import type { CreatePinInput, UpdatePinInput } from "@/features/pins/types";
+import type { CreatePinInput, UpdatePinInput } from "@/features/pins";
 import type {
   PinFormController,
   PinFormFieldKey,

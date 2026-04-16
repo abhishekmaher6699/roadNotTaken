@@ -1,6 +1,6 @@
 "use client";
 
-import type { Pin } from "@/features/pins/types";
+import type { Pin } from "@/features/pins";
 import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 
 function formatCategory(category?: string | null) {

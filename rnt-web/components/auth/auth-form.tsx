@@ -6,7 +6,7 @@ import {
   loginSchema,
   signupSchema,
   type SignupFormValues,
-} from "@/features/auth/validation";
+} from "@/features/auth";
 import type { AuthFormProps, FieldErrors } from "./types";
 
 // Converts Zod's field error arrays into the single-message shape the form renders.

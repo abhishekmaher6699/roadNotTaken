@@ -3,7 +3,7 @@ import type {
   TileCacheEntry,
   TileCoordinates,
   TileSummaryCacheEntry,
-} from "./types";
+} from "../types";
 import {
   getChildTiles,
   getParentTile,

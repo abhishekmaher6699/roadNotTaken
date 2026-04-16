@@ -1,4 +1,4 @@
-import type { Pin, TileCoordinates, TileSummary, TileSummaryCacheEntry } from "./types";
+import type { Pin, TileCoordinates, TileSummary, TileSummaryCacheEntry } from "../types";
 import { tileKey } from "./tile-utils";
 import {
   collectAncestorPins,

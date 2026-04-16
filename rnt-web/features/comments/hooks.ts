@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Comment, CreateCommentInput, getCommentsForPinApi, createCommentApi, deleteCommentApi } from "../../lib/comments";
+import { Comment, CreateCommentInput, getCommentsForPinApi, createCommentApi, deleteCommentApi } from "./api";
 
 export function useComments(pinId: number | null) {
   const [comments, setComments] = useState<Comment[]>([]);

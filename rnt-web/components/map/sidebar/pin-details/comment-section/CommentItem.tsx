@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Comment } from "../../../../../lib/comments";
+import type { Comment } from "../../../../../features/comments/api";
 import type { User } from "../../../../../lib/auth";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";// adjust path if needed
 

@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { usePins } from "@/hooks/pins/usePins";
-import { useAuth } from "@/hooks/auth/useAuth";
+import { usePins } from "@/features/pins/hooks";
+import { useAuth } from "@/features/auth/hooks";
 import type { CreatePinInput, Pin, UpdatePinInput } from "@/features/pins/types";
 import type {
   BasemapMode,
@@ -12,7 +12,7 @@ import type {
   MapViewport,
   PendingPin,
 } from "@/types/mapTypes";
-import { getVisibleMapTiles, getVisibleTiles, MIN_PIN_ZOOM } from "@/features/pins/tile-utils";
+import { getVisibleMapTiles, getVisibleTiles, MIN_PIN_ZOOM } from "@/features/pins/tiles/tile-utils";
 
 export function useMapPageState() {
   const { pins, tileSummaries, addPin, editPin, removePin, loadTiles, loadTileSummaries } = usePins();
@@ -22,13 +22,13 @@ export function useMapPageState() {
   const [mode, setMode] = useState<MapMode>("view");
   const [basemap, setBasemap] = useState<BasemapMode>("standard");
 
-  // Read the saved basemap preference safely after hydration.
   useEffect(() => {
     const saved = localStorage.getItem("rnt_basemap") as BasemapMode;
     if (saved === "standard" || saved === "imagery") {
       setBasemap(saved);
     }
   }, []);
+
   const [pendingPin, setPendingPin] = useState<PendingPin | null>(null);
   const [draftPin, setDraftPin] = useState<PendingPin | null>(null);
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
@@ -78,7 +78,6 @@ export function useMapPageState() {
   const handleBasemapToggle = () => {
     setBasemap((current) => {
       const next = current === "standard" ? "imagery" : "standard";
-      // Persist so the preference survives page reload.
       localStorage.setItem("rnt_basemap", next);
       return next;
     });

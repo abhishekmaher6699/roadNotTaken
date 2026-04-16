@@ -3,22 +3,22 @@ import {
   createPinApi,
   deletePinApi,
   updatePinApi,
-} from "../../features/pins/api";
+} from "./api";
 import type {
   CreatePinInput,
   Pin,
   TileCoordinates,
   UpdatePinInput,
-} from "../../features/pins/types";
-import { isPinInsideTile } from "../../features/pins/tile-utils";
-import type { ViewportBounds } from "../../features/pins/tile-utils";
+} from "./types";
+import { isPinInsideTile } from "./tiles/tile-utils";
+import type { ViewportBounds } from "./tiles/tile-utils";
 import {
   TileCache,
   TileSummaryCache,
   TileSnapshot,
   TileSummarySnapshot,
-} from "../../features/pins/tile-cache";
-import { selectVisiblePins, selectVisibleTileSummaries } from "../../features/pins/tile-selectors";
+} from "./tiles/tile-cache";
+import { selectVisiblePins, selectVisibleTileSummaries } from "./tiles/tile-selectors";
 import {
   fetchRawTiles,
   fetchSummaryTiles,
@@ -26,8 +26,10 @@ import {
   getMissingSummaryTiles,
   getRequestedTiles,
   primeDerivedParentTiles,
-} from "../../features/pins/tile-requests";
-import { tileKey } from "../../features/pins/tile-utils";
+} from "./tiles/tile-requests";
+
+import type { MapViewport } from "@/types/mapTypes";
+
 
 export function usePins() {
   const [tileCache, setTileCache] = useState<TileCache>({});
@@ -164,4 +166,29 @@ export function usePins() {
   };
 
   return { pins, tileSummaries, addPin, editPin, removePin, loadTiles, loadTileSummaries };
+}
+
+
+/**
+ * When the search results panel is open, returns only pins visible in the
+ * current viewport. Otherwise returns the normal map pin list.
+ */
+export function useDisplayedPins(
+  pins: Pin[],
+  searchResults: Pin[],
+  isResultsPanelOpen: boolean,
+  viewport: MapViewport | null
+): Pin[] {
+  return useMemo(() => {
+    if (!isResultsPanelOpen) return pins;
+    if (!viewport) return searchResults;
+
+    return searchResults.filter(
+      (p) =>
+        p.latitude >= viewport.south &&
+        p.latitude <= viewport.north &&
+        p.longitude >= viewport.west &&
+        p.longitude <= viewport.east
+    );
+  }, [pins, searchResults, isResultsPanelOpen, viewport]);
 }

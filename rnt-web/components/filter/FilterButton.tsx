@@ -5,8 +5,8 @@ import {
   ACCESS_LEVEL_OPTIONS,
   CATEGORY_OPTIONS,
   STATUS_OPTIONS,
-} from "@/features/pins/filterConstants";
-import type { PinFilters } from "@/hooks/pins/usePinFilters";
+} from "../../features/filter/filterConstants";
+import type { PinFilters } from "../../features/filter/types";
 
 interface FilterButtonProps {
   filters: PinFilters;
@@ -65,7 +65,6 @@ export function FilterButton({
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
@@ -84,7 +83,6 @@ export function FilterButton({
 
   return (
     <div className="relative">
-      {/* Trigger button */}
       <button
         ref={buttonRef}
         type="button"
@@ -97,7 +95,6 @@ export function FilterButton({
             : "bg-white/95 text-neutral-700 ring-black/10 hover:bg-white"
         }`}
       >
-        {/* Funnel icon */}
         <svg
           className="h-4 w-4 shrink-0"
           viewBox="0 0 20 20"
@@ -118,16 +115,13 @@ export function FilterButton({
         )}
       </button>
 
-      {/* Dropdown panel */}
       {open && (
         <div
           ref={panelRef}
           className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl bg-white/95 p-4 shadow-xl ring-1 ring-black/10 backdrop-blur"
         >
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-semibold text-neutral-800">
-              Filter pins
-            </p>
+            <p className="text-sm font-semibold text-neutral-800">Filter pins</p>
             {activeFilterCount > 0 && (
               <button
                 type="button"

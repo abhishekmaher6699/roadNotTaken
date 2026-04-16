@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CommentItem } from "./CommentItem";
-import type { Comment } from "../../../../../lib/comments";
+import type { Comment } from "../../../../../features/comments/api";
 import type { User } from "../../../../../lib/auth";
 
 interface CommentThreadProps {

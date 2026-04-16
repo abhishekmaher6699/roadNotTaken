@@ -2,10 +2,9 @@
 
 import { MapSidebarShell } from "../MapSidebarShell";
 import { CreatePinPreviewCard } from "./CreatePinPreviewCard";
-import { PinFormFields } from "../pin-form/PinFormFields";
+import { PinFormFields, usePinForm } from "../pin-form";
 import type { CreatePinSidebarProps } from "./types";
-import { usePinForm } from "../pin-form/usePinForm";
-import type { CreatePinInput } from "@/features/pins/types";
+import type { CreatePinInput } from "@/features/pins";
 
 export function CreatePinSidebar({
   open,

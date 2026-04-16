@@ -2,7 +2,7 @@ import type L from "leaflet";
 import { LatLng } from "leaflet";
 import { Pin, TileSummary } from "@/features/pins/types";
 import { ServerAuthUser } from "@/lib/server-auth";
-import type { PinFilters } from "@/hooks/pins/usePinFilters";
+import type { PinFilters } from "@/features/filter";
 
 export type MapMode = "view" | "edit";
 export type BasemapMode = "standard" | "imagery";

@@ -1,6 +1,6 @@
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from "react";
-import { getPinSummariesForTilesApi, getPinsForTilesApi } from "./api";
-import type { TileCoordinates } from "./types";
+import { getPinSummariesForTilesApi, getPinsForTilesApi } from "../api";
+import type { TileCoordinates } from "../types";
 import { getPrefetchTiles, tileKey } from "./tile-utils";
 import type { ViewportBounds } from "./tile-utils";
 import {
@@ -157,11 +157,11 @@ export async function fetchRawTiles(
     });
     state.activeRequestRef.current = null;
     state.requestStatsRef.current.aborted += 1;
-    console.info("[pins] tile request aborted", {
-      started: state.requestStatsRef.current.started,
-      completed: state.requestStatsRef.current.completed,
-      aborted: state.requestStatsRef.current.aborted,
-    });
+    // console.info("[pins] tile request aborted", {
+    //   started: state.requestStatsRef.current.started,
+    //   completed: state.requestStatsRef.current.completed,
+    //   aborted: state.requestStatsRef.current.aborted,
+    // });
   }
 
   // We snapshot old entries so an AbortError can restore the cache exactly as it was before.
@@ -187,13 +187,13 @@ export async function fetchRawTiles(
     tileSnapshots,
   };
   state.requestStatsRef.current.started += 1;
-  console.info("[pins] tile request started", {
-    requestId,
-    tileCount: missingTiles.length,
-    started: state.requestStatsRef.current.started,
-    completed: state.requestStatsRef.current.completed,
-    aborted: state.requestStatsRef.current.aborted,
-  });
+  // console.info("[pins] tile request started", {
+  //   requestId,
+  //   tileCount: missingTiles.length,
+  //   started: state.requestStatsRef.current.started,
+  //   completed: state.requestStatsRef.current.completed,
+  //   aborted: state.requestStatsRef.current.aborted,
+  // });
 
   state.setTileCache((current) => {
     const nextCache = { ...current };
@@ -240,14 +240,14 @@ export async function fetchRawTiles(
       return nextCache;
     });
     state.requestStatsRef.current.completed += 1;
-    console.info("[pins] tile request completed", {
-      requestId,
-      tileCount: fetchedTiles.length,
-      pinCount: response.pins?.length ?? 0,
-      started: state.requestStatsRef.current.started,
-      completed: state.requestStatsRef.current.completed,
-      aborted: state.requestStatsRef.current.aborted,
-    });
+    // console.info("[pins] tile request completed", {
+    //   requestId,
+    //   tileCount: fetchedTiles.length,
+    //   pinCount: response.pins?.length ?? 0,
+    //   started: state.requestStatsRef.current.started,
+    //   completed: state.requestStatsRef.current.completed,
+    //   aborted: state.requestStatsRef.current.aborted,
+    // });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       state.setTileCache((current) => {

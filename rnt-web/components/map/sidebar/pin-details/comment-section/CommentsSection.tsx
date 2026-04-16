@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { CommentForm } from "./CommentForm";
 import { CommentThread } from "./CommentThread";
-import { useComments } from "../../../../../hooks/comments/useComments";
+import { useComments } from "../../../../../features/comments/hooks";
 import { getCurrentUser, type User } from "../../../../../lib/auth";
 
 interface CommentsSectionProps {

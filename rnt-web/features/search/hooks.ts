@@ -16,7 +16,7 @@ export interface UseSearchReturn {
   clear: () => void;
 }
 
-// 🔥 Get real map center from Leaflet
+// Get real map center from Leaflet
 function getCenter(map: L.Map | null) {
   if (!map) return undefined;
 
@@ -50,7 +50,7 @@ export function useSearch(
     [isResultsPanelOpen]
   );
 
-  // 🔎 Suggestions (debounced)
+  //  Suggestions (debounced)
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (abortRef.current) abortRef.current.abort();
@@ -92,7 +92,7 @@ export function useSearch(
     };
   }, [query, mapRef]);
 
-  // 🔍 Full search
+  // Full search
   const search = useCallback(async () => {
     if (!query.trim() || query.trim().length < 2) return;
 
@@ -131,7 +131,7 @@ export function useSearch(
     }
   }, [query, suggestions, mapRef]);
 
-  // 🧹 Clear search
+  //  Clear search
   const clear = useCallback(() => {
     if (abortRef.current) abortRef.current.abort();
     if (debounceRef.current) clearTimeout(debounceRef.current);

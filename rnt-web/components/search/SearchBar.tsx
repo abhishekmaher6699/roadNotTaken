@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, KeyboardEvent } from "react";
-import { Pin } from "@/features/pins/types";
+import { Pin } from "@/features/pins";
 import { SearchSuggestions } from "./SearchSuggestions";
 
 interface SearchBarProps {

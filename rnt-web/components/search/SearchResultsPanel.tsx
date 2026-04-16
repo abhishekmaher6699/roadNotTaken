@@ -1,7 +1,7 @@
 "use client";
 
 import { MapSidebarShell } from "@/components/map/sidebar/MapSidebarShell";
-import { Pin } from "@/features/pins/types";
+import { Pin } from "@/features/pins";
 import { highlight } from "@/components/search/highlight";
 
 interface SearchResultsPanelProps {

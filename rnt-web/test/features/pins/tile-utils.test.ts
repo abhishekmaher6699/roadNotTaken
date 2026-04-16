@@ -11,7 +11,7 @@ import {
   isPinInsideTile,
   latLngToTile,
   tileKey,
-} from "../../../features/pins/tile-utils";
+} from "../../../features/pins/tiles/tile-utils";
 
 describe("tile-utils", () => {
   it("returns the expected pin limit at zoom breakpoints", () => {

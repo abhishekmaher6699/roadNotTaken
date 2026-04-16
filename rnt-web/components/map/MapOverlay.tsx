@@ -1,12 +1,8 @@
 "use client";
 
-import { BasemapToggle } from "@/components/map/controls/BasemapToggle";
-import { FilterButton } from "@/components/map/controls/FilterButton";
-import { LocateButton } from "@/components/map/controls/LocateButton";
-import { ModeSwitch } from "@/components/map/controls/ModeSwitch";
-import { PinInfoCard } from "@/components/map/controls/PinInfoCard";
-import { UserMenu } from "@/components/map/controls/UserMenu";
-import { SearchBar } from "@/components/search/SearchBar";
+import { FilterButton } from "@/features/filter";
+import { LocateButton, BasemapToggle, ModeSwitch, UserMenu, PinInfoCard } from "@/components/map/controls";
+import { SearchBar } from "@/components/search";
 import type { MapPageOverlayProps } from "@/types/mapTypes";
 
 export function MapOverlay({

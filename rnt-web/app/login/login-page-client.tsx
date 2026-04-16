@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
-import { useAuth } from "@/hooks/auth/useAuth";
-import { type LoginFormValues } from "@/features/auth/validation";
+import { useAuth, type LoginFormValues } from "@/features/auth";
+
 
 export function LoginPageClient() {
   const router = useRouter();

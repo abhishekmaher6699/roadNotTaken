@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/auth/useAuth";
+import { useAuth } from "@/features/auth";
 
 export default function AuthCallbackPage() {
   const router = useRouter();

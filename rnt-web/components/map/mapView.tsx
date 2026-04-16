@@ -1,14 +1,9 @@
 "use client";
 
-import L from "leaflet";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import type { MapViewProps } from "@/types/mapTypes";
 import { getPinIcon, getPreviewPinIcon } from "../../lib/mapIcons";
-import { getSummaryIcon } from "./map-utils/summaryMarker";
-import { FlyToController } from "./map-utils/FlyToController";
-import { ViewportReporter } from "./map-utils/ViewportReporter";
-import { AddPin, ClearSelectedPin } from "./map-utils/MapEventHandlers";
-import { PendingPinPopup } from "./map-utils/PendingPinPopup";
+import { FlyToController, ViewportReporter, PendingPinPopup, AddPin, ClearSelectedPin, getSummaryIcon } from "./map-utils";
 
 const TILE_URLS = {
   standard: "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png",
