@@ -293,23 +293,27 @@ export async function getPinSummariesForTiles({ tiles }: TileQueryInput) {
     -- 1. Join pins to requested tile boxes by latitude/longitude range.
     -- 2. Group by tile key.
     -- 3. Compute one centroid marker with AVG(lat/lng), plus count and top_score.
-    SELECT
-      requested_tiles.x,
-      requested_tiles.y,
-      requested_tiles.z,
-      AVG(pins.latitude)::double precision AS latitude,
-      AVG(pins.longitude)::double precision AS longitude,
-      COUNT(pins.id)::integer AS pin_count,
-      MAX(pins.score) AS top_score
-    FROM requested_tiles
-    JOIN pins
-      ON pins.longitude >= requested_tiles.west
-     AND pins.longitude < requested_tiles.east
-     AND pins.latitude >= requested_tiles.south
-     AND pins.latitude < requested_tiles.north
-    GROUP BY requested_tiles.x, requested_tiles.y, requested_tiles.z
-    ORDER BY pin_count DESC, top_score DESC NULLS LAST, requested_tiles.z DESC
-    `,
+SELECT
+  requested_tiles.x,
+  requested_tiles.y,
+  requested_tiles.z,
+  COALESCE(
+    AVG(pins.latitude),
+    AVG((requested_tiles.south + requested_tiles.north) / 2)
+  )::double precision AS latitude,
+  COALESCE(
+    AVG(pins.longitude),
+    AVG((requested_tiles.west + requested_tiles.east) / 2)
+  )::double precision AS longitude,
+  COUNT(pins.id)::integer AS pin_count,
+  MAX(pins.score) AS top_score
+FROM requested_tiles
+LEFT JOIN pins
+  ON pins.longitude >= requested_tiles.west
+ AND pins.longitude < requested_tiles.east
+ AND pins.latitude >= requested_tiles.south
+ AND pins.latitude < requested_tiles.north
+GROUP BY requested_tiles.x, requested_tiles.y, requested_tiles.z `,
   );
 
   return result.rows;

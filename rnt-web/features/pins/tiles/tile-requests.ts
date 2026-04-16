@@ -1,4 +1,9 @@
-import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from "react";
+import type {
+  Dispatch,
+  MutableRefObject,
+  RefObject,
+  SetStateAction,
+} from "react";
 import { getPinSummariesForTilesApi, getPinsForTilesApi } from "../api";
 import type { TileCoordinates } from "../types";
 import { getPrefetchTiles, tileKey } from "./tile-utils";
@@ -22,7 +27,7 @@ export const MAX_PREFETCH_VISIBLE_TILES = 9;
 
 // This bundle is everything the raw-pin request pipeline needs from the hook.
 export type RawTileRequestState = {
-  inFlightTilesRef:RefObject<Set<string>>;
+  inFlightTilesRef: RefObject<Set<string>>;
   tileCacheRef: RefObject<TileCache>;
   activeRequestRef: RefObject<{
     controller: AbortController;
@@ -55,13 +60,14 @@ function dedupeTiles(tiles: TileCoordinates[]) {
   // Visible tiles and prefetch tiles can overlap, so we collapse them by z/x/y key.
   return tiles.filter(
     (tile, index, allTiles) =>
-      index === allTiles.findIndex((candidate) => tileKey(candidate) === tileKey(tile))
+      index ===
+      allTiles.findIndex((candidate) => tileKey(candidate) === tileKey(tile)),
   );
 }
 
 export function getRequestedTiles(
   visibleTiles: TileCoordinates[],
-  bounds?: ViewportBounds
+  bounds?: ViewportBounds,
 ) {
   // Visible tiles are always fetched first; prefetch only adds a small outer ring when it is cheap.
   // How:
@@ -86,7 +92,7 @@ export function getRequestedTiles(
 export function primeDerivedParentTiles(
   requestedTiles: TileCoordinates[],
   setTileCache: Dispatch<SetStateAction<TileCache>>,
-  tileCacheRef: RefObject<TileCache>
+  tileCacheRef: RefObject<TileCache>,
 ) {
   // Before hitting the network, try to build any missing parent tiles from already-ready child tiles.
   // This is the main optimization that reduces zoom-out requests.
@@ -102,7 +108,11 @@ export function primeDerivedParentTiles(
     requestedTiles.forEach((tile) => {
       const key = tileKey(tile);
 
-      if (!nextCache[key] || nextCache[key].status === "idle" || nextCache[key].status === "error") {
+      if (
+        !nextCache[key] ||
+        nextCache[key].status === "idle" ||
+        nextCache[key].status === "error"
+      ) {
         const derivedEntry = deriveParentTileEntryFromChildren(nextCache, tile);
 
         if (derivedEntry) {
@@ -119,7 +129,7 @@ export function primeDerivedParentTiles(
 export function getMissingRawTiles(
   requestedTiles: TileCoordinates[],
   tileCacheRef: MutableRefObject<TileCache>,
-  inFlightTilesRef: MutableRefObject<Set<string>>
+  inFlightTilesRef: MutableRefObject<Set<string>>,
 ) {
   // We skip tiles that are fresh or already being fetched by the active request.
   // How:
@@ -131,14 +141,16 @@ export function getMissingRawTiles(
     const key = tileKey(tile);
     const entry = tileCacheRef.current[key];
 
-    return (!isTileEntryFresh(entry) || entry.status === "error") &&
-      !inFlightTilesRef.current.has(key);
+    return (
+      (!isTileEntryFresh(entry) || entry.status === "error") &&
+      !inFlightTilesRef.current.has(key)
+    );
   });
 }
 
 export async function fetchRawTiles(
   missingTiles: TileCoordinates[],
-  state: RawTileRequestState
+  state: RawTileRequestState,
 ) {
   if (missingTiles.length === 0) {
     return;
@@ -218,7 +230,9 @@ export async function fetchRawTiles(
     return nextCache;
   });
 
-  missingTiles.forEach((tile) => state.inFlightTilesRef.current.add(tileKey(tile)));
+  missingTiles.forEach((tile) =>
+    state.inFlightTilesRef.current.add(tileKey(tile)),
+  );
 
   try {
     const response = await getPinsForTilesApi(missingTiles, controller.signal);
@@ -227,7 +241,10 @@ export async function fetchRawTiles(
     // How:
     // - Compare the current active request id with the id captured when this request started.
     // - If they do not match, the viewport moved again and this response is stale.
-    if (!state.activeRequestRef.current || state.activeRequestRef.current.requestId !== requestId) {
+    if (
+      !state.activeRequestRef.current ||
+      state.activeRequestRef.current.requestId !== requestId
+    ) {
       return;
     }
     const fetchedTiles = response.tiles ?? missingTiles;
@@ -235,7 +252,11 @@ export async function fetchRawTiles(
     state.setTileCache((current) => {
       // `mergePinsIntoTiles` takes the one flat backend result array and redistributes pins
       // back into their specific tile cache entries by checking `isPinInsideTile`.
-      const nextCache = mergePinsIntoTiles(current, fetchedTiles, response.pins ?? []);
+      const nextCache = mergePinsIntoTiles(
+        current,
+        fetchedTiles,
+        response.pins ?? [],
+      );
       state.tileCacheRef.current = nextCache;
       return nextCache;
     });
@@ -290,7 +311,9 @@ export async function fetchRawTiles(
       return nextCache;
     });
   } finally {
-    missingTiles.forEach((tile) => state.inFlightTilesRef.current.delete(tileKey(tile)));
+    missingTiles.forEach((tile) =>
+      state.inFlightTilesRef.current.delete(tileKey(tile)),
+    );
     if (state.activeRequestRef.current?.requestId === requestId) {
       state.activeRequestRef.current = null;
     }
@@ -300,7 +323,7 @@ export async function fetchRawTiles(
 export function getMissingSummaryTiles(
   tiles: TileCoordinates[],
   summaryCacheRef: MutableRefObject<TileSummaryCache>,
-  inFlightSummaryTilesRef: MutableRefObject<Set<string>>
+  inFlightSummaryTilesRef: MutableRefObject<Set<string>>,
 ) {
   // Summary tiles follow the same freshness rule as raw tiles, just against a different cache.
   // How:
@@ -312,14 +335,16 @@ export function getMissingSummaryTiles(
     const key = tileKey(tile);
     const entry = summaryCacheRef.current[key];
 
-    return (!isTileEntryFresh(entry) || entry.status === "error") &&
-      !inFlightSummaryTilesRef.current.has(key);
+    return (
+      (!isTileEntryFresh(entry) || entry.status === "error") &&
+      !inFlightSummaryTilesRef.current.has(key)
+    );
   });
 }
 
 export async function fetchSummaryTiles(
   missingTiles: TileCoordinates[],
-  state: SummaryTileRequestState
+  state: SummaryTileRequestState,
 ) {
   if (missingTiles.length === 0) {
     return;
@@ -382,10 +407,16 @@ export async function fetchSummaryTiles(
     return nextCache;
   });
 
-  missingTiles.forEach((tile) => state.inFlightSummaryTilesRef.current.add(tileKey(tile)));
+  missingTiles.forEach((tile) =>
+    state.inFlightSummaryTilesRef.current.add(tileKey(tile)),
+  );
 
   try {
-    const response = await getPinSummariesForTilesApi(missingTiles, controller.signal);
+    const response = await getPinSummariesForTilesApi(
+      missingTiles,
+      controller.signal,
+    );
+
     if (
       !state.activeSummaryRequestRef.current ||
       state.activeSummaryRequestRef.current.requestId !== requestId
@@ -394,7 +425,7 @@ export async function fetchSummaryTiles(
     }
 
     const summaryMap = new Map(
-      (response.summaries ?? []).map((summary) => [tileKey(summary), summary])
+      (response.summaries ?? []).map((summary) => [tileKey(summary), summary]),
     );
     // `summaryMap` makes it easy to restore the backend response back into per-tile cache entries.
     const fetchedTiles = response.tiles ?? missingTiles;
@@ -409,9 +440,10 @@ export async function fetchSummaryTiles(
       // - Store that marker or `null` if the tile had no pins.
       fetchedTiles.forEach((tile) => {
         const key = tileKey(tile);
+        const summary = summaryMap.get(key);
 
         nextCache[key] = {
-          summary: summaryMap.get(key) ?? null,
+          summary: summary ?? null,
           status: "ready",
           fetchedAt: Date.now(),
         };
@@ -462,7 +494,9 @@ export async function fetchSummaryTiles(
       return nextCache;
     });
   } finally {
-    missingTiles.forEach((tile) => state.inFlightSummaryTilesRef.current.delete(tileKey(tile)));
+    missingTiles.forEach((tile) =>
+      state.inFlightSummaryTilesRef.current.delete(tileKey(tile)),
+    );
     if (state.activeSummaryRequestRef.current?.requestId === requestId) {
       state.activeSummaryRequestRef.current = null;
     }

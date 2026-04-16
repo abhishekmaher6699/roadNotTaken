@@ -3,11 +3,20 @@
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import type { MapViewProps } from "@/types/mapTypes";
 import { getPinIcon, getPreviewPinIcon } from "../../lib/mapIcons";
-import { FlyToController, ViewportReporter, PendingPinPopup, AddPin, ClearSelectedPin, getSummaryIcon } from "./map-utils";
+import {
+  FlyToController,
+  ViewportReporter,
+  PendingPinPopup,
+  AddPin,
+  ClearSelectedPin,
+  getSummaryIcon,
+} from "./map-utils";
 
 const TILE_URLS = {
-  standard: "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png",
-  imagery: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  standard:
+    "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png",
+  imagery:
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
 };
 
 const TILE_ATTRIBUTIONS = {
@@ -32,11 +41,12 @@ export default function MapView({
   onConfirmPin,
   onCancelPin,
 }: MapViewProps) {
+
   return (
     <MapContainer
       ref={mapRef}
       center={initialCenter}
-      zoom={15}
+      zoom={8}
       className="z-0 h-full w-full"
       zoomControl={false}
       attributionControl={false}
@@ -52,7 +62,10 @@ export default function MapView({
 
       <ViewportReporter onViewportChange={onViewportChange} />
       <FlyToController target={flyToTarget} />
-      <ClearSelectedPin enabled={mode === "view" && !pendingPin} onClear={onClearSelection} />
+      <ClearSelectedPin
+        enabled={mode === "view" && !pendingPin}
+        onClear={onClearSelection}
+      />
       {mode === "edit" && !pendingPin && <AddPin onAdd={onAddPin} />}
 
       {pins.map((pin) => (
@@ -69,15 +82,17 @@ export default function MapView({
         />
       ))}
 
-      {tileSummaries.map((summary) => (
-        <Marker
-          key={`${summary.z}-${summary.x}-${summary.y}`}
-          position={[summary.latitude, summary.longitude]}
-          icon={getSummaryIcon(summary.pin_count)}
-          interactive={false}
-          bubblingMouseEvents={false}
-        />
-      ))}
+      {tileSummaries
+        .filter((summary) => summary.pin_count > 0) // ✅ ADD THIS
+        .map((summary) => (
+          <Marker
+            key={`${summary.z}-${summary.x}-${summary.y}`}
+            position={[summary.latitude, summary.longitude]}
+            icon={getSummaryIcon(summary.pin_count)}
+            interactive={false}
+            bubblingMouseEvents={false}
+          />
+        ))}
 
       {draftPin && (
         <Marker

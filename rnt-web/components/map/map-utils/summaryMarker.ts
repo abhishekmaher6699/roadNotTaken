@@ -1,6 +1,6 @@
 import L from "leaflet";
 
-const cache = new Map<number, L.DivIcon>();
+const cache = new Map<string, L.DivIcon>();
 
 function getSize(pinCount: number): number {
   if (pinCount >= 50) return 52;
@@ -10,9 +10,12 @@ function getSize(pinCount: number): number {
 }
 
 /** Returns a cached DivIcon for a tile-summary cluster marker. */
+
 export function getSummaryIcon(pinCount: number): L.DivIcon {
   const size = getSize(pinCount);
-  const cached = cache.get(size);
+  const key = `${size}-${pinCount}`;
+
+  const cached = cache.get(key);
   if (cached) return cached;
 
   const icon = L.divIcon({
@@ -37,6 +40,6 @@ export function getSummaryIcon(pinCount: number): L.DivIcon {
     iconAnchor: [size / 2, size / 2],
   });
 
-  cache.set(size, icon);
+  cache.set(key, icon);
   return icon;
 }

@@ -1,4 +1,9 @@
-import type { Pin, TileCoordinates, TileSummary, TileSummaryCacheEntry } from "../types";
+import type {
+  Pin,
+  TileCoordinates,
+  TileSummary,
+  TileSummaryCacheEntry,
+} from "../types";
 import { tileKey } from "./tile-utils";
 import {
   collectAncestorPins,
@@ -10,7 +15,10 @@ import {
 } from "./tile-cache";
 
 // Visible pins come from exact ready tiles first, then from parent/child fallbacks while exact tiles load.
-export function selectVisiblePins(tileCache: TileCache, activeTiles: TileCoordinates[]) {
+export function selectVisiblePins(
+  tileCache: TileCache,
+  activeTiles: TileCoordinates[],
+) {
   // A Map keyed by pin id prevents duplicate rendering when fallback sources overlap.
   // How:
   // - Loop through every currently active tile.
@@ -45,7 +53,7 @@ function getSummaryEntry(cache: TileSummaryCache, tile: TileCoordinates) {
 // Summary tiles are simpler: we only show exact ready summaries for the currently active low-zoom tiles.
 export function selectVisibleTileSummaries(
   summaryCache: TileSummaryCache,
-  activeSummaryTiles: TileCoordinates[]
+  activeSummaryTiles: TileCoordinates[],
 ) {
   // Summary markers are keyed by tile because each tile contributes at most one aggregate marker.
   // How:
