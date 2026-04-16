@@ -1,4 +1,3 @@
-export { FilterButton } from "./FilterButton";
 export { LocateButton, loadLocation } from "./LocateButton";
 export { ModeSwitch } from "./ModeSwitch";
 export { PinInfoCard } from "./PinInfoCard";
