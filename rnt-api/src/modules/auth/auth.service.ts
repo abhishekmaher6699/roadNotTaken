@@ -8,6 +8,7 @@ export interface AuthSessionResult {
   session: {
     access_token: string;
     refresh_token?: string;
+    expires_in: number; // ✅ IMPORTANT
   } | null;
 }
 
@@ -38,9 +39,16 @@ export async function loginUser(email: string, password: string) {
     password,
   });
 
-  if (error) throw new Error(error.message);
+  if (error || !data.session) throw new Error(error?.message || "Login failed");
 
-  return data as AuthSessionResult;
+  return {
+    user: data.user,
+    session: {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_in: data.session.expires_in,
+    },
+  };
 }
 
 // Verifies an access token and returns the matching Supabase user.
@@ -65,6 +73,26 @@ export async function logoutUser(token: string) {
   }
 }
 
+// Refreshes an expired access token using the refresh token.
+export async function refreshAccessToken(
+  refreshToken: string,
+): Promise<Exclude<AuthSessionResult["session"], null>> {
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase.auth.refreshSession({
+    refresh_token: refreshToken,
+  });
+
+  if (error || !data.session) {
+    throw new Error(error?.message || "Failed to refresh token");
+  }
+
+  return {
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+    expires_in: data.session.expires_in,
+  };
+}
 // Builds the Google auth URL on the server so the frontend only needs to redirect to it.
 export function getGoogleAuthUrl() {
   if (!process.env.SUPABASE_URL) {

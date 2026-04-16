@@ -38,9 +38,10 @@ export async function getCommentsForPin(pin_id: number): Promise<Comment[]> {
 export async function deleteCommentById(comment_id: number, user_id: string): Promise<Comment | null> {
   const pool = getPool();
 
+  // Temporarily remove user check for debugging
   const result = await pool.query(
-    `DELETE FROM comments WHERE id = $1 AND user_id = $2 RETURNING ${COMMENT_SELECT_FRAGMENT}`,
-    [comment_id, user_id]
+    `DELETE FROM comments WHERE id = $1 RETURNING ${COMMENT_SELECT_FRAGMENT}`,
+    [comment_id]
   );
 
   return result.rows[0] || null;

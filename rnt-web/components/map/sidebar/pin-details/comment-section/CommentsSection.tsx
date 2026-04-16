@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { CommentForm } from "./CommentForm";
 import { CommentThread } from "./CommentThread";
-import { useComments } from "../../../../hooks/comments/useComments";
-import { getCurrentUser, type User } from "../../../../lib/auth";
+import { useComments } from "../../../../../hooks/comments/useComments";
+import { getCurrentUser, type User } from "../../../../../lib/auth";
 
 interface CommentsSectionProps {
   pinId: number | null;

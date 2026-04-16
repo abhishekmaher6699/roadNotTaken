@@ -3,26 +3,32 @@ import { Request, Response } from "express";
 const ACCESS_TOKEN_COOKIE = "access_token";
 const REFRESH_TOKEN_COOKIE = "refresh_token";
 
+const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || 1000 * 60 * 30;
+const REFRESH_TOKEN_EXPIRY =
+  process.env.REFRESH_TOKEN_EXPIRY || 1000 * 60 * 60 * 2;
+
 const isProduction = process.env.NODE_ENV === "production";
 
 // Parses the raw Cookie header into a simple key/value object.
-function parseCookies(req: Request) {
+export function parseCookies(req: Request) {
   const rawCookie = req.headers.cookie;
 
   if (!rawCookie) {
     return {};
   }
 
-  return rawCookie.split(";").reduce<Record<string, string>>((cookies, part) => {
-    const [key, ...valueParts] = part.trim().split("=");
+  return rawCookie
+    .split(";")
+    .reduce<Record<string, string>>((cookies, part) => {
+      const [key, ...valueParts] = part.trim().split("=");
 
-    if (!key) {
+      if (!key) {
+        return cookies;
+      }
+
+      cookies[key] = decodeURIComponent(valueParts.join("="));
       return cookies;
-    }
-
-    cookies[key] = decodeURIComponent(valueParts.join("="));
-    return cookies;
-  }, {});
+    }, {});
 }
 
 // Prefers an Authorization header, then falls back to the access_token cookie.
@@ -43,7 +49,7 @@ export function getAccessTokenFromRequest(req: Request) {
 export function setAuthCookies(
   res: Response,
   accessToken: string,
-  refreshToken?: string
+  refreshToken?: string,
 ) {
   res.cookie(ACCESS_TOKEN_COOKIE, accessToken, {
     httpOnly: true,

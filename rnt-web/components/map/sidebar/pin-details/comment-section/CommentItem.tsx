@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { Comment } from "../../../../lib/comments";
-import type { User } from "../../../../lib/auth";
+import type { Comment } from "../../../../../lib/comments";
+import type { User } from "../../../../../lib/auth";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";// adjust path if needed
 
 interface CommentItemProps {
@@ -91,7 +91,7 @@ export function CommentItem({
             onClick={() => onToggleCollapse(comment.id)}
             className="text-xs text-neutral-400 hover:text-neutral-700 transition"
           >
-            {isCollapsed ? "▶" : "▼"}
+            {isCollapsed ? ">" : "▼"}
           </button>
 
           {/* Avatar */}

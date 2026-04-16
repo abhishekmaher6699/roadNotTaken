@@ -5,7 +5,7 @@ import { ConfirmDialog } from "../../../ui/ConfirmDialog";
 import { MapSidebarShell } from "../MapSidebarShell";
 import { PinDetailsGallery } from "./PinDetailsGallery";
 import { PinDetailsHero } from "./PinDetailsHero";
-import { CommentsSection } from "./CommentsSection";
+import { CommentsSection } from "./comment-section/CommentsSection";
 import type { PinDetailsSidebarProps } from "./types";
 
 function DetailItem({

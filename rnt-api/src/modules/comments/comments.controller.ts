@@ -6,7 +6,7 @@ export async function createCommentHandler(req: any, res: Response) {
     const user = req.user;
     const { pin_id, content, parent_comment_id } = req.body;
 
-    console.log('Create comment request:', { pin_id, content, parent_comment_id, userId: user?.id, userEmail: user?.email });
+    // console.log('Create comment request:', { pin_id, content, parent_comment_id, userId: user?.id, userEmail: user?.email });
 
     if (!pin_id || !content) {
       return res.status(400).json({ error: 'pin_id and content are required' });
@@ -30,7 +30,7 @@ export async function createCommentHandler(req: any, res: Response) {
       user_id: user.id,
     });
 
-    console.log('Comment created:', comment);
+    // console.log('Comment created:', comment);
     res.status(201).json(comment);
   } catch (error) {
     console.error('Create comment error:', error);
@@ -63,16 +63,16 @@ export async function deleteCommentHandler(req: any, res: Response) {
       return res.status(400).json({ error: 'Invalid comment ID' });
     }
 
-    console.log('Delete comment request:', { commentId, userId: user?.id });
+    // console.log('Delete comment request:', { commentId, userId: user?.id });
 
     const deletedComment = await deleteCommentById(commentId, user.id);
 
     if (!deletedComment) {
-      console.log('Comment not found or not owned by user');
+      // console.log('Comment not found or not owned by user');
       return res.status(404).json({ error: 'Comment not found or not owned by user' });
     }
 
-    console.log('Comment deleted successfully:', deletedComment);
+    // console.log('Comment deleted successfully:', deletedComment);
     res.json({ id: commentId });
   } catch (error) {
     console.error('Delete comment error:', error);

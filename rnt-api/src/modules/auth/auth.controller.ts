@@ -1,5 +1,10 @@
-import { Request, Response } from 'express';
-import { clearAuthCookies, getAccessTokenFromRequest, setAuthCookies } from './auth.cookies';
+import { Request, Response } from "express";
+import {
+  clearAuthCookies,
+  getAccessTokenFromRequest,
+  setAuthCookies,
+  parseCookies,
+} from "./auth.cookies";
 import {
   getGoogleAuthUrl,
   getUserFromAccessToken,
@@ -7,7 +12,8 @@ import {
   signupUser,
   loginUser,
   logoutUser,
-} from './auth.service';
+  refreshAccessToken,
+} from "./auth.service";
 
 type AuthBody = {
   email?: string;
@@ -24,7 +30,7 @@ function getCredentials(body: AuthBody) {
   const { email, password } = body;
 
   if (!email || !password) {
-    throw new Error('Email and password required');
+    throw new Error("Email and password required");
   }
 
   return { email, password };
@@ -34,7 +40,7 @@ function getCredentials(body: AuthBody) {
 function setSessionCookiesFromAuthResult(
   res: Response,
   session: AuthSessionResult,
-  missingSessionMessage: string
+  missingSessionMessage: string,
 ) {
   if (!session.session?.access_token) {
     throw new Error(missingSessionMessage);
@@ -43,7 +49,7 @@ function setSessionCookiesFromAuthResult(
   setAuthCookies(
     res,
     session.session.access_token,
-    session.session.refresh_token ?? undefined
+    session.session.refresh_token,
   );
 }
 
@@ -54,31 +60,37 @@ export async function signupHandler(req: Request, res: Response) {
 
     await signupUser(email, password);
     const session = await loginUser(email, password);
-    setSessionCookiesFromAuthResult(res, session, "Signup session was not created");
+    setSessionCookiesFromAuthResult(
+      res,
+      session,
+      "Signup session was not created",
+    );
 
     res.status(201).json({
-      message: 'User created',
+      message: "User created",
       user: session.user,
     });
   } catch (err: any) {
     console.error(err);
-    res.status(err.message === 'Email and password required' ? 400 : 500).json({
+    res.status(err.message === "Email and password required" ? 400 : 500).json({
       error: err.message,
     });
   }
 }
-
-
 
 // Signs in with email/password and stores the resulting session in cookies.
 export async function loginHandler(req: Request, res: Response) {
   try {
     const { email, password } = getCredentials(req.body as AuthBody);
     const session = await loginUser(email, password);
-    setSessionCookiesFromAuthResult(res, session, "Login session was not created");
+    setSessionCookiesFromAuthResult(
+      res,
+      session,
+      "Login session was not created",
+    );
 
     res.json({
-      message: 'Login successful',
+      message: "Login successful",
       user: session.user,
     });
   } catch (err: any) {
@@ -106,10 +118,8 @@ export function currentUserHandler(req: any, res: Response) {
 // Exchanges OAuth tokens from the callback page for the server-managed cookie session.
 export async function createSessionHandler(req: Request, res: Response) {
   try {
-    const {
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    } = req.body as SessionBody;
+    const { access_token: accessToken, refresh_token: refreshToken } =
+      req.body as SessionBody;
 
     if (!accessToken) {
       return res.status(400).json({ error: "Access token required" });
@@ -134,15 +144,41 @@ export async function logoutHandler(req: Request, res: Response) {
     const token = getAccessTokenFromRequest(req);
 
     if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
+      return res.status(401).json({ error: "No token provided" });
     }
 
     await logoutUser(token);
     clearAuthCookies(res);
-    res.json({ message: 'Logout successful' });
+    res.json({ message: "Logout successful" });
   } catch (err: any) {
     console.error(err);
     clearAuthCookies(res);
     res.status(500).json({ error: err.message });
+  }
+}
+
+// Refreshes the access token using the stored refresh token.
+export async function refreshTokenHandler(req: Request, res: Response) {
+  try {
+    const cookies = parseCookies(req);
+    const refreshToken = cookies["refresh_token"];
+
+    if (!refreshToken) {
+      clearAuthCookies(res);
+      return res.status(401).json({ error: "No refresh token available" });
+    }
+
+    const newSession = await refreshAccessToken(refreshToken);
+    setAuthCookies(
+      res,
+      newSession.access_token,
+      newSession.refresh_token ?? refreshToken,
+    );
+
+    res.json({ message: "Token refreshed" });
+  } catch (err: any) {
+    console.error(err);
+    clearAuthCookies(res);
+    res.status(401).json({ error: err.message });
   }
 }
