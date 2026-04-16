@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import { MapSidebarShell } from "../MapSidebarShell";
-import { usePinForm, PinFormFields } from "../pin-form";
+import { PinFormFields } from "../pin-form";
+import { usePinForm } from "@/features/map/forms";
 import type { EditPinSidebarProps } from "./types";
 
 export function EditPinSidebar({

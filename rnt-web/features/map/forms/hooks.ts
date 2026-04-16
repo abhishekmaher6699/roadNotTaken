@@ -8,7 +8,7 @@ import type {
   PinFormFieldKey,
   PinFormState,
   UsePinFormOptions,
-} from "./types";
+} from "../../../components/map/sidebar/pin-form/types";
 import { pinFormSchema } from "./validation";
 
 const MAX_IMAGES = 10;
