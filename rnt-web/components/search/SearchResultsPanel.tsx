@@ -57,7 +57,7 @@ export function SearchResultsPanel({
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <p className="text-lg font-semibold text-neutral-800">No places found</p>
             <p className="mt-1 text-sm text-neutral-500">
-              We couldn't find anything matching &ldquo;{query}&rdquo;.
+              We could not find anything matching &ldquo;{query}&rdquo;.
             </p>
           </div>
         )}

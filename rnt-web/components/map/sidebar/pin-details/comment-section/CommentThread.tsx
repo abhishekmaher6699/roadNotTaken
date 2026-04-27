@@ -11,6 +11,7 @@ interface CommentThreadProps {
   menuOpen: number | null;
   onReply: (commentId: number) => void;
   onDelete: (commentId: number) => Promise<void>;
+  onToggleLike: (commentId: number) => Promise<void>;
   onToggleMenu: (commentId: number) => void;
   onSubmitReply: (parentCommentId: number, content: string) => Promise<void>;
 }
@@ -23,6 +24,7 @@ export function CommentThread({
   menuOpen,
   onReply,
   onDelete,
+  onToggleLike,
   onToggleMenu,
   onSubmitReply,
 }: CommentThreadProps) {
@@ -33,7 +35,11 @@ export function CommentThread({
   const toggleCollapse = (id: number) => {
     setCollapsedComments((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -69,6 +75,7 @@ export function CommentThread({
           currentUser={currentUser}
           onReply={onReply}
           onDelete={onDelete}
+          onToggleLike={onToggleLike}
           isReplying={replyToCommentId === comment.id}
           replySubmittingId={replySubmittingCommentId}
           menuOpen={menuOpen}

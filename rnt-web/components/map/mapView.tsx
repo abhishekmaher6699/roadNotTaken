@@ -46,7 +46,7 @@ export default function MapView({
     <MapContainer
       ref={mapRef}
       center={initialCenter}
-      zoom={8}
+      zoom={14}
       className="z-0 h-full w-full"
       zoomControl={false}
       attributionControl={false}

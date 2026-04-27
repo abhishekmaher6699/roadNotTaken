@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { createPin, deletePinById, getAllPins, getPinSummariesForTiles, getPinsForTiles, searchPins, updatePinById } from './pins.service';
+import { getOptionalAuthenticatedUser } from '../../middleware/auth.middleware';
+import { createPin, deletePinById, getAllPins, getPinSummariesForTiles, getPinsForTiles, likePinById, searchPins, unlikePinById, updatePinById } from './pins.service';
 import { TileQueryInput } from './pins.types';
 
 export async function createPinHandler(req: any, res: any) {
@@ -21,7 +22,8 @@ export async function createPinHandler(req: any, res: any) {
 
 export async function getPinsHandler(req: Request, res: Response) {
   try {
-    const pins = await getAllPins();
+    const user = await getOptionalAuthenticatedUser(req);
+    const pins = await getAllPins(user?.id);
     res.json(pins);
   } catch (err) {
     console.error(err);
@@ -31,6 +33,7 @@ export async function getPinsHandler(req: Request, res: Response) {
 
 export async function getPinsForTilesHandler(req: Request, res: Response) {
   try {
+    const user = await getOptionalAuthenticatedUser(req);
     const tiles: TileQueryInput['tiles'] = Array.isArray(req.body?.tiles) ? req.body.tiles : [];
 
     // How:
@@ -46,7 +49,7 @@ export async function getPinsForTilesHandler(req: Request, res: Response) {
     }
 
     // Raw pin tiles are used only once the client is zoomed in enough to show individual places.
-    const pins = await getPinsForTiles({ tiles });
+    const pins = await getPinsForTiles({ tiles }, user?.id);
 
     return res.json({
       pins,
@@ -101,6 +104,36 @@ export async function deletePinHandler(req: any, res: Response) {
     return res.status(200).json({ id: deletedPin.id });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to delete pin' });
+  }
+}
+
+export async function likePinHandler(req: any, res: Response) {
+  try {
+    const result = await likePinById(req.params.id, req.user.id);
+
+    if (!result) {
+      return res.status(404).json({ error: 'Pin not found' });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to like pin' });
+  }
+}
+
+export async function unlikePinHandler(req: any, res: Response) {
+  try {
+    const result = await unlikePinById(req.params.id, req.user.id);
+
+    if (!result) {
+      return res.status(404).json({ error: 'Pin not found' });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to unlike pin' });
   }
 }
 

@@ -24,6 +24,11 @@ export interface UpdatePinInput {
   image_urls?: string[];
 }
 
+export interface LikeMutationResult {
+  liked: boolean;
+  likes_count: number;
+}
+
 export interface TileQueryInput {
   tiles: Array<{
     x: number;

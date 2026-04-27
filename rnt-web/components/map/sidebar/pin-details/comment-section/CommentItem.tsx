@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { Comment } from "../../../../../features/comments/api";
 import type { User } from "../../../../../lib/auth";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";// adjust path if needed
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { LikeButton } from "@/components/ui/LikeButton";
 
 interface CommentItemProps {
   comment: Comment;
@@ -10,6 +11,7 @@ interface CommentItemProps {
   currentUser: User | null;
   onReply: (commentId: number) => void;
   onDelete: (commentId: number) => Promise<void>;
+  onToggleLike: (commentId: number) => Promise<void>;
   isReplying: boolean;
   replySubmittingId: number | null;
   menuOpen: number | null;
@@ -20,7 +22,6 @@ interface CommentItemProps {
   replyCount: number;
 }
 
-/* 🔥 Dynamic avatar color */
 function getAvatarColor(seed: string | number) {
   const colors = [
     "bg-red-400",
@@ -45,6 +46,7 @@ export function CommentItem({
   currentUser,
   onReply,
   onDelete,
+  onToggleLike,
   isReplying,
   replySubmittingId,
   onSubmitReply,
@@ -56,10 +58,8 @@ export function CommentItem({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  /* ✅ Ownership check */
   const isOwner =
-    currentUser &&
-    String(currentUser.id) === String(comment.user_id);
+    currentUser && String(currentUser.id) === String(comment.user_id);
 
   const handleSubmitReply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,44 +75,39 @@ export function CommentItem({
     }
   };
 
-  const initial =
-    comment.posted_by?.trim()?.charAt(0)?.toUpperCase() || "?";
+  const initial = comment.posted_by?.trim()?.charAt(0)?.toUpperCase() || "?";
 
   return (
     <>
       <div
-        className="relative rounded-xl border p-4 bg-white transition-all duration-200 hover:shadow-md hover:-translate-y-[1px]"
+        className="relative rounded-xl border bg-white p-4 transition-all duration-200 hover:-translate-y-[1px] hover:shadow-md"
         style={{ marginLeft: depth * 20 }}
       >
         <div className="flex gap-3">
-
-          {/* Collapse */}
           <button
+            type="button"
             onClick={() => onToggleCollapse(comment.id)}
-            className="text-xs text-neutral-400 hover:text-neutral-700 transition"
+            className="text-xs text-neutral-400 transition hover:text-neutral-700"
           >
-            {isCollapsed ? ">" : "▼"}
+            {isCollapsed ? ">" : "v"}
           </button>
 
-          {/* Avatar */}
           <div
             className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white shadow-sm ring-2 ring-white ${getAvatarColor(
-              comment.user_id ?? comment.posted_by ?? "A"
+              comment.user_id ?? comment.posted_by ?? "A",
             )}`}
           >
             {initial}
           </div>
 
           <div className="flex-1">
-
-            {/* Header */}
-            <div className="flex items-center gap-2 mb-1">
+            <div className="mb-1 flex items-center gap-2">
               <p className="text-sm font-semibold text-neutral-900">
                 {comment.posted_by || "Anonymous"}
               </p>
 
               {isOwner && (
-                <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] text-blue-600">
                   You
                 </span>
               )}
@@ -122,48 +117,58 @@ export function CommentItem({
               </span>
             </div>
 
-            {/* Content */}
-            <p className="text-sm text-neutral-700 mb-2 leading-relaxed">
+            <p className="mb-2 text-sm leading-relaxed text-neutral-700">
               {comment.content}
             </p>
 
-            {/* Collapsed */}
             {isCollapsed && replyCount > 0 && (
-              <p className="text-xs text-neutral-500 mb-2">
+              <p className="mb-2 text-xs text-neutral-500">
                 {replyCount} replies hidden
               </p>
             )}
 
-            {/* Actions */}
-            <div className="flex gap-4 text-xs text-neutral-500">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-500">
+              <LikeButton
+                liked={comment.viewer_has_liked}
+                count={comment.likes_count}
+                disabled={Boolean(
+                  comment.isDeleting || comment.isOptimistic,
+                )}
+                onClick={() => onToggleLike(comment.id)}
+                label="Comment"
+                showLabel={false}
+                className="min-h-0 px-2.5 py-1.5 text-xs"
+              />
+
               <button
+                type="button"
                 onClick={() => onReply(comment.id)}
-                className="hover:text-blue-600 transition-colors"
+                className="transition-colors hover:text-blue-600"
               >
                 Reply
               </button>
 
               {isOwner && (
                 <button
+                  type="button"
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="hover:text-red-500 transition-colors"
+                  className="transition-colors hover:text-red-500"
                 >
                   Delete
                 </button>
               )}
             </div>
 
-            {/* Reply box */}
             {isReplying && !isCollapsed && (
               <form onSubmit={handleSubmitReply} className="mt-3 space-y-2">
                 <textarea
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
-                  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+                  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400"
                 />
                 <button
                   type="submit"
-                  className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700"
+                  className="rounded-md bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700"
                 >
                   Reply
                 </button>
@@ -173,7 +178,6 @@ export function CommentItem({
         </div>
       </div>
 
-      {/* 🔥 Confirm Dialog */}
       <ConfirmDialog
         open={showDeleteConfirm}
         title="Delete comment?"
@@ -192,7 +196,7 @@ export function CommentItem({
           }
         }}
       >
-        <p className="text-xs text-neutral-500 line-clamp-3">
+        <p className="line-clamp-3 text-xs text-neutral-500">
           {comment.content}
         </p>
       </ConfirmDialog>

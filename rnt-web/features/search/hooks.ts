@@ -5,6 +5,10 @@ import type L from "leaflet";
 import { Pin } from "@/features/pins/types";
 import { searchPinsApi } from "@/features/pins/api";
 
+function isAbortError(error: unknown) {
+  return error instanceof Error && error.name === "AbortError";
+}
+
 export interface UseSearchReturn {
   query: string;
   setQuery: (q: string) => void;
@@ -77,9 +81,9 @@ export function useSearch(
         );
 
         setSuggestions(pins);
-      } catch (err: any) {
-        if (err?.name !== "AbortError") {
-          console.error("Search suggestions failed", err);
+      } catch (error: unknown) {
+        if (!isAbortError(error)) {
+          console.error("Search suggestions failed", error);
           setSuggestions([]);
         }
       } finally {
@@ -121,9 +125,9 @@ export function useSearch(
       );
 
       setResults(pins);
-    } catch (err: any) {
-      if (err?.name !== "AbortError") {
-        console.error("Full search failed", err);
+    } catch (error: unknown) {
+      if (!isAbortError(error)) {
+        console.error("Full search failed", error);
         setIsResultsPanelOpen(false);
       }
     } finally {

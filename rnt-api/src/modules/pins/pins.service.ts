@@ -1,6 +1,7 @@
 import { getPool } from "../../config/db";
 import {
   CreatePinInput,
+  LikeMutationResult,
   SearchPinsInput,
   TileQueryInput,
   UpdatePinInput,
@@ -13,43 +14,42 @@ import {
   buildSummaryTileValuesSql,
 } from "./pins.tile-queries";
 
-const PIN_SELECT_FRAGMENT = `
-  id,
-  user_id,
-  posted_by,
-  latitude,
-  longitude,
-  title,
-  category,
-  address,
-  status,
-  access_level,
-  description,
-  thumbnail_url,
-  image_urls,
-  score,
-  created_at,
-  updated_at
-`;
+function buildPinSelectFragment(viewerUserId?: string | null, tableName = "pins") {
+  const likedExpression = viewerUserId
+    ? `EXISTS (
+        SELECT 1
+        FROM pin_likes
+        WHERE pin_likes.pin_id = ${tableName}.id
+          AND pin_likes.user_id = $1
+      )`
+    : "false";
 
-const RANKED_TILE_PIN_SELECT_FRAGMENT = `
-  id,
-  user_id,
-  posted_by,
-  latitude,
-  longitude,
-  title,
-  category,
-  address,
-  status,
-  access_level,
-  description,
-  thumbnail_url,
-  image_urls,
-  score,
-  created_at,
-  updated_at
-`;
+  return `
+    ${tableName}.id,
+    ${tableName}.user_id,
+    ${tableName}.posted_by,
+    ${tableName}.latitude,
+    ${tableName}.longitude,
+    ${tableName}.title,
+    ${tableName}.category,
+    ${tableName}.address,
+    ${tableName}.status,
+    ${tableName}.access_level,
+    ${tableName}.description,
+    ${tableName}.thumbnail_url,
+    ${tableName}.image_urls,
+    COALESCE(${tableName}.likes_count, 0) AS likes_count,
+    (
+      SELECT COUNT(*)
+      FROM comments
+      WHERE comments.pin_id = ${tableName}.id
+    )::integer AS comment_count,
+    ${likedExpression} AS viewer_has_liked,
+    ${tableName}.score,
+    ${tableName}.created_at,
+    ${tableName}.updated_at
+  `;
+}
 
 export async function createPin(data: CreatePinInput) {
   const pool = getPool();
@@ -86,7 +86,26 @@ export async function createPin(data: CreatePinInput) {
       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
       ST_SetSRID(ST_MakePoint($11, $10), 4326)
     )
-    RETURNING *;
+    RETURNING
+      id,
+      user_id,
+      posted_by,
+      latitude,
+      longitude,
+      title,
+      category,
+      address,
+      status,
+      access_level,
+      description,
+      thumbnail_url,
+      image_urls,
+      COALESCE(likes_count, 0) AS likes_count,
+      0::integer AS comment_count,
+      false AS viewer_has_liked,
+      score,
+      created_at,
+      updated_at;
     `,
     [
       title,
@@ -107,16 +126,18 @@ export async function createPin(data: CreatePinInput) {
   return result.rows[0];
 }
 
-export async function getAllPins() {
+export async function getAllPins(viewerUserId?: string | null) {
   const pool = getPool();
+  const params = viewerUserId ? [viewerUserId] : [];
 
   const result = await pool.query(
     `
     SELECT
-      ${PIN_SELECT_FRAGMENT}
+      ${buildPinSelectFragment(viewerUserId)}
     FROM pins
     ORDER BY score DESC NULLS LAST, created_at DESC, id DESC
     `,
+    params,
   );
 
   return result.rows;
@@ -191,6 +212,13 @@ export async function updatePinById(
       description,
       thumbnail_url,
       image_urls,
+      COALESCE(likes_count, 0) AS likes_count,
+      (
+        SELECT COUNT(*)
+        FROM comments
+        WHERE comments.pin_id = pins.id
+      )::integer AS comment_count,
+      false AS viewer_has_liked,
       score,
       created_at,
       updated_at;
@@ -212,7 +240,10 @@ export async function updatePinById(
   return result.rows[0] ?? null;
 }
 
-export async function getPinsForTiles({ tiles }: TileQueryInput) {
+export async function getPinsForTiles(
+  { tiles }: TileQueryInput,
+  viewerUserId?: string | null,
+) {
   if (tiles.length === 0) {
     return [];
   }
@@ -227,6 +258,7 @@ export async function getPinsForTiles({ tiles }: TileQueryInput) {
   );
   const requestedTiles = buildRankedRequestedTiles(tiles);
   const tileValuesSql = buildRankedTileValuesSql(requestedTiles);
+  const params = viewerUserId ? [viewerUserId] : [];
 
   const result = await pool.query(
     `
@@ -245,7 +277,7 @@ export async function getPinsForTiles({ tiles }: TileQueryInput) {
         requested_tiles.y AS tile_y,
         requested_tiles.z AS tile_z,
         requested_tiles.pin_limit,
-        ${PIN_SELECT_FRAGMENT},
+        ${buildPinSelectFragment(viewerUserId, "pins")},
         ROW_NUMBER() OVER (
           PARTITION BY requested_tiles.x, requested_tiles.y, requested_tiles.z
           ORDER BY pins.score DESC NULLS LAST, pins.created_at DESC, pins.id DESC
@@ -258,13 +290,14 @@ export async function getPinsForTiles({ tiles }: TileQueryInput) {
        AND pins.latitude < requested_tiles.north
     )
     SELECT
-      ${RANKED_TILE_PIN_SELECT_FRAGMENT}
+      ${buildPinSelectFragment(viewerUserId, "ranked_tile_pins")}
     FROM ranked_tile_pins
     -- Hybrid limiting: first cap per tile, then cap the combined viewport result.
     WHERE tile_rank <= pin_limit
     ORDER BY score DESC NULLS LAST, created_at DESC, id DESC
     LIMIT ${viewportPinLimit}
     `,
+    params,
   );
 
   return result.rows;
@@ -357,7 +390,7 @@ export async function searchPins({
   const result = await pool.query(
     `
     SELECT
-      ${PIN_SELECT_FRAGMENT},
+      ${buildPinSelectFragment(null)},
 
       ${
         hasCenter
@@ -445,4 +478,104 @@ export async function searchPins({
   );
 
   return result.rows;
+}
+
+export async function likePinById(
+  pinId: string,
+  userId: string,
+): Promise<LikeMutationResult | null> {
+  const pool = getPool();
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const insertResult = await client.query(
+      `
+      INSERT INTO pin_likes (pin_id, user_id)
+      VALUES ($1::integer, $2)
+      ON CONFLICT (pin_id, user_id) DO NOTHING
+      RETURNING id;
+      `,
+      [pinId, userId],
+    );
+
+    if (insertResult.rowCount === 0) {
+      const existing = await client.query(
+        `SELECT COALESCE(likes_count, 0) AS likes_count FROM pins WHERE id = $1::integer`,
+        [pinId],
+      );
+      await client.query("COMMIT");
+      return existing.rows[0]
+        ? { liked: true, likes_count: existing.rows[0].likes_count }
+        : null;
+    }
+
+    const updateResult = await client.query(
+      `
+      UPDATE pins
+      SET likes_count = COALESCE(likes_count, 0) + 1
+      WHERE id = $1::integer
+      RETURNING COALESCE(likes_count, 0) AS likes_count;
+      `,
+      [pinId],
+    );
+
+    await client.query("COMMIT");
+    return updateResult.rows[0]
+      ? { liked: true, likes_count: updateResult.rows[0].likes_count }
+      : null;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function unlikePinById(
+  pinId: string,
+  userId: string,
+): Promise<LikeMutationResult | null> {
+  const pool = getPool();
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const deleteResult = await client.query(
+      `
+      DELETE FROM pin_likes
+      WHERE pin_id = $1::integer AND user_id = $2
+      RETURNING id;
+      `,
+      [pinId, userId],
+    );
+
+    if ((deleteResult.rowCount ?? 0) > 0) {
+      await client.query(
+        `
+        UPDATE pins
+        SET likes_count = GREATEST(COALESCE(likes_count, 0) - 1, 0)
+        WHERE id = $1::integer
+        `,
+        [pinId],
+      );
+    }
+
+    const pinResult = await client.query(
+      `SELECT COALESCE(likes_count, 0) AS likes_count FROM pins WHERE id = $1::integer`,
+      [pinId],
+    );
+
+    await client.query("COMMIT");
+    return pinResult.rows[0]
+      ? { liked: false, likes_count: pinResult.rows[0].likes_count }
+      : null;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ConfirmDialog } from "../../../ui/ConfirmDialog";
+import { LikeButton } from "../../../ui/LikeButton";
 import { MapSidebarShell } from "../MapSidebarShell";
 import { PinDetailsGallery } from "./PinDetailsGallery";
 import { PinDetailsHero } from "./PinDetailsHero";
@@ -46,6 +47,7 @@ export function PinDetailsSidebar({
   onClose,
   onEdit,
   onDelete,
+  onToggleLike,
 }: PinDetailsSidebarProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -69,6 +71,10 @@ export function PinDetailsSidebar({
     }
   };
 
+  const handleLikeClick = async () => {
+    await onToggleLike(pin);
+  };
+
   return (
     <>
       <MapSidebarShell
@@ -90,24 +96,32 @@ export function PinDetailsSidebar({
               </span>
             </div>
 
-            {isOwner && (
-              <div className="flex w-full gap-2 sm:w-auto">
-                <button
-                  type="button"
-                  onClick={onEdit}
-                  className="flex-1 rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100 sm:flex-none"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="flex-1 rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 sm:flex-none"
-                >
-                  Delete
-                </button>
-              </div>
-            )}
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+              <LikeButton
+                liked={pin.viewer_has_liked}
+                count={pin.likes_count}
+                onClick={handleLikeClick}
+                label="Pin"
+              />
+              {isOwner && (
+                <>
+                  <button
+                    type="button"
+                    onClick={onEdit}
+                    className="flex-1 rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100 sm:flex-none"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex-1 rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 sm:flex-none"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           <section className="space-y-3 rounded-3xl border border-neutral-200 bg-white px-4 py-4 sm:px-5">

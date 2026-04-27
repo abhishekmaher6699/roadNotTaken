@@ -5,6 +5,8 @@ export interface Comment {
   user_id: string;
   content: string;
   posted_by?: string;
+  likes_count: number;
+  viewer_has_liked: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -18,4 +20,9 @@ export interface CreateCommentInput {
 
 export interface GetCommentsForPinInput {
   pin_id: number;
+}
+
+export interface CommentLikeMutationResult {
+  liked: boolean;
+  likes_count: number;
 }

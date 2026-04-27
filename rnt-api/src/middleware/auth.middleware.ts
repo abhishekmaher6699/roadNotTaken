@@ -26,3 +26,24 @@ export async function authMiddleware(req: any, res: Response, next: NextFunction
     res.status(401).json({ error: 'Unauthorized' });
   }
 }
+
+export async function getOptionalAuthenticatedUser(req: Request) {
+  const token = getAccessTokenFromRequest(req);
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.auth.getUser(token);
+
+    if (error || !data.user) {
+      return null;
+    }
+
+    return data.user;
+  } catch {
+    return null;
+  }
+}

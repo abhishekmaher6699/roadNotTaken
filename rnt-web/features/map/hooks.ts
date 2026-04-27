@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useSyncExternalStore, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePins } from "@/features/pins/hooks";
 import { useAuth } from "@/features/auth/hooks";
@@ -14,20 +14,45 @@ import type {
 } from "@/types/mapTypes";
 import { getVisibleMapTiles, getVisibleTiles, MIN_PIN_ZOOM } from "@/features/pins/tiles/tile-utils";
 
+const BASEMAP_STORAGE_KEY = "rnt_basemap";
+const BASEMAP_CHANGE_EVENT = "rnt:basemap-change";
+
+function readStoredBasemap(): BasemapMode {
+  if (typeof window === "undefined") {
+    return "standard";
+  }
+
+  const saved = localStorage.getItem(BASEMAP_STORAGE_KEY);
+  return saved === "imagery" ? "imagery" : "standard";
+}
+
+function subscribeToBasemap(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const handleChange = () => onStoreChange();
+
+  window.addEventListener("storage", handleChange);
+  window.addEventListener(BASEMAP_CHANGE_EVENT, handleChange);
+
+  return () => {
+    window.removeEventListener("storage", handleChange);
+    window.removeEventListener(BASEMAP_CHANGE_EVENT, handleChange);
+  };
+}
+
 export function useMapPageState() {
-  const { pins, tileSummaries, addPin, editPin, removePin, loadTiles, loadTileSummaries } = usePins();
+  const { pins, tileSummaries, addPin, editPin, removePin, togglePinLike, loadTiles, loadTileSummaries } = usePins();
   const { logout } = useAuth();
   const router = useRouter();
 
   const [mode, setMode] = useState<MapMode>("view");
-  const [basemap, setBasemap] = useState<BasemapMode>("standard");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("rnt_basemap") as BasemapMode;
-    if (saved === "standard" || saved === "imagery") {
-      setBasemap(saved);
-    }
-  }, []);
+  const basemap = useSyncExternalStore<BasemapMode>(
+    subscribeToBasemap,
+    readStoredBasemap,
+    () => "standard",
+  );
 
   const [pendingPin, setPendingPin] = useState<PendingPin | null>(null);
   const [draftPin, setDraftPin] = useState<PendingPin | null>(null);
@@ -76,11 +101,9 @@ export function useMapPageState() {
   };
 
   const handleBasemapToggle = () => {
-    setBasemap((current) => {
-      const next = current === "standard" ? "imagery" : "standard";
-      localStorage.setItem("rnt_basemap", next);
-      return next;
-    });
+    const next = basemap === "standard" ? "imagery" : "standard";
+    localStorage.setItem(BASEMAP_STORAGE_KEY, next);
+    window.dispatchEvent(new Event(BASEMAP_CHANGE_EVENT));
   };
 
   const handleViewportChange = (vp: MapViewport) => {
@@ -127,9 +150,74 @@ export function useMapPageState() {
 
   const handleUpdatePin = async (pinId: string, values: UpdatePinInput) => {
     const updatedPin = await editPin(pinId, values);
-    setSelectedPin(updatedPin);
+    setSelectedPin((current) =>
+      current && current.id === pinId
+        ? {
+            ...updatedPin,
+            likes_count: current.likes_count,
+            viewer_has_liked: current.viewer_has_liked,
+          }
+        : updatedPin,
+    );
     setSidebarView("details");
     setMode("view");
+  };
+
+  const getOptimisticLikedPin = (pin: Pin): Pin => ({
+    ...pin,
+    viewer_has_liked: !pin.viewer_has_liked,
+    likes_count: Math.max(
+      pin.likes_count + (pin.viewer_has_liked ? -1 : 1),
+      0,
+    ),
+  });
+
+  const handleTogglePinLike = async (pin: Pin) => {
+    let previousPin = pin;
+    let optimisticPin = getOptimisticLikedPin(pin);
+
+    setSelectedPin((current) => {
+      if (!current || current.id !== pin.id) {
+        return current;
+      }
+
+      previousPin = current;
+      optimisticPin = getOptimisticLikedPin(current);
+      return optimisticPin;
+    });
+
+    try {
+      const updatedPin = await togglePinLike(pin.id, previousPin);
+
+      if (!updatedPin) {
+        return;
+      }
+
+      setSelectedPin((current) => {
+        if (!current || current.id !== pin.id) {
+          return current;
+        }
+
+        const stillOptimistic =
+          current.viewer_has_liked === optimisticPin.viewer_has_liked &&
+          current.likes_count === optimisticPin.likes_count;
+
+        return stillOptimistic ? updatedPin : current;
+      });
+    } catch (error) {
+      setSelectedPin((current) => {
+        if (!current || current.id !== pin.id) {
+          return current;
+        }
+
+        const stillOptimistic =
+          current.viewer_has_liked === optimisticPin.viewer_has_liked &&
+          current.likes_count === optimisticPin.likes_count;
+
+        return stillOptimistic ? previousPin : current;
+      });
+      throw error;
+    }
   };
 
   const handleClearSelection = () => {
@@ -177,6 +265,7 @@ export function useMapPageState() {
     handleStartEditPin,
     handleUpdatePin,
     handleDeletePin,
+    handleTogglePinLike,
     handleClearSelection,
     handleCloseSidebar,
     handleViewDetails,

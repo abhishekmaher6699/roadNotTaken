@@ -1,0 +1,64 @@
+Road Not Taken Like Feature
+
+Overview
+- Pins and comments now support likes.
+- The backend stores likes in dedicated tables instead of trusting client-side counters.
+- The frontend uses optimistic UI so likes feel instant.
+
+Database Changes
+- Added comments.likes_count
+- Added pin_likes table
+- Added comment_likes table
+- Added unique constraints so one user can like a pin or comment only once
+- Added indexes for efficient lookups by target and user
+
+API Endpoints
+- POST /pins/:id/like
+- DELETE /pins/:id/like
+- POST /comments/:id/like
+- DELETE /comments/:id/like
+
+Response Shape
+- Like and unlike endpoints return:
+  { "liked": boolean, "likes_count": number }
+
+Read Payload Changes
+- Pins now include:
+  - likes_count
+  - viewer_has_liked
+- Comments now include:
+  - likes_count
+  - viewer_has_liked
+
+Frontend Behavior
+- Pin details sidebar now shows a Like button with count
+- Comment items now show a Like button with count
+- Buttons use aria-pressed for accessibility
+- Buttons disable while a request is in flight
+- UI updates optimistically and rolls back if the request fails
+
+Important Implementation Notes
+- Counts are updated on the server, not accepted from the client
+- Duplicate likes are prevented by database constraints
+- Optional auth is used for reads so guests can see counts, while logged-in users also get viewer_has_liked
+
+Files Touched
+- rnt-api/migrations/1713184000000_add_like_tables.js
+- rnt-api/src/modules/pins/*
+- rnt-api/src/modules/comments/*
+- rnt-api/src/middleware/auth.middleware.ts
+- rnt-web/components/ui/LikeButton.tsx
+- rnt-web/components/map/sidebar/pin-details/*
+- rnt-web/features/pins/*
+- rnt-web/features/comments/*
+- rnt-web/features/map/hooks.ts
+
+Migration
+- Run from rnt-api:
+  npm run migrate:up
+
+Verification Notes
+- Backend TypeScript build passes
+- Frontend TypeScript check passes with npx tsc --noEmit
+- Frontend lint has no errors; only existing next/image warnings remain
+- Next production build in this Windows environment still hits the existing spawn EPERM issue during Next's build step

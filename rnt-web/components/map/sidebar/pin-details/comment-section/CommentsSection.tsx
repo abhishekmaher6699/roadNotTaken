@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { CommentForm } from "./CommentForm";
 import { CommentThread } from "./CommentThread";
 import { useComments } from "../../../../../features/comments/hooks";
@@ -23,15 +23,18 @@ export function CommentsSection({ pinId }: CommentsSectionProps) {
     fetchComments,
     addComment,
     removeComment,
+    toggleLike,
   } = useComments(pinId);
 
   useEffect(() => {
-    if (pinId) fetchComments();
+    if (pinId) {
+      void fetchComments();
+    }
   }, [pinId, fetchComments]);
 
   useEffect(() => {
     getCurrentUser()
-      .then((res: any) => setCurrentUser(res.user)) // ✅ FIX
+      .then((user) => setCurrentUser(user))
       .catch(() => setCurrentUser(null));
   }, []);
 
@@ -58,9 +61,7 @@ export function CommentsSection({ pinId }: CommentsSectionProps) {
   ) => {
     if (!pinId) return;
 
-    // ✅ CLOSE UI IMMEDIATELY
     setReplyToCommentId(null);
-
     setReplySubmittingCommentId(parentCommentId);
 
     try {
@@ -75,7 +76,7 @@ export function CommentsSection({ pinId }: CommentsSectionProps) {
   };
 
   return (
-    <section className="rounded-3xl border border-neutral-200/70 bg-white/80 backdrop-blur-sm px-5 py-5 sm:px-6 shadow-sm hover:shadow-md transition-shadow">
+    <section className="rounded-3xl border border-neutral-200/70 bg-white/80 px-5 py-5 shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md sm:px-6">
       <p className="text-[11px] font-semibold uppercase tracking-widest text-blue-500/80">
         Community Activity
       </p>
@@ -117,6 +118,7 @@ export function CommentsSection({ pinId }: CommentsSectionProps) {
               await removeComment(id);
               setMenuOpen(null);
             }}
+            onToggleLike={toggleLike}
             onToggleMenu={(id) => setMenuOpen(menuOpen === id ? null : id)}
             onSubmitReply={handleSubmitReply}
           />

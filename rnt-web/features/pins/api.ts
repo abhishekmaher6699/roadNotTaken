@@ -8,6 +8,11 @@ import {
   UpdatePinInput,
 } from "./types";
 
+export interface LikeMutationResponse {
+  liked: boolean;
+  likes_count: number;
+}
+
 export function getPinsApi() {
   return apiClient("/pins") as Promise<Pin[]>;
 }
@@ -52,6 +57,20 @@ export function updatePinApi(id: string, data: UpdatePinInput) {
     method: "PUT",
     body: JSON.stringify(data),
   }) as Promise<Pin>;
+}
+
+export function likePinApi(id: string, signal?: AbortSignal) {
+  return apiClient(`/pins/${id}/like`, {
+    method: "POST",
+    signal,
+  }) as Promise<LikeMutationResponse>;
+}
+
+export function unlikePinApi(id: string, signal?: AbortSignal) {
+  return apiClient(`/pins/${id}/like`, {
+    method: "DELETE",
+    signal,
+  }) as Promise<LikeMutationResponse>;
 }
 
 export function searchPinsApi(

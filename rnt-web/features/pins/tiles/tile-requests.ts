@@ -128,8 +128,8 @@ export function primeDerivedParentTiles(
 
 export function getMissingRawTiles(
   requestedTiles: TileCoordinates[],
-  tileCacheRef: MutableRefObject<TileCache>,
-  inFlightTilesRef: MutableRefObject<Set<string>>,
+  tileCacheRef: RefObject<TileCache>,
+  inFlightTilesRef: RefObject<Set<string>>,
 ) {
   // We skip tiles that are fresh or already being fetched by the active request.
   // How:

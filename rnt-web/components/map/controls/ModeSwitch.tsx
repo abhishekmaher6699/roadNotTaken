@@ -25,7 +25,7 @@ export function ModeSwitch({ mode, onChange }: ModeSwitchProps) {
             : "text-neutral-700 hover:bg-neutral-100"
         }`}
       >
-        Edit
+        Add
       </button>
     </div>
   );

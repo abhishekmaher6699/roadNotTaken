@@ -14,13 +14,12 @@ import { useSearch } from "@/features/search";
 import { useDisplayedPins, type Pin } from "@/features/pins";
 import { usePinFilters } from "@/features/filter";
 import { loadLocation } from "@/components/map/controls";
-import type { MapPageClientProps, MapViewport } from "@/types/mapTypes";
+import type { MapPageClientProps } from "@/types/mapTypes";
 
 const MapView = dynamic(() => import("@/components/map/mapView"), {
   ssr: false,
 });
 
-// Default map center — Pune. Overridden by saved location if available.
 const DEFAULT_CENTER: [number, number] = [18.52, 73.85];
 
 function getInitialCenter(): [number, number] {
@@ -29,13 +28,8 @@ function getInitialCenter(): [number, number] {
 }
 
 export function MapPageClient({ user }: MapPageClientProps) {
-  // Computed once at mount — MapContainer only reads center on first render.
   const [initialCenter] = useState<[number, number]>(getInitialCenter);
-
   const mapRef = useRef<L.Map | null>(null);
-  const viewportRef = useRef<MapViewport | null>(null);
-
-  // flyToTarget is set by search selection or locate button; FlyToController reacts to it.
   const [flyToTarget, setFlyToTarget] = useState<{ lat: number; lng: number } | null>(null);
 
   const {
@@ -47,6 +41,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     draftPin,
     selectedPin,
     sidebarView,
+    viewport,
     setSelectedPin,
     handleLogout,
     handleAddPin,
@@ -59,6 +54,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleStartEditPin,
     handleUpdatePin,
     handleDeletePin,
+    handleTogglePinLike,
     handleClearSelection,
     handleCloseSidebar,
     handleViewDetails,
@@ -77,22 +73,15 @@ export function MapPageClient({ user }: MapPageClientProps) {
     toggleAccessLevel,
   } = usePinFilters();
 
-  // When filters are active, apply them before displaying; otherwise show all tile pins.
   const filteredPins = isFiltersActive ? applyFilters(pins) : pins;
 
   const displayedPins = useDisplayedPins(
     filteredPins,
     search.results,
     search.isResultsPanelOpen,
-    viewportRef.current
+    viewport,
   );
   const displayedSummaries = search.isResultsPanelOpen ? [] : tileSummaries;
-
-  // Keep viewportRef in sync for useDisplayedPins without triggering re-renders.
-  function handleViewportChangeWithRef(vp: MapViewport) {
-    viewportRef.current = vp;
-    handleViewportChange(vp);
-  }
 
   function handleLocate(lat: number, lng: number) {
     setFlyToTarget({ lat, lng });
@@ -119,7 +108,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         flyToTarget={flyToTarget}
         initialCenter={initialCenter}
         onAddPin={handleAddPin}
-        onViewportChange={handleViewportChangeWithRef}
+        onViewportChange={handleViewportChange}
         onSelectPin={setSelectedPin}
         onClearSelection={handleClearSelection}
         onConfirmPin={handleConfirmPin}
@@ -179,6 +168,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onClose={handleCloseSidebar}
         onEdit={handleStartEditPin}
         onDelete={handleDeletePin}
+        onToggleLike={handleTogglePinLike}
       />
 
       <SearchResultsPanel

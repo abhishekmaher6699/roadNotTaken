@@ -45,6 +45,9 @@ describe("PinDetailsSidebar", () => {
     access_level: "public",
     posted_by: "owner@example.com",
     description: "An old fort on the hill.",
+    likes_count: 3,
+    comment_count: 7,
+    viewer_has_liked: false,
     created_at: "2025-01-05T00:00:00.000Z",
     updated_at: "2025-01-06T00:00:00.000Z",
     image_urls: ["https://example.com/1.jpg"],
@@ -59,6 +62,7 @@ describe("PinDetailsSidebar", () => {
         onClose={vi.fn()}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
+        onToggleLike={vi.fn()}
       />
     );
 
@@ -74,6 +78,7 @@ describe("PinDetailsSidebar", () => {
         onClose={vi.fn()}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
+        onToggleLike={vi.fn()}
       />
     );
 
@@ -104,6 +109,7 @@ describe("PinDetailsSidebar", () => {
         onClose={vi.fn()}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
+        onToggleLike={vi.fn()}
       />
     );
 
@@ -120,6 +126,7 @@ describe("PinDetailsSidebar", () => {
         onClose={vi.fn()}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
+        onToggleLike={vi.fn()}
       />
     );
 
@@ -136,6 +143,7 @@ describe("PinDetailsSidebar", () => {
         onClose={vi.fn()}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
+        onToggleLike={vi.fn()}
       />
     );
 
@@ -153,6 +161,7 @@ describe("PinDetailsSidebar", () => {
         onClose={vi.fn()}
         onEdit={onEdit}
         onDelete={vi.fn()}
+        onToggleLike={vi.fn()}
       />
     );
 
@@ -173,6 +182,7 @@ describe("PinDetailsSidebar", () => {
         onClose={vi.fn()}
         onEdit={vi.fn()}
         onDelete={onDelete}
+        onToggleLike={vi.fn()}
       />
     );
 

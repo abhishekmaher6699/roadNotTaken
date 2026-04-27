@@ -48,6 +48,31 @@ export function PinInfoCard({
           {pin.latitude.toFixed(5)}, {pin.longitude.toFixed(5)}
         </p>
 
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              className="h-3.5 w-3.5"
+              fill="currentColor"
+            >
+              <path d="M10 17.2 3.9 11.5a4.2 4.2 0 0 1 0-6.1 4.1 4.1 0 0 1 5.8 0l.3.3.3-.3a4.1 4.1 0 0 1 5.8 0 4.2 4.2 0 0 1 0 6.1Z" />
+            </svg>
+            {pin.likes_count} likes
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              className="h-3.5 w-3.5"
+              fill="currentColor"
+            >
+              <path d="M4 4.8A2.8 2.8 0 0 1 6.8 2h6.4A2.8 2.8 0 0 1 16 4.8v4.4A2.8 2.8 0 0 1 13.2 12H9l-3.6 2.7c-.5.4-1.2 0-1.2-.6V12A2.8 2.8 0 0 1 4 9.2Z" />
+            </svg>
+            {pin.comment_count} comments
+          </span>
+        </div>
+
         {pin.description && (
           <p className="mt-3 text-sm leading-6 text-neutral-700">
             {pin.description}

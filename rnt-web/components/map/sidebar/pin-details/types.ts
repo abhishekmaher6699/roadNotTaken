@@ -7,4 +7,5 @@ export interface PinDetailsSidebarProps {
   onClose: () => void;
   onEdit: () => void;
   onDelete: (pinId: string) => Promise<void>;
+  onToggleLike: (pin: Pin) => Promise<void>;
 }

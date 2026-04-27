@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { createComment, getCommentsForPin, deleteCommentById } from './comments.service';
+import { getOptionalAuthenticatedUser } from '../../middleware/auth.middleware';
+import { createComment, deleteCommentById, getCommentsForPin, likeCommentById, unlikeCommentById } from './comments.service';
 
 export async function createCommentHandler(req: any, res: Response) {
   try {
@@ -46,7 +47,8 @@ export async function getCommentsForPinHandler(req: Request, res: Response) {
       return res.status(400).json({ error: 'Invalid pin ID' });
     }
 
-    const comments = await getCommentsForPin(pinId);
+    const user = await getOptionalAuthenticatedUser(req);
+    const comments = await getCommentsForPin(pinId, user?.id);
     res.json(comments);
   } catch (error) {
     console.error(error);
@@ -77,5 +79,47 @@ export async function deleteCommentHandler(req: any, res: Response) {
   } catch (error) {
     console.error('Delete comment error:', error);
     res.status(500).json({ error: 'Failed to delete comment' });
+  }
+}
+
+export async function likeCommentHandler(req: any, res: Response) {
+  try {
+    const commentId = parseInt(req.params.id as string, 10);
+
+    if (isNaN(commentId)) {
+      return res.status(400).json({ error: 'Invalid comment ID' });
+    }
+
+    const result = await likeCommentById(commentId, req.user.id);
+
+    if (!result) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Like comment error:', error);
+    return res.status(500).json({ error: 'Failed to like comment' });
+  }
+}
+
+export async function unlikeCommentHandler(req: any, res: Response) {
+  try {
+    const commentId = parseInt(req.params.id as string, 10);
+
+    if (isNaN(commentId)) {
+      return res.status(400).json({ error: 'Invalid comment ID' });
+    }
+
+    const result = await unlikeCommentById(commentId, req.user.id);
+
+    if (!result) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Unlike comment error:', error);
+    return res.status(500).json({ error: 'Failed to unlike comment' });
   }
 }

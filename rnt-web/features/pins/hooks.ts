@@ -2,6 +2,8 @@ import { useMemo, useRef, useState } from "react";
 import {
   createPinApi,
   deletePinApi,
+  likePinApi,
+  unlikePinApi,
   updatePinApi,
 } from "./api";
 import type {
@@ -61,6 +63,8 @@ export function usePins() {
     completed: 0,
     aborted: 0,
   });
+  const likeControllersRef = useRef<Map<string, AbortController>>(new Map());
+  const likeRequestIdsRef = useRef<Map<string, number>>(new Map());
 
   // The hook exposes already-selected map content. The heavy tile decisions live in helper files.
   const pins = useMemo(
@@ -131,6 +135,39 @@ export function usePins() {
     });
   };
 
+  const patchPinInCache = (
+    pinId: string,
+    updater: (pin: Pin) => Pin,
+  ) => {
+    setTileCache((current) => {
+      const nextCache: TileCache = {};
+
+      Object.entries(current).forEach(([key, entry]) => {
+        nextCache[key] = {
+          ...entry,
+          pins: entry.pins.map((pin) => (pin.id === pinId ? updater(pin) : pin)),
+        };
+      });
+
+      tileCacheRef.current = nextCache;
+      return nextCache;
+    });
+  };
+
+  const findPinInCache = (pinId: string) => {
+    for (const entry of Object.values(tileCacheRef.current)) {
+      const pin = entry.pins.find((candidate) => candidate.id === pinId);
+      if (pin) {
+        return pin;
+      }
+    }
+
+    return null;
+  };
+
+  const isAbortError = (error: unknown) =>
+    error instanceof Error && error.name === "AbortError";
+
   const removePinFromCache = (pinId: string) => {
     setTileCache((current) => {
       const nextCache: TileCache = {};
@@ -165,7 +202,76 @@ export function usePins() {
     return updatedPin;
   };
 
-  return { pins, tileSummaries, addPin, editPin, removePin, loadTiles, loadTileSummaries };
+  const togglePinLike = async (pinId: string, fallbackPin?: Pin) => {
+    const previousPin = findPinInCache(pinId) ?? fallbackPin ?? null;
+
+    if (!previousPin) {
+      return null;
+    }
+
+    const previousController = likeControllersRef.current.get(pinId);
+    previousController?.abort();
+
+    const optimisticPin: Pin = {
+      ...previousPin,
+      viewer_has_liked: !previousPin.viewer_has_liked,
+      likes_count: Math.max(
+        previousPin.likes_count + (previousPin.viewer_has_liked ? -1 : 1),
+        0,
+      ),
+    };
+
+    patchPinInCache(pinId, () => optimisticPin);
+
+    const requestId = (likeRequestIdsRef.current.get(pinId) ?? 0) + 1;
+    likeRequestIdsRef.current.set(pinId, requestId);
+    const controller = new AbortController();
+    likeControllersRef.current.set(pinId, controller);
+
+    try {
+      const result = optimisticPin.viewer_has_liked
+        ? await likePinApi(pinId, controller.signal)
+        : await unlikePinApi(pinId, controller.signal);
+
+      if (likeRequestIdsRef.current.get(pinId) !== requestId) {
+        return optimisticPin;
+      }
+
+      const resolvedPin: Pin = {
+        ...optimisticPin,
+        viewer_has_liked: result.liked,
+        likes_count: result.likes_count,
+      };
+
+      patchPinInCache(pinId, () => resolvedPin);
+      return resolvedPin;
+    } catch (error) {
+      if (isAbortError(error)) {
+        return null;
+      }
+
+      if (likeRequestIdsRef.current.get(pinId) === requestId) {
+        patchPinInCache(pinId, () => previousPin);
+      }
+
+      throw error;
+    } finally {
+      if (likeRequestIdsRef.current.get(pinId) === requestId) {
+        likeControllersRef.current.delete(pinId);
+      }
+    }
+  };
+
+  return {
+    pins,
+    tileSummaries,
+    addPin,
+    editPin,
+    removePin,
+    togglePinLike,
+    loadTiles,
+    loadTileSummaries,
+  };
 }
 
 

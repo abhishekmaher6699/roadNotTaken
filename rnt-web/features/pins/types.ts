@@ -14,6 +14,9 @@ export interface Pin {
   image_url?: string | null;
   score?: number | null;
   user_id?: string;
+  likes_count: number;
+  comment_count: number;
+  viewer_has_liked: boolean;
   created_at?: string | null;
   updated_at?: string | null;
 }
