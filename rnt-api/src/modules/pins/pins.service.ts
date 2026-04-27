@@ -14,13 +14,17 @@ import {
   buildSummaryTileValuesSql,
 } from "./pins.tile-queries";
 
-function buildPinSelectFragment(viewerUserId?: string | null, tableName = "pins") {
+function buildPinSelectFragment(
+  viewerUserId?: string | null,
+  tableName = "pins",
+  viewerUserIdParam = "$1",
+) {
   const likedExpression = viewerUserId
     ? `EXISTS (
         SELECT 1
         FROM pin_likes
         WHERE pin_likes.pin_id = ${tableName}.id
-          AND pin_likes.user_id = $1
+          AND pin_likes.user_id = ${viewerUserIdParam}
       )`
     : "false";
 
@@ -356,7 +360,7 @@ export async function searchPins({
   query,
   limit = 6,
   center,
-}: SearchPinsInput) {
+}: SearchPinsInput, viewerUserId?: string | null) {
   const pool = getPool();
 
   const term = query?.trim() ?? "";
@@ -380,6 +384,14 @@ export async function searchPins({
     params.push(center.lng, center.lat); // $4, $5
   }
 
+  const viewerUserIdParam = viewerUserId
+    ? `$${params.length + 1}`
+    : "$1";
+
+  if (viewerUserId) {
+    params.push(viewerUserId);
+  }
+
   const distanceScore = hasCenter
     ? `LEAST(1.0, EXP(-ST_Distance(
           ST_MakePoint(longitude, latitude)::geography,
@@ -390,7 +402,7 @@ export async function searchPins({
   const result = await pool.query(
     `
     SELECT
-      ${buildPinSelectFragment(null)},
+      ${buildPinSelectFragment(viewerUserId, "pins", viewerUserIdParam)},
 
       ${
         hasCenter

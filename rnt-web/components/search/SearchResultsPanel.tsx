@@ -105,13 +105,20 @@ export function SearchResultsPanel({
                   )}
                 </div>
 
-                <div className="mt-auto flex w-full items-center gap-3 pt-2">
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+                <div className="mt-auto flex w-full flex-wrap items-center gap-2 pt-2">
+                  <div className="flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
                     <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
                     </svg>
-                    {pin.score ?? 0}
+                    {pin.likes_count} likes
                   </div>
+
+                  {/* <div className="flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M4 4.8A2.8 2.8 0 0 1 6.8 2h6.4A2.8 2.8 0 0 1 16 4.8v4.4A2.8 2.8 0 0 1 13.2 12H9l-3.6 2.7c-.5.4-1.2 0-1.2-.6V12A2.8 2.8 0 0 1 4 9.2Z" />
+                    </svg>
+                    {pin.comment_count} comments
+                  </div> */}
                   
                   <div className="flex items-center gap-1 text-[11px] text-neutral-400">
                     <span>by {pin.posted_by || "anonymous"}</span>

@@ -156,6 +156,7 @@ export async function updatePinHandler(req: any, res: Response) {
 
 export async function searchPinsHandler(req: Request, res: Response) {
   try {
+    const user = await getOptionalAuthenticatedUser(req);
     const query = typeof req.query.q === "string" ? req.query.q : "";
 
     const limitParam = parseInt(req.query.limit as string, 10);
@@ -172,7 +173,7 @@ export async function searchPinsHandler(req: Request, res: Response) {
         ? { lat, lng }
         : undefined;
 
-    const pins = await searchPins({ query, limit, center });
+    const pins = await searchPins({ query, limit, center }, user?.id);
 
     return res.json(pins);
   } catch (err) {

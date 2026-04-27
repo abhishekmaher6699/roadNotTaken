@@ -1,16 +1,20 @@
 import { Request, Response } from 'express';
 import { getOptionalAuthenticatedUser } from '../../middleware/auth.middleware';
-import { createComment, deleteCommentById, getCommentsForPin, likeCommentById, unlikeCommentById } from './comments.service';
+import { CommentsServiceError, createComment, deleteCommentById, getCommentsForPin, likeCommentById, unlikeCommentById } from './comments.service';
 
 export async function createCommentHandler(req: any, res: Response) {
   try {
     const user = req.user;
     const { pin_id, content, parent_comment_id } = req.body;
 
-    // console.log('Create comment request:', { pin_id, content, parent_comment_id, userId: user?.id, userEmail: user?.email });
-
-    if (!pin_id || !content) {
+    if (pin_id == null || typeof content !== "string") {
       return res.status(400).json({ error: 'pin_id and content are required' });
+    }
+
+    const parsedPinId = parseInt(pin_id as string, 10);
+
+    if (isNaN(parsedPinId)) {
+      return res.status(400).json({ error: 'Invalid pin_id' });
     }
 
     let parentCommentId: number | null = null;
@@ -24,16 +28,19 @@ export async function createCommentHandler(req: any, res: Response) {
     }
 
     const comment = await createComment({
-      pin_id,
+      pin_id: parsedPinId,
       content,
       parent_comment_id: parentCommentId,
       posted_by: user.email ?? req.body.posted_by,
       user_id: user.id,
     });
 
-    // console.log('Comment created:', comment);
     res.status(201).json(comment);
   } catch (error) {
+    if (error instanceof CommentsServiceError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
     console.error('Create comment error:', error);
     res.status(500).json({ error: 'Failed to create comment' });
   }
@@ -65,16 +72,12 @@ export async function deleteCommentHandler(req: any, res: Response) {
       return res.status(400).json({ error: 'Invalid comment ID' });
     }
 
-    // console.log('Delete comment request:', { commentId, userId: user?.id });
-
     const deletedComment = await deleteCommentById(commentId, user.id);
 
     if (!deletedComment) {
-      // console.log('Comment not found or not owned by user');
       return res.status(404).json({ error: 'Comment not found or not owned by user' });
     }
 
-    // console.log('Comment deleted successfully:', deletedComment);
     res.json({ id: commentId });
   } catch (error) {
     console.error('Delete comment error:', error);

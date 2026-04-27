@@ -1,6 +1,18 @@
 import { getPool } from "../../config/db";
 import { Comment, CommentLikeMutationResult, CreateCommentInput } from "./comments.types";
 
+const MAX_COMMENT_LENGTH = 1000;
+
+export class CommentsServiceError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "CommentsServiceError";
+  }
+}
+
 function buildCommentSelectFragment(viewerUserId?: string | null, tableName = "comments") {
   const likedExpression = viewerUserId
     ? `EXISTS (
@@ -27,7 +39,42 @@ function buildCommentSelectFragment(viewerUserId?: string | null, tableName = "c
 
 export async function createComment(input: CreateCommentInput & { user_id: string }): Promise<Comment> {
   const pool = getPool();
-  const { pin_id, content, posted_by, user_id, parent_comment_id = null } = input;
+  const { pin_id, posted_by, user_id, parent_comment_id = null } = input;
+  const content = input.content.trim();
+
+  if (!content) {
+    throw new CommentsServiceError("Comment content cannot be empty", 400);
+  }
+
+  if (content.length > MAX_COMMENT_LENGTH) {
+    throw new CommentsServiceError(
+      `Comment content must be ${MAX_COMMENT_LENGTH} characters or fewer`,
+      400,
+    );
+  }
+
+  const pinResult = await pool.query(
+    `SELECT id FROM pins WHERE id = $1`,
+    [pin_id],
+  );
+
+  if (!pinResult.rows[0]) {
+    throw new CommentsServiceError("Pin not found", 404);
+  }
+
+  if (parent_comment_id != null) {
+    const parentCommentResult = await pool.query(
+      `SELECT id FROM comments WHERE id = $1 AND pin_id = $2`,
+      [parent_comment_id, pin_id],
+    );
+
+    if (!parentCommentResult.rows[0]) {
+      throw new CommentsServiceError(
+        "Parent comment was not found for this pin",
+        400,
+      );
+    }
+  }
 
   const result = await pool.query(
     `INSERT INTO comments (pin_id, user_id, content, posted_by, parent_comment_id) VALUES ($1, $2, $3, $4, $5) RETURNING ${buildCommentSelectFragment(null)}`,
