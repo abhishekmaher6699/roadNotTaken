@@ -76,20 +76,31 @@ export function CommentsSection({ pinId }: CommentsSectionProps) {
   };
 
   return (
-    <section className="rounded-3xl border border-neutral-200/70 bg-white/80 px-5 py-5 shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md sm:px-6">
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-blue-500/80">
-        Community Activity
-      </p>
+    <section className="rounded-2xl border border-neutral-200 bg-white">
+      <div className="border-b border-neutral-100 px-4 py-4 sm:px-5">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
+              Discussion
+            </p>
+            <h3 className="mt-1 text-base font-semibold text-neutral-950">
+              Comments
+            </h3>
+          </div>
 
-      <h3 className="mt-1 text-lg font-semibold text-neutral-900">
-        Comments & Discussion
-      </h3>
+          <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600">
+            {comments.length}
+          </span>
+        </div>
+      </div>
 
       {commentsError && (
-        <p className="mt-2 text-sm text-red-600">{commentsError}</p>
+        <p className="mx-4 mt-4 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700 sm:mx-5">
+          {commentsError}
+        </p>
       )}
 
-      <div className="mt-4">
+      <div className="px-4 py-4 sm:px-5">
         <CommentForm
           onSubmit={handleSubmitComment}
           isSubmitting={false}
@@ -97,11 +108,13 @@ export function CommentsSection({ pinId }: CommentsSectionProps) {
         />
       </div>
 
-      <div className="mt-6">
+      <div className="border-t border-neutral-100 px-4 py-4 sm:px-5">
         {commentsLoading ? (
-          <p className="text-sm text-neutral-500">Loading comments...</p>
+          <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-500">
+            Loading comments...
+          </p>
         ) : comments.length === 0 ? (
-          <p className="text-sm text-neutral-500">
+          <p className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-5 text-center text-sm text-neutral-500">
             No comments yet. Be the first to share your thoughts!
           </p>
         ) : (

@@ -25,7 +25,7 @@ export function MapOverlay({
       </div>
 
       {/* Search bar + Filter button — top-centre */}
-      <div className="pointer-events-auto absolute left-1/2 top-3 flex w-full max-w-sm -translate-x-1/2 items-start gap-2 px-4 sm:top-4 sm:max-w-md">
+      <div className="pointer-events-auto absolute left-1/2 top-3 flex w-full max-w-sm -translate-x-1/2 items-center gap-2 px-4 sm:top-4 sm:max-w-md">
         <div className="min-w-0 flex-1">
           <SearchBar
             query={search.query}
@@ -38,7 +38,7 @@ export function MapOverlay({
             onClear={search.clear}
           />
         </div>
-        <div className="shrink-0 pt-0.5">
+        <div className="shrink-0">
           <FilterButton
             filters={filter.filters}
             activeFilterCount={filter.activeFilterCount}

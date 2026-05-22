@@ -1,16 +1,3 @@
-// Migration: Add pg_trgm extension and GIN indexes on pins
-// for fast case-insensitive substring search (ILIKE '%query%').
-//
-// Why pg_trgm?
-// Standard B-Tree indexes cannot accelerate wildcard-prefixed patterns like
-// ILIKE '%ruins%'. pg_trgm breaks text into trigrams (3-char chunks) and
-// indexes those, allowing PostgreSQL to narrow the scan dramatically even
-// with a leading wildcard.
-//
-// We index `title` and `address` — the two columns users actually search by.
-// `description` was intentionally excluded: it's long prose that is unlikely
-// to match user intent, and indexing it would waste significant disk space.
-
 exports.up = (pgm) => {
   pgm.sql(`
     CREATE EXTENSION IF NOT EXISTS pg_trgm;

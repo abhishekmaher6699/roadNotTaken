@@ -108,31 +108,89 @@ export async function deletePinHandler(req: any, res: Response) {
 }
 
 export async function likePinHandler(req: any, res: Response) {
+  const pinId = req.params.id;
+  const userId = req.user.id;
+
+  console.log("[pins:like] received", {
+    pinId,
+    userId,
+    method: req.method,
+    path: req.originalUrl,
+    at: new Date().toISOString(),
+  });
+
   try {
-    const result = await likePinById(req.params.id, req.user.id);
+    const result = await likePinById(pinId, userId);
 
     if (!result) {
+      console.log("[pins:like] pin not found", {
+        pinId,
+        userId,
+        at: new Date().toISOString(),
+      });
       return res.status(404).json({ error: 'Pin not found' });
     }
 
+    console.log("[pins:like] completed", {
+      pinId,
+      userId,
+      liked: result.liked,
+      likes_count: result.likes_count,
+      at: new Date().toISOString(),
+    });
+
     return res.status(200).json(result);
   } catch (error) {
-    console.error(error);
+    console.error("[pins:like] failed", {
+      pinId,
+      userId,
+      error,
+      at: new Date().toISOString(),
+    });
     return res.status(500).json({ error: 'Failed to like pin' });
   }
 }
 
 export async function unlikePinHandler(req: any, res: Response) {
+  const pinId = req.params.id;
+  const userId = req.user.id;
+
+  console.log("[pins:unlike] received", {
+    pinId,
+    userId,
+    method: req.method,
+    path: req.originalUrl,
+    at: new Date().toISOString(),
+  });
+
   try {
-    const result = await unlikePinById(req.params.id, req.user.id);
+    const result = await unlikePinById(pinId, userId);
 
     if (!result) {
+      console.log("[pins:unlike] pin not found", {
+        pinId,
+        userId,
+        at: new Date().toISOString(),
+      });
       return res.status(404).json({ error: 'Pin not found' });
     }
 
+    console.log("[pins:unlike] completed", {
+      pinId,
+      userId,
+      liked: result.liked,
+      likes_count: result.likes_count,
+      at: new Date().toISOString(),
+    });
+
     return res.status(200).json(result);
   } catch (error) {
-    console.error(error);
+    console.error("[pins:unlike] failed", {
+      pinId,
+      userId,
+      error,
+      at: new Date().toISOString(),
+    });
     return res.status(500).json({ error: 'Failed to unlike pin' });
   }
 }

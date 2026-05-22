@@ -32,6 +32,14 @@ import {
 
 import type { MapViewport } from "@/types/mapTypes";
 
+const LIKE_FLUSH_DELAY_MS = 500;
+
+interface PendingLikeMutation {
+  basePin: Pin;
+  timer: ReturnType<typeof setTimeout>;
+  controller: AbortController | null;
+  resolve: (pin: Pin | null) => void;
+}
 
 export function usePins() {
   const [tileCache, setTileCache] = useState<TileCache>({});
@@ -65,6 +73,7 @@ export function usePins() {
   });
   const likeControllersRef = useRef<Map<string, AbortController>>(new Map());
   const likeRequestIdsRef = useRef<Map<string, number>>(new Map());
+  const pendingLikeMutationsRef = useRef<Map<string, PendingLikeMutation>>(new Map());
 
   // The hook exposes already-selected map content. The heavy tile decisions live in helper files.
   const pins = useMemo(
@@ -223,43 +232,78 @@ export function usePins() {
 
     patchPinInCache(pinId, () => optimisticPin);
 
-    const requestId = (likeRequestIdsRef.current.get(pinId) ?? 0) + 1;
-    likeRequestIdsRef.current.set(pinId, requestId);
-    const controller = new AbortController();
-    likeControllersRef.current.set(pinId, controller);
+    const pendingMutation = pendingLikeMutationsRef.current.get(pinId);
+    if (pendingMutation) {
+      clearTimeout(pendingMutation.timer);
+      pendingMutation.controller?.abort();
+      pendingMutation.resolve(null);
 
-    try {
-      const result = optimisticPin.viewer_has_liked
-        ? await likePinApi(pinId, controller.signal)
-        : await unlikePinApi(pinId, controller.signal);
-
-      if (likeRequestIdsRef.current.get(pinId) !== requestId) {
+      if (
+        !pendingMutation.controller &&
+        optimisticPin.viewer_has_liked === pendingMutation.basePin.viewer_has_liked
+      ) {
+        pendingLikeMutationsRef.current.delete(pinId);
         return optimisticPin;
       }
-
-      const resolvedPin: Pin = {
-        ...optimisticPin,
-        viewer_has_liked: result.liked,
-        likes_count: result.likes_count,
-      };
-
-      patchPinInCache(pinId, () => resolvedPin);
-      return resolvedPin;
-    } catch (error) {
-      if (isAbortError(error)) {
-        return null;
-      }
-
-      if (likeRequestIdsRef.current.get(pinId) === requestId) {
-        patchPinInCache(pinId, () => previousPin);
-      }
-
-      throw error;
-    } finally {
-      if (likeRequestIdsRef.current.get(pinId) === requestId) {
-        likeControllersRef.current.delete(pinId);
-      }
     }
+
+    const requestId = (likeRequestIdsRef.current.get(pinId) ?? 0) + 1;
+    likeRequestIdsRef.current.set(pinId, requestId);
+
+    return new Promise<Pin | null>((resolve, reject) => {
+      const timer = setTimeout(async () => {
+        const controller = new AbortController();
+        likeControllersRef.current.set(pinId, controller);
+
+        const currentMutation = pendingLikeMutationsRef.current.get(pinId);
+        if (currentMutation) {
+          currentMutation.controller = controller;
+        }
+
+        try {
+          const result = optimisticPin.viewer_has_liked
+            ? await likePinApi(pinId, controller.signal)
+            : await unlikePinApi(pinId, controller.signal);
+
+          if (likeRequestIdsRef.current.get(pinId) !== requestId) {
+            resolve(null);
+            return;
+          }
+
+          const resolvedPin: Pin = {
+            ...optimisticPin,
+            viewer_has_liked: result.liked,
+            likes_count: result.likes_count,
+          };
+
+          patchPinInCache(pinId, () => resolvedPin);
+          resolve(resolvedPin);
+        } catch (error) {
+          if (isAbortError(error)) {
+            resolve(null);
+            return;
+          }
+
+          if (likeRequestIdsRef.current.get(pinId) === requestId) {
+            patchPinInCache(pinId, () => previousPin);
+          }
+
+          reject(error);
+        } finally {
+          if (likeRequestIdsRef.current.get(pinId) === requestId) {
+            likeControllersRef.current.delete(pinId);
+            pendingLikeMutationsRef.current.delete(pinId);
+          }
+        }
+      }, LIKE_FLUSH_DELAY_MS);
+
+      pendingLikeMutationsRef.current.set(pinId, {
+        basePin: pendingMutation?.basePin ?? previousPin,
+        timer,
+        controller: null,
+        resolve,
+      });
+    });
   };
 
   return {

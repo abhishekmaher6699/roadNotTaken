@@ -89,10 +89,10 @@ export function FilterButton({
         onClick={() => setOpen((v) => !v)}
         aria-label="Filter pins"
         aria-expanded={open}
-        className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium shadow-lg ring-1 backdrop-blur transition-all duration-150 ${
+        className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium shadow-lg ring-1 backdrop-blur transition-colors duration-150 ${
           activeFilterCount > 0
             ? "bg-neutral-900 text-white ring-neutral-900"
-            : "bg-white/95 text-neutral-700 ring-black/10 hover:bg-white"
+            : "bg-white/95 text-neutral-500 ring-black/10 hover:bg-white hover:text-neutral-700"
         }`}
       >
         <svg
@@ -107,12 +107,16 @@ export function FilterButton({
             clipRule="evenodd"
           />
         </svg>
-        <span className="hidden sm:inline">Filter</span>
-        {activeFilterCount > 0 && (
-          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-neutral-900">
-            {activeFilterCount}
-          </span>
-        )}
+        <span
+          className={`absolute -right-1 -top-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+            activeFilterCount > 0
+              ? "bg-neutral-900 text-white ring-2 ring-white"
+              : "bg-transparent text-transparent"
+          }`}
+          aria-hidden={activeFilterCount === 0}
+        >
+          {activeFilterCount > 0 ? activeFilterCount : 0}
+        </span>
       </button>
 
       {open && (

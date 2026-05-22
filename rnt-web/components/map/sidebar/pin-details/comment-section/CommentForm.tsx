@@ -28,23 +28,26 @@ export function CommentForm({
   };
 
   return (
-    <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50/60 backdrop-blur-sm p-4 focus-within:ring-2 focus-within:ring-blue-500/30 transition">
-      <form onSubmit={handleSubmit} className="space-y-3">
+    <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 transition focus-within:border-neutral-300 focus-within:bg-white focus-within:shadow-sm">
+      <form onSubmit={handleSubmit} className="space-y-2.5">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder={placeholder}
           rows={3}
-          className="w-full resize-none rounded-xl border border-transparent bg-white px-4 py-3 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 shadow-sm"
+          className="w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm leading-6 text-neutral-800 shadow-sm outline-none placeholder:text-neutral-400 focus:border-neutral-400"
         />
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs text-neutral-400">
+            {content.trim().length}
+          </span>
           <button
             type="submit"
             disabled={!content.trim() || isSubmitting}
-            className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2 text-sm font-medium text-white hover:from-blue-700 hover:to-blue-600 active:scale-[0.98] disabled:bg-neutral-300 transition-all"
+            className="rounded-full bg-neutral-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
           >
-            {isSubmitting ? "Posting..." : "Post Comment"}
+            {isSubmitting ? "Posting..." : "Post"}
           </button>
         </div>
       </form>

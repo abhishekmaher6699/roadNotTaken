@@ -70,7 +70,6 @@ export function CommentThread({
       <div key={comment.id}>
         <CommentItem
           comment={comment}
-          depth={depth}
           parentComment={parent}
           currentUser={currentUser}
           onReply={onReply}
@@ -87,7 +86,7 @@ export function CommentThread({
         />
 
         {!collapsed && replies.length > 0 && (
-          <div className="mt-4 space-y-5">
+          <div className="mt-3 space-y-3 border-l border-neutral-200 pl-4">
             {replies.map((r) => render(r, depth + 1, comment))}
           </div>
         )}
@@ -96,7 +95,7 @@ export function CommentThread({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {comments
         .filter((c) => c.parent_comment_id == null)
         .sort(sort)

@@ -44,21 +44,7 @@ export function SearchBar({
   return (
     <div ref={containerRef} className="relative w-full">
       {/* Pill */}
-      <div className="flex items-center gap-2 rounded-full border border-white/25 bg-white/80 px-4 py-2.5 shadow-xl backdrop-blur-xl transition-all focus-within:border-white/50 focus-within:bg-white/95 focus-within:shadow-2xl">
-        {/* Search icon */}
-        <svg
-          className="h-4 w-4 shrink-0 text-neutral-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2.5}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"
-          />
-        </svg>
+      <div className="flex h-10 items-center gap-2 rounded-full bg-white/95 pl-3 shadow-lg ring-1 ring-black/10 backdrop-blur transition-colors focus-within:bg-white">
 
         <input
           ref={inputRef}
@@ -97,9 +83,22 @@ export function SearchBar({
           type="button"
           onClick={onSearch}
           aria-label="Run search"
-          className="shrink-0 rounded-full bg-neutral-900 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-neutral-700"
+          className="flex h-10 w-11 shrink-0 items-center justify-center rounded-r-full bg-neutral-950 text-white transition-colors hover:bg-neutral-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950"
         >
-          Search
+          <svg
+            aria-hidden="true"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.25}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"
+            />
+          </svg>
         </button>
       </div>
 

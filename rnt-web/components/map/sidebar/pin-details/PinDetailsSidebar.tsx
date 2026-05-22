@@ -101,7 +101,7 @@ export function PinDetailsSidebar({
                 liked={pin.viewer_has_liked}
                 count={pin.likes_count}
                 onClick={handleLikeClick}
-                label="Pin"
+                label="Like"
               />
               {isOwner && (
                 <>
@@ -166,7 +166,7 @@ export function PinDetailsSidebar({
 
           {gallery.length > 0 && <PinDetailsGallery pin={pin} />}
 
-          <CommentsSection pinId={pinId} />
+          {open && <CommentsSection pinId={pinId} />}
         </div>
       </MapSidebarShell>
 
