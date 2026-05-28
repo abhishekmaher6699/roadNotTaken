@@ -5,3 +5,28 @@ body.gallery-open .map-overlay-shell {
   opacity: 0;
   pointer-events: none;
 }
+
+.map-summary-marker {
+  background: transparent;
+  border: 0;
+}
+
+.map-summary-marker__bubble {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.94);
+  border: 2px solid rgba(255, 255, 255, 0.96);
+  border-radius: 999px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.24);
+  color: #fff;
+  display: flex;
+  font-weight: 700;
+  justify-content: center;
+  transition:
+    box-shadow 180ms ease,
+    transform 120ms ease;
+  will-change: transform;
+}
+
+.leaflet-marker-icon.map-summary-marker {
+  transition: opacity 120ms ease;
+}

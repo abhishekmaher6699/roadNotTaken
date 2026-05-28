@@ -48,6 +48,7 @@ export function PinDetailsSidebar({
   onEdit,
   onDelete,
   onToggleLike,
+  onCommentCountChange,
 }: PinDetailsSidebarProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -166,7 +167,14 @@ export function PinDetailsSidebar({
 
           {gallery.length > 0 && <PinDetailsGallery pin={pin} />}
 
-          {open && <CommentsSection pinId={pinId} />}
+          {open && (
+            <CommentsSection
+              pinId={pinId}
+              onCommentCountChange={(delta) =>
+                onCommentCountChange?.(pin.id, delta)
+              }
+            />
+          )}
         </div>
       </MapSidebarShell>
 

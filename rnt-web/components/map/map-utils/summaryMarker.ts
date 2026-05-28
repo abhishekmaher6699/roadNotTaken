@@ -3,10 +3,7 @@ import L from "leaflet";
 const cache = new Map<string, L.DivIcon>();
 
 function getSize(pinCount: number): number {
-  if (pinCount >= 50) return 52;
-  if (pinCount >= 20) return 46;
-  if (pinCount >= 10) return 40;
-  return 34;
+  return Math.min(52, Math.max(34, Math.round(30 + Math.log2(pinCount + 1) * 5)));
 }
 
 /** Returns a cached DivIcon for a tile-summary cluster marker. */
@@ -21,20 +18,14 @@ export function getSummaryIcon(pinCount: number): L.DivIcon {
   const icon = L.divIcon({
     className: "map-summary-marker",
     html: `
-      <div style="
-        width:${size}px;
-        height:${size}px;
-        border-radius:999px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        background:rgba(15,23,42,0.92);
-        color:#fff;
-        border:2px solid rgba(255,255,255,0.95);
-        box-shadow:0 12px 30px rgba(15,23,42,0.22);
-        font-size:${size >= 46 ? "13px" : "12px"};
-        font-weight:700;
-      ">${pinCount}</div>
+      <div
+        class="map-summary-marker__bubble"
+        style="
+          width:${size}px;
+          height:${size}px;
+          font-size:${size >= 46 ? "13px" : "12px"};
+        "
+      >${pinCount}</div>
     `,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],

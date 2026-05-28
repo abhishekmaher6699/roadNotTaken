@@ -36,14 +36,17 @@ export function useComments(pinId: number | null) {
     }
   }, [pinId]);
 
-  const addComment = useCallback(async (input: CreateCommentInput) => {
+  const addComment = useCallback(async (
+    input: CreateCommentInput,
+    optimisticAuthor?: { id?: string; postedBy?: string },
+  ) => {
     const optimisticComment: Comment = {
       id: Date.now(),
       pin_id: input.pin_id,
       parent_comment_id: input.parent_comment_id ?? null,
-      user_id: "",
+      user_id: optimisticAuthor?.id ?? "",
       content: input.content,
-      posted_by: "You",
+      posted_by: optimisticAuthor?.postedBy ?? "Anonymous",
       likes_count: 0,
       viewer_has_liked: false,
       created_at: new Date().toISOString(),
@@ -68,17 +71,33 @@ export function useComments(pinId: number | null) {
   }, []);
 
   const removeComment = useCallback(async (commentId: number) => {
-    setComments((prev) =>
-      prev.map((c) => (c.id === commentId ? { ...c, isDeleting: true } : c))
-    );
+    const removedIds = new Set<number>([commentId]);
+
+    setComments((prev) => {
+      const collectReplyIds = (parentId: number) => {
+        prev.forEach((comment) => {
+          if (comment.parent_comment_id === parentId && !removedIds.has(comment.id)) {
+            removedIds.add(comment.id);
+            collectReplyIds(comment.id);
+          }
+        });
+      };
+
+      collectReplyIds(commentId);
+
+      return prev.map((c) =>
+        removedIds.has(c.id) ? { ...c, isDeleting: true } : c
+      );
+    });
 
     try {
       await deleteCommentApi(commentId);
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setComments((prev) => prev.filter((c) => !removedIds.has(c.id)));
+      return removedIds.size;
     } catch (err) {
       setComments((prev) =>
         prev.map((c) =>
-          c.id === commentId ? { ...c, isDeleting: false } : c
+          removedIds.has(c.id) ? { ...c, isDeleting: false } : c
         )
       );
       setError("Failed to delete comment");

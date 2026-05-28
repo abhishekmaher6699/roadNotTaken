@@ -65,6 +65,7 @@ export function usePins() {
   
   const requestIdRef = useRef(0);
   const summaryRequestIdRef = useRef(0);
+  const summaryTileSelectionIdRef = useRef(0);
   
   const requestStatsRef = useRef({
     started: 0,
@@ -110,18 +111,42 @@ export function usePins() {
   };
 
   const loadTileSummaries = async (tiles: TileCoordinates[]) => {
-    setActiveSummaryTiles(tiles);
+    const selectionId = summaryTileSelectionIdRef.current + 1;
+    summaryTileSelectionIdRef.current = selectionId;
 
-    await fetchSummaryTiles(
-      getMissingSummaryTiles(tiles, summaryCacheRef, inFlightSummaryTilesRef),
-      {
+    if (tiles.length === 0) {
+      setActiveSummaryTiles([]);
+      await fetchSummaryTiles([], {
         inFlightSummaryTilesRef,
         summaryCacheRef,
         activeSummaryRequestRef,
         summaryRequestIdRef,
         setSummaryCache,
-      }
+      });
+      return;
+    }
+
+    const missingTiles = getMissingSummaryTiles(
+      tiles,
+      summaryCacheRef,
+      inFlightSummaryTilesRef
     );
+
+    if (missingTiles.length === 0 || activeSummaryTiles.length === 0) {
+      setActiveSummaryTiles(tiles);
+    }
+
+    await fetchSummaryTiles(missingTiles, {
+      inFlightSummaryTilesRef,
+      summaryCacheRef,
+      activeSummaryRequestRef,
+      summaryRequestIdRef,
+      setSummaryCache,
+    });
+
+    if (summaryTileSelectionIdRef.current === selectionId) {
+      setActiveSummaryTiles(tiles);
+    }
   };
 
   const syncPinIntoCache = (pin: Pin) => {
@@ -191,6 +216,13 @@ export function usePins() {
       tileCacheRef.current = nextCache;
       return nextCache;
     });
+  };
+
+  const updatePinCommentCount = (pinId: string, delta: number) => {
+    patchPinInCache(pinId, (pin) => ({
+      ...pin,
+      comment_count: Math.max(pin.comment_count + delta, 0),
+    }));
   };
 
   const addPin = async (data: CreatePinInput) => {
@@ -313,6 +345,7 @@ export function usePins() {
     editPin,
     removePin,
     togglePinLike,
+    updatePinCommentCount,
     loadTiles,
     loadTileSummaries,
   };

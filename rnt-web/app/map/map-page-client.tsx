@@ -55,6 +55,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleUpdatePin,
     handleDeletePin,
     handleTogglePinLike,
+    handleCommentCountChange,
     handleClearSelection,
     handleCloseSidebar,
     handleViewDetails,
@@ -169,6 +170,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onEdit={handleStartEditPin}
         onDelete={handleDeletePin}
         onToggleLike={handleTogglePinLike}
+        onCommentCountChange={handleCommentCountChange}
       />
 
       <SearchResultsPanel

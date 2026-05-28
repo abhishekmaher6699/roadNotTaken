@@ -93,16 +93,17 @@ export function SearchResultsPanel({
                         )}
                       </p>
                     )}
+
+                    {pin.category && (
+                      <span className="mt-1.5 inline-flex w-fit items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-[10px] font-semibold capitalize text-neutral-500">
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ background: getCategoryColor(pin.category) }}
+                        />
+                        {pin.category}
+                      </span>
+                    )}
                   </div>
-                  
-                  {pin.category && (
-                    <span
-                      className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
-                      style={{ background: getCategoryColor(pin.category) }}
-                    >
-                      {pin.category}
-                    </span>
-                  )}
                 </div>
 
                 <div className="mt-auto flex w-full flex-wrap items-center gap-2 pt-2">

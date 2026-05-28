@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { Comment } from "../../../../../features/comments/api";
 import type { User } from "../../../../../lib/auth";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { LikeButton } from "@/components/ui/LikeButton";
+import { ConfirmDialog } from "../../../../ui/ConfirmDialog";
+import { LikeButton } from "../../../../ui/LikeButton";
 
 interface CommentItemProps {
   comment: Comment;
@@ -13,8 +13,6 @@ interface CommentItemProps {
   onToggleLike: (commentId: number) => Promise<void>;
   isReplying: boolean;
   replySubmittingId: number | null;
-  menuOpen: number | null;
-  onToggleMenu: (commentId: number) => void;
   onSubmitReply: (parentCommentId: number, content: string) => Promise<void>;
   isCollapsed: boolean;
   onToggleCollapse: (commentId: number) => void;
@@ -78,29 +76,37 @@ export function CommentItem({
     ? new Date(comment.created_at).toLocaleDateString(undefined, {
         month: "short",
         day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
       })
     : "Just now";
 
   return (
     <>
       <div
-        className="relative rounded-xl border border-neutral-200 bg-white p-3.5 transition hover:border-neutral-300"
+        className={`group relative rounded-xl px-2 py-2 transition hover:bg-neutral-50 ${
+          comment.isDeleting ? "opacity-60" : ""
+        }`}
       >
-        <div className="flex gap-3">
-          <div
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${getAvatarColor(
-              comment.user_id ?? comment.posted_by ?? "A",
-            )}`}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => replyCount > 0 && onToggleCollapse(comment.id)}
+            disabled={replyCount === 0}
+            className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition ${
+              replyCount > 0 ? "hover:ring-2 hover:ring-neutral-200" : ""
+            } ${getAvatarColor(comment.user_id ?? comment.posted_by ?? "A")}`}
+            aria-label={
+              replyCount > 0
+                ? `${isCollapsed ? "Show" : "Hide"} replies`
+                : undefined
+            }
           >
-            {initial}
-          </div>
+            {isCollapsed && replyCount > 0 ? "+" : initial}
+          </button>
 
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-neutral-950">
+                <p className="truncate text-[13px] font-semibold text-neutral-950">
                   {comment.posted_by || "Anonymous"}
                 </p>
               </div>
@@ -111,20 +117,27 @@ export function CommentItem({
                 </span>
               )}
 
-              <span className="text-xs text-neutral-400">{createdAt}</span>
+              <span className="text-[11px] text-neutral-400">- {createdAt}</span>
+              {comment.isOptimistic && (
+                <span className="text-[11px] text-neutral-400">Posting</span>
+              )}
             </div>
 
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
+            <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
               {comment.content}
             </p>
 
             {isCollapsed && replyCount > 0 && (
-              <p className="mt-2 text-xs text-neutral-500">
-                {replyCount} replies hidden
-              </p>
+              <button
+                type="button"
+                onClick={() => onToggleCollapse(comment.id)}
+                className="mt-1.5 rounded-full px-2 py-0.5 text-xs font-semibold text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900"
+              >
+                {replyCount} {replyCount === 1 ? "reply" : "replies"} hidden
+              </button>
             )}
 
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+            <div className="mt-1.5 flex flex-wrap items-center gap-0.5 text-xs text-neutral-500">
               <LikeButton
                 liked={comment.viewer_has_liked}
                 count={comment.likes_count}
@@ -134,13 +147,15 @@ export function CommentItem({
                 onClick={() => onToggleLike(comment.id)}
                 label="Comment"
                 showLabel={false}
-                className="min-h-0 gap-1 border-transparent bg-transparent px-1.5 py-0.5 text-xs shadow-none hover:bg-neutral-100 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>span]:bg-transparent [&>span]:px-0.5 [&>span]:py-0"
+                className="!min-h-0 !gap-1 !rounded-full !border-transparent !bg-transparent !px-1.5 !py-0.5 !text-xs !shadow-none hover:!bg-neutral-100 [&>svg]:!h-3 [&>svg]:!w-3 [&>span]:!bg-transparent [&>span]:!px-0.5 [&>span]:!py-0 [&>span]:!text-[11px]"
               />
 
               <button
                 type="button"
                 onClick={() => onReply(comment.id)}
-                className="rounded-full px-2 py-1 font-medium transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+                className={`rounded-full px-1.5 py-0.5 font-semibold transition-colors hover:bg-neutral-100 hover:text-neutral-900 ${
+                  isReplying ? "bg-neutral-100 text-neutral-900" : ""
+                }`}
               >
                 Reply
               </button>
@@ -149,9 +164,9 @@ export function CommentItem({
                 <button
                   type="button"
                   onClick={() => onToggleCollapse(comment.id)}
-                  className="rounded-full px-2 py-1 font-medium transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+                  className="rounded-full px-1.5 py-0.5 font-semibold transition-colors hover:bg-neutral-100 hover:text-neutral-900"
                 >
-                  {isCollapsed ? "Show replies" : "Hide replies"}
+                  {isCollapsed ? "Show" : "Collapse"}
                 </button>
               )}
 
@@ -159,7 +174,7 @@ export function CommentItem({
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="rounded-full px-2 py-1 font-medium transition-colors hover:bg-red-50 hover:text-red-600"
+                  className="rounded-full px-1.5 py-0.5 font-semibold transition-colors hover:bg-red-50 hover:text-red-600"
                 >
                   Delete
                 </button>
@@ -167,21 +182,28 @@ export function CommentItem({
             </div>
 
             {isReplying && !isCollapsed && (
-              <form onSubmit={handleSubmitReply} className="mt-3 space-y-2 rounded-xl bg-neutral-50 p-3">
+              <form
+                onSubmit={handleSubmitReply}
+                className="mt-2 space-y-2 rounded-xl border border-neutral-200 bg-white p-2"
+              >
                 <textarea
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   rows={2}
                   placeholder="Write a reply..."
-                  className="w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-neutral-400"
+                  maxLength={1000}
+                  className="max-h-28 min-h-12 w-full resize-y rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-sm leading-6 outline-none placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white"
                 />
-                <div className="flex justify-end">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-neutral-400">
+                    {replyText.trim().length}/1000
+                  </span>
                   <button
                     type="submit"
                     disabled={!replyText.trim() || Boolean(replySubmittingId)}
-                    className="rounded-full bg-neutral-950 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                    className="rounded-full bg-neutral-950 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
                   >
-                    Reply
+                    {replySubmittingId === comment.id ? "Replying..." : "Reply"}
                   </button>
                 </div>
               </form>

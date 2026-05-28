@@ -109,11 +109,6 @@ export function SearchSuggestions({
             i !== 0 ? "border-t border-neutral-100" : ""
           }`}
         >
-          <span
-            className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full"
-            style={{ background: getCategoryColor(pin.category) }}
-          />
-
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-neutral-900">
               {highlight(pin.title, query).map((seg, idx) =>
@@ -138,10 +133,11 @@ export function SearchSuggestions({
           </div>
 
           {pin.category && (
-            <span
-              className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
-              style={{ background: getCategoryColor(pin.category) }}
-            >
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-[10px] font-semibold capitalize text-neutral-500">
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ background: getCategoryColor(pin.category) }}
+              />
               {pin.category}
             </span>
           )}

@@ -7,6 +7,7 @@ import {
   getPrefetchTiles,
   getTileBounds,
   getVisibleMapTiles,
+  getVisibleSummaryTiles,
   getVisibleTiles,
   isPinInsideTile,
   latLngToTile,
@@ -55,6 +56,26 @@ describe("tile-utils", () => {
 
   it("returns visible raw tiles at and above the minimum pin zoom", () => {
     const tiles = getVisibleTiles(
+      { north: 10, south: -10, east: 10, west: -10 },
+      MIN_PIN_ZOOM
+    );
+
+    expect(tiles.length).toBeGreaterThan(0);
+    expect(tiles.every((tile) => tile.z === MIN_PIN_ZOOM)).toBe(true);
+  });
+
+  it("uses slightly finer tiles for summary markers below the raw pin zoom", () => {
+    const tiles = getVisibleSummaryTiles(
+      { north: 22, south: 17, east: 78, west: 72 },
+      MIN_PIN_ZOOM - 1
+    );
+
+    expect(tiles.length).toBeGreaterThan(0);
+    expect(tiles.every((tile) => tile.z === MIN_PIN_ZOOM)).toBe(true);
+  });
+
+  it("caps summary tiles at the raw pin zoom", () => {
+    const tiles = getVisibleSummaryTiles(
       { north: 10, south: -10, east: 10, west: -10 },
       MIN_PIN_ZOOM
     );

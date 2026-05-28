@@ -12,10 +12,11 @@ import type {
   MapViewport,
   PendingPin,
 } from "@/types/mapTypes";
-import { getVisibleMapTiles, getVisibleTiles, MIN_PIN_ZOOM } from "@/features/pins/tiles/tile-utils";
+import { getVisibleSummaryTiles, getVisibleTiles, MIN_PIN_ZOOM } from "@/features/pins/tiles/tile-utils";
 
 const BASEMAP_STORAGE_KEY = "rnt_basemap";
 const BASEMAP_CHANGE_EVENT = "rnt:basemap-change";
+const RAW_PIN_LAYER_ZOOM = MIN_PIN_ZOOM + 0.25;
 
 function readStoredBasemap(): BasemapMode {
   if (typeof window === "undefined") {
@@ -43,7 +44,17 @@ function subscribeToBasemap(onStoreChange: () => void) {
 }
 
 export function useMapPageState() {
-  const { pins, tileSummaries, addPin, editPin, removePin, togglePinLike, loadTiles, loadTileSummaries } = usePins();
+  const {
+    pins,
+    tileSummaries,
+    addPin,
+    editPin,
+    removePin,
+    togglePinLike,
+    updatePinCommentCount,
+    loadTiles,
+    loadTileSummaries,
+  } = usePins();
   const { logout } = useAuth();
   const router = useRouter();
 
@@ -114,8 +125,8 @@ export function useMapPageState() {
     viewportDebounceRef.current = setTimeout(() => {
       setViewport(vp);
 
-      if (vp.zoom < MIN_PIN_ZOOM) {
-        void loadTileSummaries(getVisibleMapTiles(vp, vp.zoom));
+      if (vp.zoom < RAW_PIN_LAYER_ZOOM) {
+        void loadTileSummaries(getVisibleSummaryTiles(vp, vp.zoom));
         void loadTiles([], vp);
         return;
       }
@@ -123,7 +134,7 @@ export function useMapPageState() {
       void loadTileSummaries([]);
       const visibleTiles = getVisibleTiles(vp, vp.zoom);
       void loadTiles(visibleTiles, vp);
-    }, 120);
+    }, 50);
   };
 
   const handleCreatePin = async (values: CreatePinInput) => {
@@ -220,6 +231,18 @@ export function useMapPageState() {
     }
   };
 
+  const handleCommentCountChange = (pinId: string, delta: number) => {
+    updatePinCommentCount(pinId, delta);
+    setSelectedPin((current) =>
+      current && current.id === pinId
+        ? {
+            ...current,
+            comment_count: Math.max(current.comment_count + delta, 0),
+          }
+        : current,
+    );
+  };
+
   const handleClearSelection = () => {
     if (sidebarView === "details" || sidebarView === "edit") {
       return;
@@ -266,6 +289,7 @@ export function useMapPageState() {
     handleUpdatePin,
     handleDeletePin,
     handleTogglePinLike,
+    handleCommentCountChange,
     handleClearSelection,
     handleCloseSidebar,
     handleViewDetails,

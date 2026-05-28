@@ -13,6 +13,8 @@ export interface ViewportBounds {
 
 // Below this zoom we switch to aggregated discovery markers instead of raw pins.
 export const MIN_PIN_ZOOM = 7;
+export const MAX_SUMMARY_TILE_ZOOM = MIN_PIN_ZOOM;
+const SUMMARY_TILE_ZOOM_OFFSET = 1;
 
 export function getPinsPerTileLimit(zoom: number) {
   // This mirrors the backend limit ladder so locally derived parent tiles behave the same way.
@@ -101,6 +103,19 @@ export function getVisibleTiles(bounds: ViewportBounds, zoom: number) {
 
   // Once we are above the discovery threshold, renderable content comes from raw pin tiles.
   return getVisibleMapTiles(bounds, zoom);
+}
+
+export function getVisibleSummaryTiles(
+  bounds: ViewportBounds,
+  zoom: number,
+  padding = 1,
+) {
+  const summaryZoom = Math.min(
+    MAX_SUMMARY_TILE_ZOOM,
+    Math.floor(zoom) + SUMMARY_TILE_ZOOM_OFFSET
+  );
+
+  return getVisibleMapTiles(bounds, summaryZoom, padding);
 }
 
 export function getPrefetchTiles(bounds: ViewportBounds, zoom: number) {

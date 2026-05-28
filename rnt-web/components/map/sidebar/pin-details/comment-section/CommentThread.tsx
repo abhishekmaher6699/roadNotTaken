@@ -8,11 +8,9 @@ interface CommentThreadProps {
   currentUser: User | null;
   replyToCommentId: number | null;
   replySubmittingCommentId: number | null;
-  menuOpen: number | null;
   onReply: (commentId: number) => void;
   onDelete: (commentId: number) => Promise<void>;
   onToggleLike: (commentId: number) => Promise<void>;
-  onToggleMenu: (commentId: number) => void;
   onSubmitReply: (parentCommentId: number, content: string) => Promise<void>;
 }
 
@@ -21,11 +19,9 @@ export function CommentThread({
   currentUser,
   replyToCommentId,
   replySubmittingCommentId,
-  menuOpen,
   onReply,
   onDelete,
   onToggleLike,
-  onToggleMenu,
   onSubmitReply,
 }: CommentThreadProps) {
   const [collapsedComments, setCollapsedComments] = useState<Set<number>>(
@@ -77,8 +73,6 @@ export function CommentThread({
           onToggleLike={onToggleLike}
           isReplying={replyToCommentId === comment.id}
           replySubmittingId={replySubmittingCommentId}
-          menuOpen={menuOpen}
-          onToggleMenu={onToggleMenu}
           onSubmitReply={onSubmitReply}
           isCollapsed={collapsed}
           onToggleCollapse={toggleCollapse}
@@ -86,7 +80,11 @@ export function CommentThread({
         />
 
         {!collapsed && replies.length > 0 && (
-          <div className="mt-3 space-y-3 border-l border-neutral-200 pl-4">
+          <div
+            className={`ml-3 mt-1 space-y-1 border-l border-neutral-200 pl-2.5 ${
+              depth >= 2 ? "sm:ml-1.5 sm:pl-2" : ""
+            }`}
+          >
             {replies.map((r) => render(r, depth + 1, comment))}
           </div>
         )}
@@ -95,7 +93,7 @@ export function CommentThread({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-1">
       {comments
         .filter((c) => c.parent_comment_id == null)
         .sort(sort)
