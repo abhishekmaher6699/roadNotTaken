@@ -9,6 +9,7 @@ interface MapSidebarShellProps {
   onClose: () => void;
   children: ReactNode;
   size?: "default" | "wide";
+  side?: "left" | "right";
 }
 
 export function MapSidebarShell({
@@ -18,18 +19,21 @@ export function MapSidebarShell({
   onClose,
   children,
   size = "default",
+  side = "left",
 }: MapSidebarShellProps) {
   const widthClass =
     size === "wide"
       ? "w-full sm:w-[min(38rem,calc(100%-2rem))] xl:w-[min(42rem,calc(100%-2rem))]"
       : "w-full sm:w-[min(25rem,calc(100%-2rem))]";
+  const sideClass = side === "right" ? "sm:right-4" : "sm:left-4";
+  const closedXClass = side === "right" ? "sm:translate-x-4" : "sm:-translate-x-4";
 
   return (
     <div
-      className={`map-sidebar-shell absolute inset-x-0 bottom-0 top-auto z-2000 h-[min(82vh,42rem)] ${widthClass} rounded-t-3xl bg-white shadow-xl ring-1 ring-black/8 transition-[transform,opacity] duration-150 ease-out will-change-transform sm:inset-x-auto sm:bottom-auto sm:left-4 sm:top-20 sm:h-[calc(100%-6rem)] sm:rounded-3xl ${
+      className={`map-sidebar-shell absolute inset-x-0 bottom-0 top-auto z-2000 h-[min(82vh,42rem)] ${widthClass} rounded-t-3xl bg-white shadow-xl ring-1 ring-black/8 transition-[transform,opacity] duration-150 ease-out will-change-transform sm:inset-x-auto sm:bottom-auto ${sideClass} sm:top-20 sm:h-[calc(100%-6rem)] sm:rounded-3xl ${
         open
           ? "translate-y-0 opacity-100 sm:translate-x-0"
-          : "pointer-events-none translate-y-full opacity-0 sm:-translate-x-4 sm:translate-y-0"
+          : `pointer-events-none translate-y-full opacity-0 ${closedXClass} sm:translate-y-0`
       }`}
     >
       <div className="flex h-full flex-col">

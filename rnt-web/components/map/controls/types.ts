@@ -14,6 +14,7 @@ export interface BasemapToggleProps {
 export interface UserMenuProps {
   initial: string;
   email?: string;
+  onOpenProfile: () => void;
   onLogout: () => Promise<void>;
 }
 

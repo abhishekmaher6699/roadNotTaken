@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { UserMenuProps } from "./types";
 
-export function UserMenu({ initial, email, onLogout }: UserMenuProps) {
+export function UserMenu({
+  initial,
+  email,
+  onOpenProfile,
+  onLogout,
+}: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -40,7 +45,10 @@ export function UserMenu({ initial, email, onLogout }: UserMenuProps) {
           <button
             type="button"
             className="flex w-full rounded-xl px-3 py-2 text-left text-sm text-neutral-700 transition hover:bg-neutral-100"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              onOpenProfile();
+            }}
           >
             Profile
           </button>

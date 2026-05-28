@@ -1,4 +1,5 @@
 import { Response } from "express";
+import { getOptionalAuthenticatedUser } from "../../middleware/auth.middleware";
 import {
   getPublicProfile,
   getOrCreateProfile,
@@ -32,6 +33,12 @@ export async function updateMyProfileHandler(req: any, res: Response) {
 
 export async function getPublicProfileHandler(req: any, res: Response) {
   try {
+    const user = await getOptionalAuthenticatedUser(req);
+
+    if (user && user.id === req.params.userId) {
+      await getOrCreateProfile(user.id, user.email);
+    }
+
     const profile = await getPublicProfile(req.params.userId);
 
     if (!profile) {

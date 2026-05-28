@@ -69,6 +69,7 @@ export function useMapPageState() {
   const [draftPin, setDraftPin] = useState<PendingPin | null>(null);
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [sidebarView, setSidebarView] = useState<MapSidebarView>(null);
+  const [profileSidebarUserId, setProfileSidebarUserId] = useState<string | null>(null);
   const [viewport, setViewport] = useState<MapViewport | null>(null);
   const viewportDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -267,6 +268,14 @@ export function useMapPageState() {
     setSidebarView("details");
   };
 
+  const handleOpenProfile = (userId: string) => {
+    setProfileSidebarUserId(userId);
+  };
+
+  const handleCloseProfile = () => {
+    setProfileSidebarUserId(null);
+  };
+
   return {
     pins,
     tileSummaries,
@@ -276,6 +285,7 @@ export function useMapPageState() {
     draftPin,
     selectedPin,
     sidebarView,
+    profileSidebarUserId,
     viewport,
     setSelectedPin,
     handleLogout,
@@ -294,5 +304,7 @@ export function useMapPageState() {
     handleClearSelection,
     handleCloseSidebar,
     handleViewDetails,
+    handleOpenProfile,
+    handleCloseProfile,
   };
 }

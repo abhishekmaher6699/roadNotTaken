@@ -81,5 +81,6 @@ export interface MapPageOverlayProps extends MapPageClientProps {
   onModeChange: (mode: MapMode) => void;
   onBasemapToggle: () => void;
   onLocate: (lat: number, lng: number) => void;
+  onOpenProfile: () => void;
   onLogout: () => Promise<void>;
 }

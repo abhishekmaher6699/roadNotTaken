@@ -16,6 +16,7 @@ export function MapOverlay({
   onModeChange,
   onBasemapToggle,
   onLocate,
+  onOpenProfile,
   onLogout,
 }: MapPageOverlayProps) {
   return (
@@ -54,6 +55,7 @@ export function MapOverlay({
         <UserMenu
           initial={(user.email?.[0] ?? "U").toUpperCase()}
           email={user.email}
+          onOpenProfile={onOpenProfile}
           onLogout={onLogout}
         />
         <div className="hidden flex-col items-end gap-3 sm:flex">

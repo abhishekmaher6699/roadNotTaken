@@ -8,6 +8,7 @@ import { MapOverlay } from "@/components/map/MapOverlay";
 import { CreatePinSidebar } from "@/components/map/sidebar/create-pin";
 import { EditPinSidebar } from "@/components/map/sidebar/edit-pin";
 import { PinDetailsSidebar } from "@/components/map/sidebar/pin-details";
+import { ProfileSidebar } from "@/components/map/sidebar/profile";
 import { SearchResultsPanel } from "@/components/search";
 import { useMapPageState } from "@/features/map/hooks";
 import { useSearch } from "@/features/search";
@@ -41,6 +42,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     draftPin,
     selectedPin,
     sidebarView,
+    profileSidebarUserId,
     viewport,
     setSelectedPin,
     handleLogout,
@@ -59,6 +61,8 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleClearSelection,
     handleCloseSidebar,
     handleViewDetails,
+    handleOpenProfile,
+    handleCloseProfile,
   } = useMapPageState();
 
   const search = useSearch(mapRef);
@@ -143,6 +147,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onModeChange={handleModeChange}
         onBasemapToggle={handleBasemapToggle}
         onLocate={handleLocate}
+        onOpenProfile={() => handleOpenProfile(user.id)}
         onLogout={handleLogout}
       />
 
@@ -171,6 +176,13 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onDelete={handleDeletePin}
         onToggleLike={handleTogglePinLike}
         onCommentCountChange={handleCommentCountChange}
+      />
+
+      <ProfileSidebar
+        open={Boolean(profileSidebarUserId)}
+        userId={profileSidebarUserId}
+        fallbackEmail={user.email}
+        onClose={handleCloseProfile}
       />
 
       <SearchResultsPanel
