@@ -147,7 +147,7 @@ export function CommentItem({
                 onClick={() => onToggleLike(comment.id)}
                 label="Comment"
                 showLabel={false}
-                className="!min-h-0 !gap-1 !rounded-full !border-transparent !bg-transparent !px-1.5 !py-0.5 !text-xs !shadow-none hover:!bg-neutral-100 [&>svg]:!h-3 [&>svg]:!w-3 [&>span]:!bg-transparent [&>span]:!px-0.5 [&>span]:!py-0 [&>span]:!text-[11px]"
+                className="min-h-0 gap-1 rounded-full border-transparent bg-transparent px-1.5 py-0.5 text-xs shadow-none hover:bg-neutral-100 [&>svg]:h-3 [&>svg]:w-3 [&>span]:bg-transparent [&>span]:px-0.5 [&>span]:py-0 [&>span]:text-[11px]"
               />
 
               <button
