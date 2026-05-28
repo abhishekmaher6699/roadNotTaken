@@ -146,7 +146,8 @@ export function useMapPageState() {
   };
 
   const handleDeletePin = async (pinId: string) => {
-    await removePin(pinId);
+    const deletedPin = selectedPin?.id === pinId ? selectedPin : undefined;
+    await removePin(pinId, deletedPin);
     setSelectedPin((current) => (current?.id === pinId ? null : current));
     setSidebarView(null);
   };

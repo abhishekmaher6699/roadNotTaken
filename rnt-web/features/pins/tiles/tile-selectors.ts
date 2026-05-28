@@ -71,5 +71,7 @@ export function selectVisibleTileSummaries(
     }
   });
 
-  return Array.from(visibleSummaries.values());
+  return Array.from(visibleSummaries.values()).sort((a, b) =>
+    tileKey(a).localeCompare(tileKey(b)),
+  );
 }

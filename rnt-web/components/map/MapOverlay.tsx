@@ -20,12 +20,12 @@ export function MapOverlay({
 }: MapPageOverlayProps) {
   return (
     <div className="map-overlay-shell pointer-events-none absolute inset-0 z-1000">
-      <div className="pointer-events-auto absolute left-3 top-3 sm:left-4 sm:top-4">
+      <div className="pointer-events-auto absolute left-3 top-16 sm:left-4 sm:top-4">
         <ModeSwitch mode={mode} onChange={onModeChange} />
       </div>
 
       {/* Search bar + Filter button — top-centre */}
-      <div className="pointer-events-auto absolute left-1/2 top-3 flex w-full max-w-sm -translate-x-1/2 items-center gap-2 px-4 sm:top-4 sm:max-w-md">
+      <div className="pointer-events-auto absolute left-3 right-16 top-3 flex items-center gap-2 sm:left-1/2 sm:right-auto sm:top-4 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:px-4">
         <div className="min-w-0 flex-1">
           <SearchBar
             query={search.query}
@@ -56,6 +56,13 @@ export function MapOverlay({
           email={user.email}
           onLogout={onLogout}
         />
+        <div className="hidden flex-col items-end gap-3 sm:flex">
+          <BasemapToggle basemap={basemap} onToggle={onBasemapToggle} />
+          <LocateButton onLocate={onLocate} />
+        </div>
+      </div>
+
+      <div className="pointer-events-auto absolute right-3 top-16 flex flex-col items-end gap-2 sm:hidden">
         <BasemapToggle basemap={basemap} onToggle={onBasemapToggle} />
         <LocateButton onLocate={onLocate} />
       </div>

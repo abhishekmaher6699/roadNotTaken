@@ -26,20 +26,20 @@ export function MapSidebarShell({
 
   return (
     <div
-      className={`map-sidebar-shell absolute inset-x-0 bottom-0 top-auto z-2000 h-[min(82vh,42rem)] ${widthClass} rounded-t-[1.75rem] bg-white shadow-xl ring-1 ring-black/8 transition-[transform,opacity] duration-150 ease-out will-change-transform sm:inset-x-auto sm:bottom-auto sm:left-4 sm:top-20 sm:h-[calc(100%-6rem)] sm:rounded-[1.75rem] ${
+      className={`map-sidebar-shell absolute inset-x-0 bottom-0 top-auto z-2000 h-[min(82vh,42rem)] ${widthClass} rounded-t-3xl bg-white shadow-xl ring-1 ring-black/8 transition-[transform,opacity] duration-150 ease-out will-change-transform sm:inset-x-auto sm:bottom-auto sm:left-4 sm:top-20 sm:h-[calc(100%-6rem)] sm:rounded-3xl ${
         open
           ? "translate-y-0 opacity-100 sm:translate-x-0"
           : "pointer-events-none translate-y-full opacity-0 sm:-translate-x-4 sm:translate-y-0"
       }`}
     >
       <div className="flex h-full flex-col">
-        <div className="flex items-start justify-between border-b border-neutral-200 px-4 py-3 sm:px-5">
+        <div className="flex items-start justify-between border-b border-neutral-200 px-4 py-2.5 sm:px-5">
           <div className="min-w-0">
 
-            <h2 className="mt-1 text-base font-semibold text-neutral-950 sm:text-lg">
+            <h2 className="text-base font-semibold text-neutral-950">
               {title}
             </h2>
-            <p className="mt-1 text-xs leading-5 text-neutral-500 sm:text-sm">
+            <p className="mt-0.5 text-xs leading-5 text-neutral-500">
               {description}
             </p>
           </div>
@@ -47,13 +47,13 @@ export function MapSidebarShell({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full border border-neutral-200 px-3 py-1 text-xs font-medium text-neutral-600 transition hover:bg-neutral-50 hover:text-neutral-900 sm:text-sm"
+            className="shrink-0 rounded-full border border-neutral-200 px-2.5 py-1 text-xs font-semibold text-neutral-600 transition hover:bg-neutral-50 hover:text-neutral-900"
           >
             Close
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-3.5 py-3.5 sm:px-4 sm:py-4">
           {children}
         </div>
       </div>

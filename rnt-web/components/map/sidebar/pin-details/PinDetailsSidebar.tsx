@@ -17,13 +17,27 @@ function DetailItem({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">
+    <div className="flex items-start justify-between gap-4 border-b border-neutral-100 py-2.5 last:border-b-0">
+      <p className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">
         {label}
       </p>
-      <p className="mt-1.5 text-sm font-medium leading-6 text-neutral-800 sm:text-[15px]">
+      <p className="min-w-0 text-right text-sm font-medium leading-5 text-neutral-800">
         {value}
       </p>
+    </div>
+  );
+}
+
+function SectionTitle({
+  title,
+}: {
+  title: string;
+}) {
+  return (
+    <div>
+      <h3 className="mt-0.5 text-sm font-semibold text-neutral-950">
+        {title}
+      </h3>
     </div>
   );
 }
@@ -85,11 +99,11 @@ export function PinDetailsSidebar({
         onClose={onClose}
         size="wide"
       >
-        <div className="space-y-4 pb-4 sm:space-y-5">
+        <div className="space-y-3 pb-4">
           <PinDetailsHero pin={pin} />
 
-          <div className="flex flex-col gap-3 rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-neutral-500">
+          <div className="flex flex-col gap-2.5 rounded-2xl border border-neutral-200 bg-white px-3.5 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
               <span>Overview</span>
               <span className="h-1 w-1 rounded-full bg-neutral-300" />
               <span>
@@ -97,26 +111,27 @@ export function PinDetailsSidebar({
               </span>
             </div>
 
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+            <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end">
               <LikeButton
                 liked={pin.viewer_has_liked}
                 count={pin.likes_count}
                 onClick={handleLikeClick}
                 label="Like"
+                className="min-h-0 px-3 py-1.5 text-xs [&>svg]:h-3.5 [&>svg]:w-3.5"
               />
               {isOwner && (
                 <>
                   <button
                     type="button"
                     onClick={onEdit}
-                    className="flex-1 rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100 sm:flex-none"
+                    className="rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-100"
                   >
                     Edit
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="flex-1 rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 sm:flex-none"
+                    className="rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
                   >
                     Delete
                   </button>
@@ -125,17 +140,10 @@ export function PinDetailsSidebar({
             </div>
           </div>
 
-          <section className="space-y-3 rounded-3xl border border-neutral-200 bg-white px-4 py-4 sm:px-5">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
-                Place data
-              </p>
-              <h3 className="mt-1 text-base font-semibold text-neutral-950">
-                Archive snapshot
-              </h3>
-            </div>
+          <section className="space-y-2.5 rounded-2xl border border-neutral-200 bg-white px-3.5 py-3">
+            <SectionTitle title="Archive snapshot" />
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
               <DetailItem label="Address" value={pin.address || "Unknown"} />
               <DetailItem label="Status" value={pin.status || "Unknown"} />
               <DetailItem
@@ -155,11 +163,9 @@ export function PinDetailsSidebar({
           </section>
 
           {pin.description && (
-            <section className="rounded-3xl border border-neutral-200 bg-white px-4 py-4 sm:px-5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
-                Description
-              </p>
-              <p className="mt-2 text-[15px] leading-7 text-neutral-700">
+            <section className="rounded-2xl border border-neutral-200 bg-white px-3.5 py-3">
+              <SectionTitle title="Notes" />
+              <p className="mt-2 text-sm leading-6 text-neutral-700">
                 {pin.description}
               </p>
             </section>

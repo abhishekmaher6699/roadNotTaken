@@ -43,7 +43,7 @@ export function SearchResultsPanel({
       onClose={onClose}
       size="wide"
     >
-      <div className="space-y-4 pb-4">
+      <div className="space-y-3 pb-4">
         {isSearching && results.length === 0 && (
           <div className="flex flex-col items-center justify-center space-y-3 py-10">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-800" />
@@ -63,17 +63,17 @@ export function SearchResultsPanel({
         )}
 
         {results.length > 0 && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {results.map((pin) => (
               <button
                 key={pin.id}
                 type="button"
                 onClick={() => onSelect(pin)}
-                className="group relative flex flex-col items-start gap-3 rounded-2xl border border-neutral-200 bg-white p-4 text-left shadow-sm transition hover:border-neutral-300 hover:shadow-md"
+                className="group relative flex flex-col items-start gap-2.5 rounded-2xl border border-neutral-200 bg-white p-3 text-left shadow-sm transition hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-md sm:p-3.5"
               >
-                <div className="flex w-full items-start justify-between gap-3">
+                <div className="flex w-full items-start justify-between gap-2">
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <p className="truncate text-base font-semibold text-neutral-900 group-hover:text-neutral-950">
+                    <p className="truncate text-[15px] font-semibold leading-5 text-neutral-900 group-hover:text-neutral-950">
                       {highlight(pin.title, query).map((seg, idx) =>
                         seg.highlight ? (
                           <mark key={idx} className="bg-amber-100 font-bold text-neutral-950 rounded px-0.5">{seg.text}</mark>
@@ -83,7 +83,7 @@ export function SearchResultsPanel({
                       )}
                     </p>
                     {pin.address && (
-                      <p className="mt-0.5 truncate text-sm text-neutral-500">
+                      <p className="mt-0.5 truncate text-xs leading-5 text-neutral-500">
                         {highlight(pin.address, query).map((seg, idx) =>
                           seg.highlight ? (
                             <mark key={idx} className="bg-amber-50 font-semibold text-neutral-600 rounded px-0.5">{seg.text}</mark>
@@ -95,7 +95,7 @@ export function SearchResultsPanel({
                     )}
 
                     {pin.category && (
-                      <span className="mt-1.5 inline-flex w-fit items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-[10px] font-semibold capitalize text-neutral-500">
+                      <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-[10px] font-semibold capitalize text-neutral-500">
                         <span
                           className="h-1.5 w-1.5 rounded-full"
                           style={{ background: getCategoryColor(pin.category) }}
@@ -106,9 +106,9 @@ export function SearchResultsPanel({
                   </div>
                 </div>
 
-                <div className="mt-auto flex w-full flex-wrap items-center gap-2 pt-2">
-                  <div className="flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <div className="mt-auto flex w-full flex-wrap items-center gap-1.5 pt-1.5">
+                  <div className="flex items-center gap-1 rounded-full border border-rose-100 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">
+                    <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
                     </svg>
                     {pin.likes_count} likes
@@ -121,7 +121,7 @@ export function SearchResultsPanel({
                     {pin.comment_count} comments
                   </div> */}
                   
-                  <div className="flex items-center gap-1 text-[11px] text-neutral-400">
+                  <div className="min-w-0 flex items-center gap-1 text-[11px] text-neutral-400">
                     <span>by {pin.posted_by || "anonymous"}</span>
                   </div>
                 </div>

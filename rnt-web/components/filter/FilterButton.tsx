@@ -122,7 +122,7 @@ export function FilterButton({
       {open && (
         <div
           ref={panelRef}
-          className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl bg-white/95 p-4 shadow-xl ring-1 ring-black/10 backdrop-blur"
+          className="absolute right-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-1.5rem))] rounded-2xl bg-white/95 p-4 shadow-xl ring-1 ring-black/10 backdrop-blur sm:left-0 sm:right-auto sm:w-72"
         >
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm font-semibold text-neutral-800">Filter pins</p>

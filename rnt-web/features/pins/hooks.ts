@@ -34,6 +34,29 @@ import type { MapViewport } from "@/types/mapTypes";
 
 const LIKE_FLUSH_DELAY_MS = 500;
 
+function areSummaryListsEqual(
+  current: ReturnType<typeof selectVisibleTileSummaries>,
+  next: ReturnType<typeof selectVisibleTileSummaries>,
+) {
+  if (current.length !== next.length) {
+    return false;
+  }
+
+  return current.every((summary, index) => {
+    const candidate = next[index];
+
+    return (
+      summary.x === candidate.x &&
+      summary.y === candidate.y &&
+      summary.z === candidate.z &&
+      summary.latitude === candidate.latitude &&
+      summary.longitude === candidate.longitude &&
+      summary.pin_count === candidate.pin_count &&
+      summary.top_score === candidate.top_score
+    );
+  });
+}
+
 interface PendingLikeMutation {
   basePin: Pin;
   timer: ReturnType<typeof setTimeout>;
@@ -82,10 +105,22 @@ export function usePins() {
     [activeTiles, tileCache]
   );
 
-  const tileSummaries = useMemo(
-    () => selectVisibleTileSummaries(summaryCache, activeSummaryTiles),
-    [activeSummaryTiles, summaryCache]
-  );
+  const previousTileSummariesRef = useRef<
+    ReturnType<typeof selectVisibleTileSummaries>
+  >([]);
+  const tileSummaries = useMemo(() => {
+    const nextSummaries = selectVisibleTileSummaries(
+      summaryCache,
+      activeSummaryTiles,
+    );
+
+    if (areSummaryListsEqual(previousTileSummariesRef.current, nextSummaries)) {
+      return previousTileSummariesRef.current;
+    }
+
+    previousTileSummariesRef.current = nextSummaries;
+    return nextSummaries;
+  }, [activeSummaryTiles, summaryCache]);
 
   const loadTiles = async (
     visibleTiles: TileCoordinates[],
@@ -218,6 +253,38 @@ export function usePins() {
     });
   };
 
+  const patchSummaryCountForPin = (pin: Pin, delta: number) => {
+    setSummaryCache((current) => {
+      const nextCache: TileSummaryCache = {};
+
+      Object.entries(current).forEach(([key, entry]) => {
+        const [z, x, y] = key.split("/").map(Number);
+        const tile = { z, x, y };
+
+        if (!entry.summary || !isPinInsideTile(pin, tile)) {
+          nextCache[key] = entry;
+          return;
+        }
+
+        const nextCount = Math.max(entry.summary.pin_count + delta, 0);
+
+        nextCache[key] = {
+          ...entry,
+          summary:
+            nextCount > 0
+              ? {
+                  ...entry.summary,
+                  pin_count: nextCount,
+                }
+              : null,
+        };
+      });
+
+      summaryCacheRef.current = nextCache;
+      return nextCache;
+    });
+  };
+
   const updatePinCommentCount = (pinId: string, delta: number) => {
     patchPinInCache(pinId, (pin) => ({
       ...pin,
@@ -229,12 +296,19 @@ export function usePins() {
     const newPin = await createPinApi(data);
     // Mutations patch the local tile cache so the map does not wait for a refetch to stay accurate.
     syncPinIntoCache(newPin);
+    patchSummaryCountForPin(newPin, 1);
     return newPin;
   };
 
-  const removePin = async (id: string) => {
+  const removePin = async (id: string, fallbackPin?: Pin) => {
+    const pin = findPinInCache(id) ?? fallbackPin ?? null;
+
     await deletePinApi(id);
     removePinFromCache(id);
+
+    if (pin) {
+      patchSummaryCountForPin(pin, -1);
+    }
   };
 
   const editPin = async (id: string, data: UpdatePinInput) => {

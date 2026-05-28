@@ -45,13 +45,16 @@ export function PinDetailsGallery({ pin }: PinDetailsGalleryProps) {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-2.5 rounded-2xl border border-neutral-200 bg-white px-3.5 py-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
             Gallery
           </p>
-          <p className="mt-1 text-sm text-neutral-600">
+          <p className="mt-0.5 text-sm font-semibold text-neutral-950">
+            Photos
+          </p>
+          <p className="mt-0.5 text-xs text-neutral-500">
             Tap an image to open the full gallery.
           </p>
         </div>
@@ -61,13 +64,13 @@ export function PinDetailsGallery({ pin }: PinDetailsGalleryProps) {
             setActiveIndex(0);
             setIsOpen(true);
           }}
-          className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100"
+          className="w-fit rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-100"
         >
           Open gallery
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2">
         {gallerySlides.slice(0, 6).map((item, index) => {
           const remaining = gallerySlides.length - 6;
           const showOverflow = index === 5 && remaining > 0;
@@ -80,12 +83,12 @@ export function PinDetailsGallery({ pin }: PinDetailsGalleryProps) {
                 setActiveIndex(index);
                 setIsOpen(true);
               }}
-              className="group relative overflow-hidden rounded-2xl border border-neutral-200 text-left"
+              className="group relative overflow-hidden rounded-xl border border-neutral-200 text-left"
             >
               <img
                 src={getOptimizedCloudinaryUrl(item.src, "gallery-preview") ?? item.src}
                 alt={`${pin.title} ${index + 1}`}
-                className="h-28 w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                className="h-20 w-full object-cover transition duration-300 group-hover:scale-[1.03] sm:h-24"
               />
               {showOverflow && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-sm font-semibold text-white">
