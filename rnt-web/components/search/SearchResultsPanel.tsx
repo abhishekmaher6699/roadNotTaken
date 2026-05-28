@@ -2,6 +2,7 @@
 
 import { MapSidebarShell } from "@/components/map/sidebar/MapSidebarShell";
 import { Pin } from "@/features/pins";
+import { getPinAuthorName } from "@/features/pins/author";
 import { highlight } from "@/components/search/highlight";
 
 interface SearchResultsPanelProps {
@@ -122,7 +123,7 @@ export function SearchResultsPanel({
                   </div> */}
                   
                   <div className="min-w-0 flex items-center gap-1 text-[11px] text-neutral-400">
-                    <span>by {pin.posted_by || "anonymous"}</span>
+                    <span>by {getPinAuthorName(pin)}</span>
                   </div>
                 </div>
               </button>

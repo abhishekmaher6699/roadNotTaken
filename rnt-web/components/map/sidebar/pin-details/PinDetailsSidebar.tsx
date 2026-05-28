@@ -8,6 +8,7 @@ import { MapSidebarShell } from "../MapSidebarShell";
 import { PinDetailsGallery } from "./PinDetailsGallery";
 import { PinDetailsHero } from "./PinDetailsHero";
 import { CommentsSection } from "./comment-section";
+import { getPinAuthorName } from "@/features/pins/author";
 import type { PinDetailsSidebarProps } from "./types";
 
 function DetailItem({
@@ -68,6 +69,7 @@ export function PinDetailsSidebar({
   onDelete,
   onToggleLike,
   onOpenProfile,
+  focusedCommentId,
   onCommentCountChange,
 }: PinDetailsSidebarProps) {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -81,12 +83,7 @@ export function PinDetailsSidebar({
 
   const isOwner = pin.user_id === currentUserId;
   const gallery = pin.image_urls ?? (pin.thumbnail_url ? [pin.thumbnail_url] : []);
-  const postedBy =
-    pin.author?.display_name ||
-    pin.author?.username ||
-    pin.author?.email ||
-    pin.posted_by ||
-    "Unknown";
+  const postedBy = getPinAuthorName(pin);
 
   const handleDelete = async () => {
     try {
@@ -199,6 +196,7 @@ export function PinDetailsSidebar({
             <CommentsSection
               pinId={pinId}
               onOpenProfile={onOpenProfile}
+              focusedCommentId={focusedCommentId}
               onCommentCountChange={(delta) =>
                 onCommentCountChange?.(pin.id, delta)
               }

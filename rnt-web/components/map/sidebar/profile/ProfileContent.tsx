@@ -6,7 +6,7 @@ type ProfileTab = "pins" | "comments";
 
 interface ProfileContentProps {
   content: PublicProfileResponse["content"];
-  onOpenPin?: (pinId: string) => void;
+  onOpenPin?: (pinId: string, commentId?: number) => void;
 }
 
 export function ProfileContent({ content, onOpenPin }: ProfileContentProps) {
@@ -63,7 +63,7 @@ export function ProfileContent({ content, onOpenPin }: ProfileContentProps) {
               <button
                 key={comment.id}
                 type="button"
-                onClick={() => onOpenPin?.(String(comment.pin_id))}
+                onClick={() => onOpenPin?.(String(comment.pin_id), comment.id)}
                 className="block w-full px-4 py-3 text-left transition hover:bg-neutral-50"
               >
                 <p className="line-clamp-2 text-sm leading-6 text-neutral-800">

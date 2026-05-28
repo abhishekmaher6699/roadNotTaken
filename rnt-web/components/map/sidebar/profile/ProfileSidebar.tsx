@@ -78,7 +78,7 @@ export function ProfileSidebar({
     try {
       setEditError(null);
       setIsUploadingAvatar(true);
-      const url = await uploadImage(file);
+      const url = await uploadImage(file, "profiles");
       setForm((current) => ({ ...current, avatar_url: url }));
     } catch (uploadError) {
       setEditError(

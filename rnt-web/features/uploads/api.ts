@@ -4,14 +4,19 @@ import {
   CloudinaryUploadResult,
 } from "./types";
 
-export function getCloudinarySignatureApi() {
+export type UploadFolder = "pins" | "profiles";
+
+export function getCloudinarySignatureApi(folder: UploadFolder = "pins") {
   return apiClient(
-    "/uploads/cloudinary/signature"
+    `/uploads/cloudinary/signature?folder=${folder}`
   ) as Promise<CloudinarySignaturePayload>;
 }
 
-export async function uploadImageToCloudinary(file: File) {
-  const signature = await getCloudinarySignatureApi();
+export async function uploadImageToCloudinary(
+  file: File,
+  folder: UploadFolder = "pins",
+) {
+  const signature = await getCloudinarySignatureApi(folder);
   const formData = new FormData();
 
   formData.append("file", file);

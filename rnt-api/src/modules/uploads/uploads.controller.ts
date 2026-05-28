@@ -3,7 +3,9 @@ import { getCloudinaryUploadSignature } from "./uploads.service";
 
 export function cloudinarySignatureHandler(req: Request, res: Response) {
   try {
-    const payload = getCloudinaryUploadSignature();
+    const folder =
+      req.query.folder === "profiles" ? "profiles" : "pins";
+    const payload = getCloudinaryUploadSignature(folder);
     res.json(payload);
   } catch (error) {
     console.error(error);

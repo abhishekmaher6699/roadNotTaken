@@ -2,12 +2,20 @@ import crypto from "crypto";
 import { CloudinarySignaturePayload } from "./uploads.types";
 
 const DEFAULT_UPLOAD_FOLDER = "road-not-taken/pins";
+const DEFAULT_PROFILE_UPLOAD_FOLDER = "road-not-taken/profiles";
 
-export function getCloudinaryUploadSignature(): CloudinarySignaturePayload {
+export type CloudinaryUploadFolderType = "pins" | "profiles";
+
+export function getCloudinaryUploadSignature(
+  folderType: CloudinaryUploadFolderType = "pins",
+): CloudinarySignaturePayload {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
-  const folder = process.env.CLOUDINARY_UPLOAD_FOLDER || DEFAULT_UPLOAD_FOLDER;
+  const folder =
+    folderType === "profiles"
+      ? process.env.CLOUDINARY_PROFILE_UPLOAD_FOLDER || DEFAULT_PROFILE_UPLOAD_FOLDER
+      : process.env.CLOUDINARY_UPLOAD_FOLDER || DEFAULT_UPLOAD_FOLDER;
 
   if (!cloudName || !apiKey || !apiSecret) {
     throw new Error("Cloudinary env vars are missing");

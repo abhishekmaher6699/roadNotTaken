@@ -7,12 +7,14 @@ import { getCurrentUser, type User } from "../../../../../lib/auth";
 interface CommentsSectionProps {
   pinId: number | null;
   onOpenProfile?: (userId: string) => void;
+  focusedCommentId?: number | null;
   onCommentCountChange?: (delta: number) => void;
 }
 
 export function CommentsSection({
   pinId,
   onOpenProfile,
+  focusedCommentId,
   onCommentCountChange,
 }: CommentsSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -192,6 +194,7 @@ export function CommentsSection({
                 onToggleLike={toggleLike}
                 onSubmitReply={handleSubmitReply}
                 onOpenProfile={onOpenProfile}
+                focusedCommentId={focusedCommentId}
               />
             )}
           </div>

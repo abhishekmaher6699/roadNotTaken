@@ -57,4 +57,15 @@ describe('uploads.service', () => {
 
     expect(result.folder).toBe('custom-folder');
   });
+
+  it('uses the profile upload folder when requested', () => {
+    process.env.CLOUDINARY_CLOUD_NAME = 'cloud';
+    process.env.CLOUDINARY_API_KEY = 'key';
+    process.env.CLOUDINARY_API_SECRET = 'secret';
+    delete process.env.CLOUDINARY_PROFILE_UPLOAD_FOLDER;
+
+    const result = getCloudinaryUploadSignature('profiles');
+
+    expect(result.folder).toBe('road-not-taken/profiles');
+  });
 });

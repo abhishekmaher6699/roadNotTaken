@@ -35,6 +35,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
   const mapRef = useRef<L.Map | null>(null);
   const [flyToTarget, setFlyToTarget] = useState<{ lat: number; lng: number } | null>(null);
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
+  const [focusedCommentId, setFocusedCommentId] = useState<number | null>(null);
 
   const {
     pins,
@@ -97,6 +98,16 @@ export function MapPageClient({ user }: MapPageClientProps) {
       .catch(() => setProfileAvatarUrl(null));
   }, []);
 
+  useEffect(() => {
+    if (!focusedCommentId) return;
+
+    const timeout = window.setTimeout(() => {
+      setFocusedCommentId(null);
+    }, 2500);
+
+    return () => window.clearTimeout(timeout);
+  }, [focusedCommentId]);
+
   function handleLocate(lat: number, lng: number) {
     setFlyToTarget({ lat, lng });
   }
@@ -105,17 +116,19 @@ export function MapPageClient({ user }: MapPageClientProps) {
     if (!pin) return;
     setFlyToTarget({ lat: pin.latitude, lng: pin.longitude });
     setSelectedPin(pin);
+    setFocusedCommentId(null);
     handleViewDetails();
     search.clear();
   }
 
-  async function handleOpenProfilePin(pinId: string) {
+  async function handleOpenProfilePin(pinId: string, commentId?: number) {
     const pin =
       pins.find((candidate) => String(candidate.id) === String(pinId)) ??
       (await getPinApi(pinId));
 
     setFlyToTarget({ lat: pin.latitude, lng: pin.longitude });
     setSelectedPin(pin);
+    setFocusedCommentId(commentId ?? null);
     handleViewDetails();
   }
 
@@ -196,6 +209,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onDelete={handleDeletePin}
         onToggleLike={handleTogglePinLike}
         onOpenProfile={handleOpenProfile}
+        focusedCommentId={focusedCommentId}
         onCommentCountChange={handleCommentCountChange}
       />
 

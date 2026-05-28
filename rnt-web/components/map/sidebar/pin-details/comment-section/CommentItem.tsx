@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Comment } from "../../../../../features/comments/api";
 import type { User } from "../../../../../lib/auth";
 import { ConfirmDialog } from "../../../../ui/ConfirmDialog";
@@ -12,6 +12,7 @@ interface CommentItemProps {
   onDelete: (commentId: number) => Promise<void>;
   onToggleLike: (commentId: number) => Promise<void>;
   onOpenProfile?: (userId: string) => void;
+  isFocused?: boolean;
   isReplying: boolean;
   replySubmittingId: number | null;
   onSubmitReply: (parentCommentId: number, content: string) => Promise<void>;
@@ -45,6 +46,7 @@ export function CommentItem({
   onDelete,
   onToggleLike,
   onOpenProfile,
+  isFocused = false,
   isReplying,
   replySubmittingId,
   onSubmitReply,
@@ -55,6 +57,7 @@ export function CommentItem({
   const [replyText, setReplyText] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const itemRef = useRef<HTMLDivElement | null>(null);
 
   const isOwner =
     currentUser && String(currentUser.id) === String(comment.user_id);
@@ -76,8 +79,6 @@ export function CommentItem({
   const authorName =
     comment.author?.display_name ||
     comment.author?.username ||
-    comment.author?.email ||
-    comment.posted_by ||
     "Anonymous";
   const initial = authorName.trim().charAt(0).toUpperCase() || "?";
   const createdAt = comment.created_at
@@ -87,12 +88,18 @@ export function CommentItem({
       })
     : "Just now";
 
+  useEffect(() => {
+    if (!isFocused) return;
+    itemRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [isFocused]);
+
   return (
     <>
       <div
+        ref={itemRef}
         className={`group relative rounded-xl px-2 py-2 transition hover:bg-neutral-50 ${
           comment.isDeleting ? "opacity-60" : ""
-        }`}
+        } ${isFocused ? "bg-amber-50 ring-1 ring-amber-200" : ""}`}
       >
         <div className="flex gap-2">
           <button

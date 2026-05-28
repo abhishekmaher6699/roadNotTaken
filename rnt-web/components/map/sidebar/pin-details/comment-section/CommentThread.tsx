@@ -13,6 +13,7 @@ interface CommentThreadProps {
   onToggleLike: (commentId: number) => Promise<void>;
   onSubmitReply: (parentCommentId: number, content: string) => Promise<void>;
   onOpenProfile?: (userId: string) => void;
+  focusedCommentId?: number | null;
 }
 
 export function CommentThread({
@@ -25,6 +26,7 @@ export function CommentThread({
   onToggleLike,
   onSubmitReply,
   onOpenProfile,
+  focusedCommentId,
 }: CommentThreadProps) {
   const [collapsedComments, setCollapsedComments] = useState<Set<number>>(
     new Set(),
@@ -77,6 +79,7 @@ export function CommentThread({
           replySubmittingId={replySubmittingCommentId}
           onSubmitReply={onSubmitReply}
           onOpenProfile={onOpenProfile}
+          isFocused={focusedCommentId === comment.id}
           isCollapsed={collapsed}
           onToggleCollapse={toggleCollapse}
           replyCount={replies.length}
