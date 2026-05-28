@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { getOptionalAuthenticatedUser } from '../../middleware/auth.middleware';
-import { createPin, deletePinById, getAllPins, getPinSummariesForTiles, getPinsForTiles, likePinById, searchPins, unlikePinById, updatePinById } from './pins.service';
+import { createPin, deletePinById, getAllPins, getPinById, getPinSummariesForTiles, getPinsForTiles, likePinById, searchPins, unlikePinById, updatePinById } from './pins.service';
 import { TileQueryInput } from './pins.types';
 
 export async function createPinHandler(req: any, res: any) {
@@ -148,6 +148,28 @@ export async function likePinHandler(req: any, res: Response) {
       at: new Date().toISOString(),
     });
     return res.status(500).json({ error: 'Failed to like pin' });
+  }
+}
+
+export async function getPinByIdHandler(req: Request, res: Response) {
+  try {
+    const pinId = parseInt(req.params.id as string, 10);
+
+    if (isNaN(pinId)) {
+      return res.status(400).json({ error: "Invalid pin ID" });
+    }
+
+    const user = await getOptionalAuthenticatedUser(req);
+    const pin = await getPinById(String(pinId), user?.id);
+
+    if (!pin) {
+      return res.status(404).json({ error: "Pin not found" });
+    }
+
+    return res.json(pin);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to fetch pin" });
   }
 }
 

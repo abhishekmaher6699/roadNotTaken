@@ -6,6 +6,7 @@ import type { UserMenuProps } from "./types";
 export function UserMenu({
   initial,
   email,
+  avatarUrl,
   onOpenProfile,
   onLogout,
 }: UserMenuProps) {
@@ -30,7 +31,15 @@ export function UserMenu({
         onClick={() => setOpen((current) => !current)}
         className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-900 text-sm font-semibold text-white shadow-lg ring-2 ring-white transition hover:scale-[1.02] active:scale-95 sm:h-12 sm:w-12"
       >
-        {initial}
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt=""
+            className="h-full w-full rounded-full object-cover"
+          />
+        ) : (
+          initial
+        )}
       </button>
 
       {open && (

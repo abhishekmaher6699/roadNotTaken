@@ -33,7 +33,9 @@ describe("profiles.service", () => {
           comment_count: 3,
           comment_karma: 4,
         }],
-      });
+      })
+      .mockResolvedValueOnce({ rows: [{ id: "1", title: "Pin", address: null, likes_count: 1, comment_count: 0, created_at: "2026-05-01T00:00:00.000Z" }] })
+      .mockResolvedValueOnce({ rows: [{ id: 1, pin_id: 1, pin_title: "Pin", content: "Nice", likes_count: 1, created_at: "2026-05-01T00:00:00.000Z" }] });
 
     const profile = await getPublicProfile("user-1");
 
@@ -43,6 +45,8 @@ describe("profiles.service", () => {
       ["user-1"],
     );
     expect(profile?.stats.total_karma).toBe(9);
+    expect(profile?.content.pins).toHaveLength(1);
+    expect(profile?.content.comments).toHaveLength(1);
   });
 
   it("normalizes blank editable fields to null", async () => {

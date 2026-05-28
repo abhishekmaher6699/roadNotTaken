@@ -17,6 +17,10 @@ export function getPinsApi() {
   return apiClient("/pins") as Promise<Pin[]>;
 }
 
+export function getPinApi(id: string) {
+  return apiClient(`/pins/${encodeURIComponent(id)}`) as Promise<Pin>;
+}
+
 export function getPinsForTilesApi(
   tiles: TileCoordinates[],
   signal?: AbortSignal

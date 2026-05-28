@@ -74,6 +74,7 @@ export interface FilterOverlayProps {
 export interface MapPageOverlayProps extends MapPageClientProps {
   mode: MapMode;
   basemap: BasemapMode;
+  profileAvatarUrl?: string | null;
   selectedPin: Pin | null;
   search: SearchOverlayProps;
   filter: FilterOverlayProps;

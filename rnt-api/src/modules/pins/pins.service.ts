@@ -160,6 +160,25 @@ export async function getAllPins(viewerUserId?: string | null) {
   return result.rows;
 }
 
+export async function getPinById(id: string, viewerUserId?: string | null) {
+  const pool = getPool();
+  const params = viewerUserId ? [viewerUserId, id] : [id];
+  const idParam = viewerUserId ? "$2" : "$1";
+
+  const result = await pool.query(
+    `
+    SELECT
+      ${buildPinSelectFragment(viewerUserId)}
+    FROM pins
+    WHERE id = ${idParam}::integer
+    LIMIT 1;
+    `,
+    params,
+  );
+
+  return result.rows[0] ?? null;
+}
+
 export async function deletePinById(id: string, userId: string) {
   const pool = getPool();
 

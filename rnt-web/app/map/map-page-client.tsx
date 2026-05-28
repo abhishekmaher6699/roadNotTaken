@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type L from "leaflet";
 import dynamic from "next/dynamic";
 
@@ -12,8 +12,10 @@ import { ProfileSidebar } from "@/components/map/sidebar/profile";
 import { SearchResultsPanel } from "@/components/search";
 import { useMapPageState } from "@/features/map/hooks";
 import { useSearch } from "@/features/search";
+import { getPinApi } from "@/features/pins/api";
 import { useDisplayedPins, type Pin } from "@/features/pins";
 import { usePinFilters } from "@/features/filter";
+import { getMyProfileApi } from "@/features/profiles";
 import { loadLocation } from "@/components/map/controls";
 import type { MapPageClientProps } from "@/types/mapTypes";
 
@@ -32,6 +34,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
   const [initialCenter] = useState<[number, number]>(getInitialCenter);
   const mapRef = useRef<L.Map | null>(null);
   const [flyToTarget, setFlyToTarget] = useState<{ lat: number; lng: number } | null>(null);
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
 
   const {
     pins,
@@ -88,6 +91,12 @@ export function MapPageClient({ user }: MapPageClientProps) {
   );
   const displayedSummaries = search.isResultsPanelOpen ? [] : tileSummaries;
 
+  useEffect(() => {
+    getMyProfileApi()
+      .then((profile) => setProfileAvatarUrl(profile.avatar_url))
+      .catch(() => setProfileAvatarUrl(null));
+  }, []);
+
   function handleLocate(lat: number, lng: number) {
     setFlyToTarget({ lat, lng });
   }
@@ -98,6 +107,16 @@ export function MapPageClient({ user }: MapPageClientProps) {
     setSelectedPin(pin);
     handleViewDetails();
     search.clear();
+  }
+
+  async function handleOpenProfilePin(pinId: string) {
+    const pin =
+      pins.find((candidate) => String(candidate.id) === String(pinId)) ??
+      (await getPinApi(pinId));
+
+    setFlyToTarget({ lat: pin.latitude, lng: pin.longitude });
+    setSelectedPin(pin);
+    handleViewDetails();
   }
 
   return (
@@ -124,6 +143,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         user={user}
         mode={mode}
         basemap={basemap}
+        profileAvatarUrl={profileAvatarUrl}
         selectedPin={selectedPin}
         search={{
           query: search.query,
@@ -184,6 +204,8 @@ export function MapPageClient({ user }: MapPageClientProps) {
         userId={profileSidebarUserId}
         fallbackEmail={user.email}
         canEdit={profileSidebarUserId === user.id}
+        onOpenPin={handleOpenProfilePin}
+        onProfileSaved={setProfileAvatarUrl}
         onClose={handleCloseProfile}
       />
 

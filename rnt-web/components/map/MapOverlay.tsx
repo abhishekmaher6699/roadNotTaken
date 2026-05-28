@@ -9,6 +9,7 @@ export function MapOverlay({
   user,
   mode,
   basemap,
+  profileAvatarUrl,
   selectedPin,
   search,
   filter,
@@ -55,6 +56,7 @@ export function MapOverlay({
         <UserMenu
           initial={(user.email?.[0] ?? "U").toUpperCase()}
           email={user.email}
+          avatarUrl={profileAvatarUrl}
           onOpenProfile={onOpenProfile}
           onLogout={onLogout}
         />

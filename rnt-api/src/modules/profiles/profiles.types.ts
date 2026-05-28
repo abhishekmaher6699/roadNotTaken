@@ -29,4 +29,22 @@ export interface PublicProfileResponse {
     pin_count: number;
     comment_count: number;
   };
+  content: {
+    pins: Array<{
+      id: string;
+      title: string;
+      address: string | null;
+      likes_count: number;
+      comment_count: number;
+      created_at: string;
+    }>;
+    comments: Array<{
+      id: number;
+      pin_id: number;
+      pin_title: string | null;
+      content: string;
+      likes_count: number;
+      created_at: string;
+    }>;
+  };
 }

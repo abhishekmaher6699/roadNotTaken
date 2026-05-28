@@ -22,6 +22,24 @@ export interface ProfileStats {
 export interface PublicProfileResponse {
   user: Omit<Profile, "email" | "updated_at">;
   stats: ProfileStats;
+  content: {
+    pins: Array<{
+      id: string;
+      title: string;
+      address: string | null;
+      likes_count: number;
+      comment_count: number;
+      created_at: string;
+    }>;
+    comments: Array<{
+      id: number;
+      pin_id: number;
+      pin_title: string | null;
+      content: string;
+      likes_count: number;
+      created_at: string;
+    }>;
+  };
 }
 
 export interface UpdateProfileInput {

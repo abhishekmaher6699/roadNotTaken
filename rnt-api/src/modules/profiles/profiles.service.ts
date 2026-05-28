@@ -269,6 +269,46 @@ export async function getPublicProfile(
   const row = result.rows[0];
   if (!row) return null;
 
+  const [pinsResult, commentsResult] = await Promise.all([
+    pool.query(
+      `
+      SELECT
+        pins.id::text,
+        pins.title,
+        pins.address,
+        COALESCE(pins.likes_count, 0)::integer AS likes_count,
+        (
+          SELECT COUNT(*)
+          FROM comments
+          WHERE comments.pin_id = pins.id
+        )::integer AS comment_count,
+        pins.created_at
+      FROM pins
+      WHERE pins.user_id = $1
+      ORDER BY pins.created_at DESC, pins.id DESC
+      LIMIT 10;
+      `,
+      [userId],
+    ),
+    pool.query(
+      `
+      SELECT
+        comments.id,
+        comments.pin_id,
+        pins.title AS pin_title,
+        comments.content,
+        COALESCE(comments.likes_count, 0)::integer AS likes_count,
+        comments.created_at
+      FROM comments
+      LEFT JOIN pins ON pins.id = comments.pin_id
+      WHERE comments.user_id = $1
+      ORDER BY comments.created_at DESC, comments.id DESC
+      LIMIT 10;
+      `,
+      [userId],
+    ),
+  ]);
+
   return {
     user: {
       user_id: row.user_id,
@@ -286,6 +326,10 @@ export async function getPublicProfile(
       comment_karma: row.comment_karma,
       pin_count: row.pin_count,
       comment_count: row.comment_count,
+    },
+    content: {
+      pins: pinsResult.rows,
+      comments: commentsResult.rows,
     },
   };
 }
