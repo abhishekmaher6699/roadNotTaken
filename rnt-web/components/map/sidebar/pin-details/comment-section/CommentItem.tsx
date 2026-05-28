@@ -11,6 +11,7 @@ interface CommentItemProps {
   onReply: (commentId: number) => void;
   onDelete: (commentId: number) => Promise<void>;
   onToggleLike: (commentId: number) => Promise<void>;
+  onOpenProfile?: (userId: string) => void;
   isReplying: boolean;
   replySubmittingId: number | null;
   onSubmitReply: (parentCommentId: number, content: string) => Promise<void>;
@@ -43,6 +44,7 @@ export function CommentItem({
   onReply,
   onDelete,
   onToggleLike,
+  onOpenProfile,
   isReplying,
   replySubmittingId,
   onSubmitReply,
@@ -71,7 +73,13 @@ export function CommentItem({
     }
   };
 
-  const initial = comment.posted_by?.trim()?.charAt(0)?.toUpperCase() || "?";
+  const authorName =
+    comment.author?.display_name ||
+    comment.author?.username ||
+    comment.author?.email ||
+    comment.posted_by ||
+    "Anonymous";
+  const initial = authorName.trim().charAt(0).toUpperCase() || "?";
   const createdAt = comment.created_at
     ? new Date(comment.created_at).toLocaleDateString(undefined, {
         month: "short",
@@ -89,16 +97,17 @@ export function CommentItem({
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => replyCount > 0 && onToggleCollapse(comment.id)}
-            disabled={replyCount === 0}
-            className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition ${
-              replyCount > 0 ? "hover:ring-2 hover:ring-neutral-200" : ""
-            } ${getAvatarColor(comment.user_id ?? comment.posted_by ?? "A")}`}
-            aria-label={
-              replyCount > 0
-                ? `${isCollapsed ? "Show" : "Hide"} replies`
-                : undefined
+            onClick={() =>
+              comment.user_id && onOpenProfile
+                ? onOpenProfile(comment.user_id)
+                : replyCount > 0
+                  ? onToggleCollapse(comment.id)
+                  : undefined
             }
+            className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition ${
+              comment.user_id && onOpenProfile ? "hover:ring-2 hover:ring-neutral-200" : ""
+            } ${getAvatarColor(comment.user_id ?? comment.posted_by ?? "A")}`}
+            aria-label="Open profile"
           >
             {isCollapsed && replyCount > 0 ? "+" : initial}
           </button>
@@ -106,9 +115,19 @@ export function CommentItem({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
               <div className="min-w-0">
-                <p className="truncate text-[13px] font-semibold text-neutral-950">
-                  {comment.posted_by || "Anonymous"}
-                </p>
+                {comment.user_id && onOpenProfile ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenProfile(comment.user_id)}
+                    className="truncate text-left text-[13px] font-semibold text-neutral-950 underline-offset-4 hover:underline"
+                  >
+                    {authorName}
+                  </button>
+                ) : (
+                  <p className="truncate text-[13px] font-semibold text-neutral-950">
+                    {authorName}
+                  </p>
+                )}
               </div>
 
               {isOwner && (

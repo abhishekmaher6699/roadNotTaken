@@ -5,6 +5,13 @@ export interface Pin {
   address?: string | null;
   status?: string | null;
   posted_by?: string | null;
+  author?: {
+    id: string;
+    display_name?: string | null;
+    username?: string | null;
+    avatar_url?: string | null;
+    email?: string | null;
+  } | null;
   access_level?: string | null;
   latitude: number;
   longitude: number;

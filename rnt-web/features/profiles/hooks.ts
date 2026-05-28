@@ -17,41 +17,35 @@ export function usePublicProfile(userId: string | null) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let ignore = false;
-
-    async function loadProfile() {
-      if (!userId) {
-        setProfile(null);
-        setError(null);
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
+  const loadProfile = useCallback(async () => {
+    if (!userId) {
+      setProfile(null);
       setError(null);
-
-      try {
-        const nextProfile = await getPublicProfileApi(userId);
-        if (!ignore) setProfile(nextProfile);
-      } catch (err) {
-        if (!ignore) {
-          setProfile(null);
-          setError(err instanceof Error ? err.message : "Failed to load profile");
-        }
-      } finally {
-        if (!ignore) setIsLoading(false);
-      }
+      setIsLoading(false);
+      return;
     }
 
-    void loadProfile();
+    setIsLoading(true);
+    setError(null);
 
-    return () => {
-      ignore = true;
-    };
+    try {
+      const nextProfile = await getPublicProfileApi(userId);
+      setProfile(nextProfile);
+      return nextProfile;
+    } catch (err) {
+      setProfile(null);
+      setError(err instanceof Error ? err.message : "Failed to load profile");
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   }, [userId]);
 
-  return { profile, isLoading, error };
+  useEffect(() => {
+    void loadProfile().catch(() => undefined);
+  }, [loadProfile]);
+
+  return { profile, isLoading, error, refetch: loadProfile };
 }
 
 export function useMyProfile() {

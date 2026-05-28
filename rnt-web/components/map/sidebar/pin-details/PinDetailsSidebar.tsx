@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { ConfirmDialog } from "../../../ui/ConfirmDialog";
 import { LikeButton } from "../../../ui/LikeButton";
 import { MapSidebarShell } from "../MapSidebarShell";
@@ -12,18 +13,22 @@ import type { PinDetailsSidebarProps } from "./types";
 function DetailItem({
   label,
   value,
+  children,
 }: {
   label: string;
   value: string;
+  children?: ReactNode;
 }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-neutral-100 py-2.5 last:border-b-0">
       <p className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">
         {label}
       </p>
-      <p className="min-w-0 text-right text-sm font-medium leading-5 text-neutral-800">
-        {value}
-      </p>
+      {children ?? (
+        <p className="min-w-0 text-right text-sm font-medium leading-5 text-neutral-800">
+          {value}
+        </p>
+      )}
     </div>
   );
 }
@@ -62,6 +67,7 @@ export function PinDetailsSidebar({
   onEdit,
   onDelete,
   onToggleLike,
+  onOpenProfile,
   onCommentCountChange,
 }: PinDetailsSidebarProps) {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -75,6 +81,12 @@ export function PinDetailsSidebar({
 
   const isOwner = pin.user_id === currentUserId;
   const gallery = pin.image_urls ?? (pin.thumbnail_url ? [pin.thumbnail_url] : []);
+  const postedBy =
+    pin.author?.display_name ||
+    pin.author?.username ||
+    pin.author?.email ||
+    pin.posted_by ||
+    "Unknown";
 
   const handleDelete = async () => {
     try {
@@ -150,7 +162,17 @@ export function PinDetailsSidebar({
                 label="Access level"
                 value={pin.access_level || "Unknown"}
               />
-              <DetailItem label="Posted by" value={pin.posted_by || "Unknown"} />
+              <DetailItem label="Posted by" value={postedBy}>
+                {(pin.author?.id || pin.user_id) && onOpenProfile ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenProfile((pin.author?.id || pin.user_id) as string)}
+                    className="min-w-0 text-right text-sm font-semibold leading-5 text-neutral-950 underline-offset-4 transition hover:underline"
+                  >
+                    {postedBy}
+                  </button>
+                ) : undefined}
+              </DetailItem>
               <DetailItem
                 label="Created on"
                 value={formatDate(pin.created_at)}
@@ -176,6 +198,7 @@ export function PinDetailsSidebar({
           {open && (
             <CommentsSection
               pinId={pinId}
+              onOpenProfile={onOpenProfile}
               onCommentCountChange={(delta) =>
                 onCommentCountChange?.(pin.id, delta)
               }

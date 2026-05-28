@@ -7,6 +7,13 @@ export interface Comment {
   user_id: string;
   content: string;
   posted_by?: string;
+  author?: {
+    id: string;
+    display_name?: string | null;
+    username?: string | null;
+    avatar_url?: string | null;
+    email?: string | null;
+  } | null;
   likes_count: number;
   viewer_has_liked: boolean;
   created_at: string;

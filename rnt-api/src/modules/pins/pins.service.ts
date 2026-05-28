@@ -32,6 +32,19 @@ function buildPinSelectFragment(
     ${tableName}.id,
     ${tableName}.user_id,
     ${tableName}.posted_by,
+    json_build_object(
+      'id', ${tableName}.user_id,
+      'display_name', (
+        SELECT profiles.display_name FROM profiles WHERE profiles.user_id = ${tableName}.user_id
+      ),
+      'username', (
+        SELECT profiles.username FROM profiles WHERE profiles.user_id = ${tableName}.user_id
+      ),
+      'avatar_url', (
+        SELECT profiles.avatar_url FROM profiles WHERE profiles.user_id = ${tableName}.user_id
+      ),
+      'email', ${tableName}.posted_by
+    ) AS author,
     ${tableName}.latitude,
     ${tableName}.longitude,
     ${tableName}.title,

@@ -216,6 +216,17 @@ export async function getPublicProfile(
 ): Promise<PublicProfileResponse | null> {
   const pool = getPool();
 
+  await pool.query(
+    `
+    INSERT INTO profiles (user_id)
+    SELECT $1
+    WHERE EXISTS (SELECT 1 FROM pins WHERE user_id = $1)
+       OR EXISTS (SELECT 1 FROM comments WHERE user_id = $1)
+    ON CONFLICT (user_id) DO NOTHING;
+    `,
+    [userId],
+  );
+
   const result = await pool.query(
     `
     SELECT

@@ -17,6 +17,10 @@ export interface User {
 
 type CurrentUserResponse = User | { user?: User | null };
 
+function isUser(value: CurrentUserResponse): value is User {
+  return "id" in value;
+}
+
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/auth/me`, {
@@ -33,7 +37,7 @@ export async function getCurrentUser(): Promise<User | null> {
       return data.user ?? null;
     }
 
-    return data;
+    return isUser(data) ? data : null;
   } catch (error) {
     console.error("Failed to get current user:", error);
     return null;

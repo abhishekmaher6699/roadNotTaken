@@ -30,6 +30,19 @@ function buildCommentSelectFragment(viewerUserId?: string | null, tableName = "c
     ${tableName}.user_id,
     ${tableName}.content,
     ${tableName}.posted_by,
+    json_build_object(
+      'id', ${tableName}.user_id,
+      'display_name', (
+        SELECT profiles.display_name FROM profiles WHERE profiles.user_id = ${tableName}.user_id
+      ),
+      'username', (
+        SELECT profiles.username FROM profiles WHERE profiles.user_id = ${tableName}.user_id
+      ),
+      'avatar_url', (
+        SELECT profiles.avatar_url FROM profiles WHERE profiles.user_id = ${tableName}.user_id
+      ),
+      'email', ${tableName}.posted_by
+    ) AS author,
     COALESCE(${tableName}.likes_count, 0) AS likes_count,
     ${likedExpression} AS viewer_has_liked,
     ${tableName}.created_at,

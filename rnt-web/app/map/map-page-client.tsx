@@ -175,6 +175,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onEdit={handleStartEditPin}
         onDelete={handleDeletePin}
         onToggleLike={handleTogglePinLike}
+        onOpenProfile={handleOpenProfile}
         onCommentCountChange={handleCommentCountChange}
       />
 
@@ -182,6 +183,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         open={Boolean(profileSidebarUserId)}
         userId={profileSidebarUserId}
         fallbackEmail={user.email}
+        canEdit={profileSidebarUserId === user.id}
         onClose={handleCloseProfile}
       />
 

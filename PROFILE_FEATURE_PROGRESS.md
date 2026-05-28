@@ -12,10 +12,10 @@
 - [x] Add profile sidebar state to the map page.
 - [x] Build basic right-side `ProfileSidebar`.
 - [x] Open current user profile from the user menu.
-- [ ] Make pin authors open the profile sidebar.
-- [ ] Make comment authors open the profile sidebar.
-- [ ] Add lightweight author data to pin APIs.
-- [ ] Add lightweight author data to comment APIs.
-- [ ] Add profile edit UI.
-- [ ] Add profile content tabs.
-- [ ] Add focused tests.
+- [x] Make pin authors open the profile sidebar.
+- [x] Make comment authors open the profile sidebar.
+- [x] Add lightweight author data to pin APIs.
+- [x] Add lightweight author data to comment APIs.
+- [x] Add profile edit UI.
+- [x] Add profile content tabs.
+- [x] Add focused tests.
