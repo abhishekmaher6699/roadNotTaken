@@ -7,6 +7,7 @@ import pinsRoutes from "./modules/pins/pins.routes"
 import authRoutes from "./modules/auth/auth.routes"
 import uploadsRoutes from "./modules/uploads/uploads.routes"
 import commentsRoutes from "./modules/comments/comments.routes"
+import profilesRoutes from "./modules/profiles/profiles.routes"
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/pins', pinsRoutes)
 app.use('/auth', authRoutes)
 app.use('/uploads', uploadsRoutes)
 app.use('/comments', commentsRoutes)
+app.use('/profiles', profilesRoutes)
 
 
 app.get('/', (req, res) => {
