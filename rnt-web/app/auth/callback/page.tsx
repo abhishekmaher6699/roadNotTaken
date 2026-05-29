@@ -12,7 +12,7 @@ export default function AuthCallbackPage() {
   const finishOAuth = useEffectEvent(async () => {
     try {
       await completeGoogleOAuth();
-      router.replace("/map");
+      router.replace("/profile/setup");
       router.refresh();
     } catch (oauthError) {
       setError(

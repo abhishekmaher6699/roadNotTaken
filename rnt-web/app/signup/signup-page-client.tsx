@@ -10,7 +10,7 @@ export function SignupPageClient() {
 
   const handleSignup = async ({ email, password }: SignupFormValues) => {
     await signup(email, password);
-    router.replace("/map");
+    router.replace("/profile/setup");
     router.refresh();
   };
 

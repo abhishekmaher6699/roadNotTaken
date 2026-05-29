@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import type { Comment } from "../../../../../features/comments/api";
 import type { User } from "../../../../../lib/auth";
 import { ConfirmDialog } from "../../../../ui/ConfirmDialog";
-import { LikeButton } from "../../../../ui/LikeButton";
 
 interface CommentItemProps {
   comment: Comment;
@@ -177,17 +176,22 @@ export function CommentItem({
             )}
 
             <div className="mt-1.5 flex flex-wrap items-center gap-0.5 text-xs text-neutral-500">
-              <LikeButton
-                liked={comment.viewer_has_liked}
-                count={comment.likes_count}
+              <button
+                type="button"
+                aria-pressed={comment.viewer_has_liked}
                 disabled={Boolean(
                   comment.isDeleting || comment.isOptimistic,
                 )}
-                onClick={() => onToggleLike(comment.id)}
-                label="Comment"
-                showLabel={false}
-                className="min-h-0 gap-1 rounded-full border-transparent bg-transparent px-1.5 py-0.5 text-xs shadow-none hover:bg-neutral-100 [&>svg]:h-3 [&>svg]:w-3 [&>span]:bg-transparent [&>span]:px-0.5 [&>span]:py-0 [&>span]:text-[11px]"
-              />
+                onClick={() => void onToggleLike(comment.id)}
+                className={`inline-flex items-center gap-1 rounded px-1 py-0.5 font-semibold transition-colors hover:bg-neutral-100 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60 ${
+                  comment.viewer_has_liked ? "text-rose-600" : ""
+                }`}
+              >
+                <span aria-hidden="true">
+                  {comment.viewer_has_liked ? "♥" : "♡"}
+                </span>
+                <span>{comment.likes_count}</span>
+              </button>
 
               <button
                 type="button"

@@ -56,7 +56,14 @@ export async function apiClient(
   });
 
   // STEP 2: refresh on 401
-  if (res.status === 401) {
+  const shouldRefresh =
+    res.status === 401 &&
+    !endpoint.startsWith("/auth/login") &&
+    !endpoint.startsWith("/auth/signup") &&
+    !endpoint.startsWith("/auth/session") &&
+    !endpoint.startsWith("/auth/refresh");
+
+  if (shouldRefresh) {
     await refreshToken();
 
     res = await fetch(`${API_URL}${endpoint}`, {

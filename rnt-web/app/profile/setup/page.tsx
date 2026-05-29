@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { MapPageClient } from "./map-page-client";
+import { ProfileSetupClient } from "./profile-setup-client";
 import { getServerAuthUser } from "@/lib/server-auth";
 import { getServerProfile, isProfileComplete } from "@/lib/server-profile";
 
-export default async function MapPage() {
+export default async function ProfileSetupPage() {
   const user = await getServerAuthUser();
 
   if (!user) {
@@ -12,9 +12,9 @@ export default async function MapPage() {
 
   const profile = await getServerProfile();
 
-  if (!isProfileComplete(profile)) {
-    redirect("/profile/setup");
+  if (isProfileComplete(profile)) {
+    redirect("/map");
   }
 
-  return <MapPageClient user={user} />;
+  return <ProfileSetupClient email={user.email} />;
 }

@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
 import { useAuth, type LoginFormValues } from "@/features/auth";
+import { getMyProfileApi } from "@/features/profiles";
+import { isProfileComplete } from "@/lib/profile-completion";
 
 
 export function LoginPageClient() {
@@ -11,7 +13,8 @@ export function LoginPageClient() {
 
   const handleLogin = async ({ email, password }: LoginFormValues) => {
     await login(email, password);
-    router.replace("/map");
+    const profile = await getMyProfileApi();
+    router.replace(isProfileComplete(profile) ? "/map" : "/profile/setup");
     router.refresh();
   };
 
