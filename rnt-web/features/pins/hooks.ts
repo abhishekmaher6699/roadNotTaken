@@ -34,6 +34,10 @@ import type { MapViewport } from "@/types/mapTypes";
 
 const LIKE_FLUSH_DELAY_MS = 500;
 
+function getSocialScore(pin: Pick<Pin, "likes_count" | "comment_count">) {
+  return pin.likes_count + pin.comment_count * 2;
+}
+
 function areSummaryListsEqual(
   current: ReturnType<typeof selectVisibleTileSummaries>,
   next: ReturnType<typeof selectVisibleTileSummaries>,
@@ -286,10 +290,17 @@ export function usePins() {
   };
 
   const updatePinCommentCount = (pinId: string, delta: number) => {
-    patchPinInCache(pinId, (pin) => ({
-      ...pin,
-      comment_count: Math.max(pin.comment_count + delta, 0),
-    }));
+    patchPinInCache(pinId, (pin) => {
+      const nextPin = {
+        ...pin,
+        comment_count: Math.max(pin.comment_count + delta, 0),
+      };
+
+      return {
+        ...nextPin,
+        score: getSocialScore(nextPin),
+      };
+    });
   };
 
   const addPin = async (data: CreatePinInput) => {
@@ -335,6 +346,7 @@ export function usePins() {
         0,
       ),
     };
+    optimisticPin.score = getSocialScore(optimisticPin);
 
     patchPinInCache(pinId, () => optimisticPin);
 
@@ -381,6 +393,7 @@ export function usePins() {
             viewer_has_liked: result.liked,
             likes_count: result.likes_count,
           };
+          resolvedPin.score = getSocialScore(resolvedPin);
 
           patchPinInCache(pinId, () => resolvedPin);
           resolve(resolvedPin);

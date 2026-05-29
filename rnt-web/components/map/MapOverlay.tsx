@@ -18,6 +18,7 @@ export function MapOverlay({
   onBasemapToggle,
   onLocate,
   onOpenProfile,
+  onOpenProfileById,
   onLogout,
 }: MapPageOverlayProps) {
   return (
@@ -78,6 +79,7 @@ export function MapOverlay({
           pin={selectedPin}
           mode={mode}
           onViewDetails={onViewDetails}
+          onOpenProfile={onOpenProfileById}
         />
       </div>
     </div>

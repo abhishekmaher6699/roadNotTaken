@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { getOptionalAuthenticatedUser } from '../../middleware/auth.middleware';
+import { AuthenticatedRequest, getOptionalAuthenticatedUser } from '../../middleware/auth.middleware';
 import { CommentsServiceError, createComment, deleteCommentById, getCommentsForPin, likeCommentById, unlikeCommentById } from './comments.service';
 
-export async function createCommentHandler(req: any, res: Response) {
+export async function createCommentHandler(req: AuthenticatedRequest, res: Response) {
   try {
     const user = req.user;
     const { pin_id, content, parent_comment_id } = req.body;
@@ -63,7 +63,7 @@ export async function getCommentsForPinHandler(req: Request, res: Response) {
   }
 }
 
-export async function deleteCommentHandler(req: any, res: Response) {
+export async function deleteCommentHandler(req: AuthenticatedRequest, res: Response) {
   try {
     const user = req.user;
     const commentId = parseInt(req.params.id as string);
@@ -85,7 +85,7 @@ export async function deleteCommentHandler(req: any, res: Response) {
   }
 }
 
-export async function likeCommentHandler(req: any, res: Response) {
+export async function likeCommentHandler(req: AuthenticatedRequest, res: Response) {
   try {
     const commentId = parseInt(req.params.id as string, 10);
 
@@ -106,7 +106,7 @@ export async function likeCommentHandler(req: any, res: Response) {
   }
 }
 
-export async function unlikeCommentHandler(req: any, res: Response) {
+export async function unlikeCommentHandler(req: AuthenticatedRequest, res: Response) {
   try {
     const commentId = parseInt(req.params.id as string, 10);
 

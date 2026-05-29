@@ -23,4 +23,5 @@ export interface PinInfoCardProps {
   pin: Pin | null;
   mode: MapMode;
   onViewDetails: () => void;
+  onOpenProfile?: (userId: string) => void;
 }

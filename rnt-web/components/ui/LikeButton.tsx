@@ -31,9 +31,9 @@ export function LikeButton({
       className={[
         "inline-flex min-h-11 items-center gap-2.5 rounded-full border px-3.5 py-2 text-sm font-medium shadow-sm transition",
         liked
-          ? "border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-rose-700"
+          ? "border-rose-200 bg-linear-to-r from-rose-50 to-pink-50 text-rose-700"
           : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50",
-        disabled ? "cursor-not-allowed opacity-60" : "hover:-translate-y-[1px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500",
+        disabled ? "cursor-not-allowed opacity-60" : "hover:-translate-y-px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500",
         className,
       ].join(" ")}
     >

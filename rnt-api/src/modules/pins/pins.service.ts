@@ -401,7 +401,6 @@ export async function searchPins({
   }
 
   const threshold = term.includes(" ") ? 0.25 : 0.3;
-  await pool.query(`SELECT set_limit(${threshold});`);
 
   const hasCenter = center && center.lat && center.lng;
 
@@ -430,7 +429,12 @@ export async function searchPins({
         ) / 8000.0))`
     : `0`;
 
-  const result = await pool.query(
+  // set_limit is a session-level setting — must run on the same connection as the search
+  // query to prevent it from leaking to other callers through the pool.
+  const client = await pool.connect();
+  try {
+    await client.query(`SELECT set_limit($1)`, [threshold]);
+    const result = await client.query(
     `
     SELECT
       ${buildPinSelectFragment(viewerUserId, "pins", viewerUserIdParam)},
@@ -445,17 +449,49 @@ export async function searchPins({
       }
 
       (
+        -- Exact and phrase matches should dominate partial word matches.
+        CASE
+          WHEN LOWER(title) = LOWER($1) THEN 12.0
+          WHEN LOWER(title) LIKE LOWER($2) THEN 8.0
+          WHEN LOWER(COALESCE(address, '')) LIKE LOWER($2) THEN 4.0
+          ELSE 0
+        END
+
+        -- Query-word coverage: a pin matching all words in "hinjewadi tech park"
+        -- should beat pins that only match "hinjewadi".
+        + COALESCE((
+          SELECT AVG(
+            CASE
+              WHEN EXISTS (
+                SELECT 1
+                FROM unnest(
+                  string_to_array(
+                    LOWER(CONCAT_WS(' ', title, address, category)),
+                    ' '
+                  )
+                ) AS document_words(document_word)
+                WHERE document_word = LOWER(qword)
+                  OR document_word LIKE LOWER(qword) || '%'
+                  OR similarity(document_word, LOWER(qword)) >= 0.72
+              ) THEN 1.0
+              ELSE 0.0
+            END
+          )
+          FROM unnest(string_to_array(LOWER($1), ' ')) AS qword
+          WHERE LENGTH(qword) >= 3
+        ), 0) * 5.0
+
         -- Position-independent word match against title
         -- "India Gate..." and "Gateway of India..." both score 1.0 for "india"
         -- "cafe prem" and "hauz khas cafe cluster" both score 1.0 for "cafe"
-        COALESCE((
+        + COALESCE((
           SELECT MAX(similarity(LOWER($1), word))
           FROM unnest(string_to_array(LOWER(title), ' ')) AS word
           WHERE LENGTH(word) >= LENGTH($1) - 1
         ), 0) * 3.0
 
         -- Address similarity (whole string fine here, addresses are structured)
-        + similarity(address, $1) * 1.2
+        + COALESCE(similarity(address, $1), 0) * 1.2
 
         -- Multi-word query: best per-word match across title words
         -- Helps "hauz khas" match "Hauz Khas Cafe Cluster"
@@ -473,7 +509,7 @@ export async function searchPins({
         -- Phonetic tiebreaker (very small, just catches "pune" -> "poon" type typos)
         + (GREATEST(
             difference(title, $1),
-            difference(address, $1)
+            COALESCE(difference(address, $1), 0)
           ) / 4.0) * 0.2
 
         -- Distance: decisive for equal text scores, near-zero across cities
@@ -535,10 +571,12 @@ export async function searchPins({
     ORDER BY relevance DESC, score DESC NULLS LAST, created_at DESC
     LIMIT $3;
     `,
-    params
-  );
-
-  return result.rows;
+      params,
+    );
+    return result.rows;
+  } finally {
+    client.release();
+  }
 }
 
 export async function likePinById(

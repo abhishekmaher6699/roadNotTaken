@@ -1,6 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
+import { User } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../config/supabase';
 import { getAccessTokenFromRequest } from '../modules/auth/auth.cookies';
+
+export interface AuthenticatedRequest extends Request {
+  user: User;
+  accessToken: string;
+}
 
 
 export async function authMiddleware(req: any, res: Response, next: NextFunction) {

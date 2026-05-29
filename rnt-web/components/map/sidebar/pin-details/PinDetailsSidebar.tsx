@@ -8,7 +8,12 @@ import { MapSidebarShell } from "../MapSidebarShell";
 import { PinDetailsGallery } from "./PinDetailsGallery";
 import { PinDetailsHero } from "./PinDetailsHero";
 import { CommentsSection } from "./comment-section";
-import { getPinAuthorName } from "@/features/pins/author";
+import {
+  getAuthorInitial,
+  getPinAuthorAvatarUrl,
+  getPinAuthorId,
+  getPinAuthorName,
+} from "@/features/pins/author";
 import type { PinDetailsSidebarProps } from "./types";
 
 function DetailItem({
@@ -84,6 +89,9 @@ export function PinDetailsSidebar({
   const isOwner = pin.user_id === currentUserId;
   const gallery = pin.image_urls ?? (pin.thumbnail_url ? [pin.thumbnail_url] : []);
   const postedBy = getPinAuthorName(pin);
+  const authorId = getPinAuthorId(pin);
+  const authorAvatarUrl = getPinAuthorAvatarUrl(pin);
+  const authorInitial = getAuthorInitial(postedBy);
 
   const handleDelete = async () => {
     try {
@@ -160,13 +168,26 @@ export function PinDetailsSidebar({
                 value={pin.access_level || "Unknown"}
               />
               <DetailItem label="Posted by" value={postedBy}>
-                {(pin.author?.id || pin.user_id) && onOpenProfile ? (
+                {authorId && onOpenProfile ? (
                   <button
                     type="button"
-                    onClick={() => onOpenProfile((pin.author?.id || pin.user_id) as string)}
-                    className="min-w-0 text-right text-sm font-semibold leading-5 text-neutral-950 underline-offset-4 transition hover:underline"
+                    onClick={() => onOpenProfile(authorId)}
+                    className="flex min-w-0 items-center gap-2 text-right transition hover:text-neutral-950"
                   >
-                    {postedBy}
+                    {authorAvatarUrl ? (
+                      <img
+                        src={authorAvatarUrl}
+                        alt=""
+                        className="h-6 w-6 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-950 text-[10px] font-semibold text-white">
+                        {authorInitial}
+                      </span>
+                    )}
+                    <span className="min-w-0 truncate border-b border-transparent text-sm font-semibold leading-5 text-neutral-950 transition hover:border-neutral-950">
+                      {postedBy}
+                    </span>
                   </button>
                 ) : undefined}
               </DetailItem>

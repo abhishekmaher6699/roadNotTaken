@@ -86,5 +86,6 @@ export interface MapPageOverlayProps extends MapPageClientProps {
   onBasemapToggle: () => void;
   onLocate: (lat: number, lng: number) => void;
   onOpenProfile: () => void;
+  onOpenProfileById: (userId: string) => void;
   onLogout: () => Promise<void>;
 }

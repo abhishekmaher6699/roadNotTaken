@@ -189,6 +189,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onBasemapToggle={handleBasemapToggle}
         onLocate={handleLocate}
         onOpenProfile={() => handleOpenProfile(user.id)}
+        onOpenProfileById={handleOpenProfile}
         onLogout={handleLogout}
       />
 

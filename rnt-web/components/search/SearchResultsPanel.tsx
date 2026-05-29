@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { MapSidebarShell } from "@/components/map/sidebar/MapSidebarShell";
 import { Pin } from "@/features/pins";
-import { getPinAuthorName } from "@/features/pins/author";
+import {
+  getAuthorInitial,
+  getPinAuthorAvatarUrl,
+  getPinAuthorId,
+  getPinAuthorName,
+} from "@/features/pins/author";
 import type { ProfileSearchResult } from "@/features/profiles";
 import { highlight } from "@/components/search/highlight";
 
@@ -94,58 +99,101 @@ export function SearchResultsPanel({
                   {results.length === 0 ? (
                     <p className="text-sm text-neutral-500">No pin matches.</p>
                   ) : (
-                    results.map((pin) => (
-                      <button
-                        key={pin.id}
-                        type="button"
-                        onClick={() => onSelect(pin)}
-                        className="group relative flex flex-col items-start gap-2.5 rounded-2xl border border-neutral-200 bg-white p-3 text-left shadow-sm transition hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-md sm:p-3.5"
-                      >
-                        <div className="flex w-full items-start justify-between gap-2">
-                          <div className="flex min-w-0 flex-1 flex-col">
-                            <p className="truncate text-[15px] font-semibold leading-5 text-neutral-900 group-hover:text-neutral-950">
-                              {highlight(pin.title, query).map((seg, idx) =>
-                                seg.highlight ? (
-                                  <mark key={idx} className="rounded bg-amber-100 px-0.5 font-bold text-neutral-950">{seg.text}</mark>
-                                ) : (
-                                  <span key={idx}>{seg.text}</span>
-                                )
-                              )}
-                            </p>
-                            {pin.address && (
-                              <p className="mt-0.5 truncate text-xs leading-5 text-neutral-500">
-                                {highlight(pin.address, query).map((seg, idx) =>
+                    results.map((pin) => {
+                      const authorName = getPinAuthorName(pin);
+                      const authorId = getPinAuthorId(pin);
+                      const authorAvatarUrl = getPinAuthorAvatarUrl(pin);
+
+                      return (
+                        <div
+                          key={pin.id}
+                          className="group relative flex flex-col items-start gap-2.5 rounded-2xl border border-neutral-200 bg-white p-3 text-left shadow-sm transition hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-md sm:p-3.5"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => onSelect(pin)}
+                            className="flex w-full items-start justify-between gap-2 text-left"
+                          >
+                            <div className="flex min-w-0 flex-1 flex-col">
+                              <p className="truncate text-[15px] font-semibold leading-5 text-neutral-900 group-hover:text-neutral-950">
+                                {highlight(pin.title, query).map((seg, idx) =>
                                   seg.highlight ? (
-                                    <mark key={idx} className="rounded bg-amber-50 px-0.5 font-semibold text-neutral-600">{seg.text}</mark>
+                                    <mark key={idx} className="rounded bg-amber-100 px-0.5 font-bold text-neutral-950">{seg.text}</mark>
                                   ) : (
                                     <span key={idx}>{seg.text}</span>
                                   )
                                 )}
                               </p>
-                            )}
+                              {pin.address && (
+                                <p className="mt-0.5 truncate text-xs leading-5 text-neutral-500">
+                                  {highlight(pin.address, query).map((seg, idx) =>
+                                    seg.highlight ? (
+                                      <mark key={idx} className="rounded bg-amber-50 px-0.5 font-semibold text-neutral-600">{seg.text}</mark>
+                                    ) : (
+                                      <span key={idx}>{seg.text}</span>
+                                    )
+                                  )}
+                                </p>
+                              )}
 
-                            {pin.category && (
-                              <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-[10px] font-semibold capitalize text-neutral-500">
-                                <span
-                                  className="h-1.5 w-1.5 rounded-full"
-                                  style={{ background: getCategoryColor(pin.category) }}
-                                />
-                                {pin.category}
-                              </span>
+                              {pin.category && (
+                                <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-[10px] font-semibold capitalize text-neutral-500">
+                                  <span
+                                    className="h-1.5 w-1.5 rounded-full"
+                                    style={{ background: getCategoryColor(pin.category) }}
+                                  />
+                                  {pin.category}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+
+                          <div className="mt-auto flex w-full flex-wrap items-center gap-1.5 pt-1.5">
+                            <div className="flex items-center gap-1 rounded-full border border-rose-100 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">
+                              {pin.likes_count} likes
+                            </div>
+                            {authorId ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onSelectUser({
+                                    user_id: authorId,
+                                    username: pin.author?.username ?? null,
+                                    display_name: pin.author?.display_name ?? null,
+                                    bio: null,
+                                    avatar_url: authorAvatarUrl,
+                                    location: null,
+                                    total_karma: 0,
+                                    pin_count: 0,
+                                    comment_count: 0,
+                                  })
+                                }
+                                className="min-w-0 flex items-center gap-1.5 text-[11px] font-semibold text-neutral-500"
+                              >
+                                {authorAvatarUrl ? (
+                                  <img
+                                    src={authorAvatarUrl}
+                                    alt=""
+                                    className="h-5 w-5 shrink-0 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-950 text-[9px] font-semibold text-white">
+                                    {getAuthorInitial(authorName)}
+                                  </span>
+                                )}
+                                <span className="truncate border-b border-transparent transition hover:border-neutral-600">
+                                  {authorName}
+                                </span>
+                              </button>
+                            ) : (
+                              <div className="min-w-0 flex items-center gap-1 text-[11px] text-neutral-400">
+                                <span>by {authorName}</span>
+                              </div>
                             )}
                           </div>
                         </div>
-
-                        <div className="mt-auto flex w-full flex-wrap items-center gap-1.5 pt-1.5">
-                          <div className="flex items-center gap-1 rounded-full border border-rose-100 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">
-                            {pin.likes_count} likes
-                          </div>
-                          <div className="min-w-0 flex items-center gap-1 text-[11px] text-neutral-400">
-                            <span>by {getPinAuthorName(pin)}</span>
-                          </div>
-                        </div>
-                      </button>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               )}

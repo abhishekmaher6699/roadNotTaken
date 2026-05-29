@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getMyProfileApi,
   getPublicProfileApi,
@@ -16,8 +16,12 @@ export function usePublicProfile(userId: string | null) {
   const [profile, setProfile] = useState<PublicProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
   const loadProfile = useCallback(async () => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
     if (!userId) {
       setProfile(null);
       setError(null);
@@ -25,19 +29,25 @@ export function usePublicProfile(userId: string | null) {
       return;
     }
 
+    setProfile(null);
     setIsLoading(true);
     setError(null);
 
     try {
       const nextProfile = await getPublicProfileApi(userId);
+      if (requestIdRef.current !== requestId) return;
       setProfile(nextProfile);
       return nextProfile;
     } catch (err) {
-      setProfile(null);
-      setError(err instanceof Error ? err.message : "Failed to load profile");
+      if (requestIdRef.current === requestId) {
+        setProfile(null);
+        setError(err instanceof Error ? err.message : "Failed to load profile");
+      }
       throw err;
     } finally {
-      setIsLoading(false);
+      if (requestIdRef.current === requestId) {
+        setIsLoading(false);
+      }
     }
   }, [userId]);
 

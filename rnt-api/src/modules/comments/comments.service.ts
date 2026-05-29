@@ -13,13 +13,17 @@ export class CommentsServiceError extends Error {
   }
 }
 
-function buildCommentSelectFragment(viewerUserId?: string | null, tableName = "comments") {
+function buildCommentSelectFragment(
+  viewerUserId?: string | null,
+  tableName = "comments",
+  viewerUserIdParam = "$2",
+) {
   const likedExpression = viewerUserId
     ? `EXISTS (
         SELECT 1
         FROM comment_likes
         WHERE comment_likes.comment_id = ${tableName}.id
-          AND comment_likes.user_id = $2
+          AND comment_likes.user_id = ${viewerUserIdParam}
       )`
     : "false";
 

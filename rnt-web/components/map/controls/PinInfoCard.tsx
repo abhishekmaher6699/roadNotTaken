@@ -1,17 +1,27 @@
 "use client";
 
 import type { PinInfoCardProps } from "./types";
+import {
+  getAuthorInitial,
+  getPinAuthorAvatarUrl,
+  getPinAuthorId,
+  getPinAuthorName,
+} from "@/features/pins/author";
 import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 
 export function PinInfoCard({
   pin,
   mode,
   onViewDetails,
+  onOpenProfile,
 }: PinInfoCardProps) {
   const previewImageUrl = getOptimizedCloudinaryUrl(
     pin?.thumbnail_url,
     "card-contain",
   );
+  const authorName = pin ? getPinAuthorName(pin) : "";
+  const authorId = pin ? getPinAuthorId(pin) : null;
+  const authorAvatarUrl = pin ? getPinAuthorAvatarUrl(pin) : null;
 
   if (!pin) {
     return (
@@ -50,6 +60,29 @@ export function PinInfoCard({
         <p className="mt-1.5 text-xs text-neutral-500">
           {pin.latitude.toFixed(5)}, {pin.longitude.toFixed(5)}
         </p>
+
+        {authorId && onOpenProfile && (
+          <button
+            type="button"
+            onClick={() => onOpenProfile(authorId)}
+            className="mt-2 flex max-w-full items-center gap-2 text-left"
+          >
+            {authorAvatarUrl ? (
+              <img
+                src={authorAvatarUrl}
+                alt=""
+                className="h-6 w-6 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-950 text-[10px] font-semibold text-white">
+                {getAuthorInitial(authorName)}
+              </span>
+            )}
+            <span className="min-w-0 truncate border-b border-transparent text-xs font-semibold text-neutral-700 transition hover:border-neutral-700 hover:text-neutral-950">
+              {authorName}
+            </span>
+          </button>
+        )}
 
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           <span className="inline-flex items-center gap-1 rounded-full border border-rose-100 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">

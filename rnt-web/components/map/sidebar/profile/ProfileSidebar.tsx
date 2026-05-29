@@ -49,8 +49,10 @@ export function ProfileSidebar({
 
   if (!open && !userId) return null;
 
-  const user = profile?.user;
-  const stats = profile?.stats;
+  const activeProfile =
+    profile && String(profile.user.user_id) === String(userId) ? profile : null;
+  const user = activeProfile?.user;
+  const stats = activeProfile?.stats;
   const displayName =
     user?.display_name || user?.username || (user ? "Anonymous" : "Profile");
 
@@ -143,7 +145,7 @@ export function ProfileSidebar({
 
             {!isEditing && (
               <ProfileContent
-                content={profile.content}
+                content={activeProfile.content}
                 onOpenPin={onOpenPin}
               />
             )}

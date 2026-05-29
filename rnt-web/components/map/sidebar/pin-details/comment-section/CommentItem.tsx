@@ -88,6 +88,10 @@ export function CommentItem({
         day: "numeric",
       })
     : "Just now";
+  const authorNameBaseClass =
+    "block max-w-full truncate text-left text-[13px] font-semibold text-neutral-950";
+  const clickableAuthorNameClass =
+    "block w-fit max-w-full truncate border-b border-transparent text-left text-[13px] font-semibold leading-5 text-neutral-950 transition hover:border-neutral-950";
 
   useEffect(() => {
     if (!isFocused) return;
@@ -135,12 +139,12 @@ export function CommentItem({
                   <button
                     type="button"
                     onClick={() => onOpenProfile(comment.user_id)}
-                    className="truncate text-left text-[13px] font-semibold text-neutral-950 underline-offset-4 hover:underline"
+                    className={clickableAuthorNameClass}
                   >
                     {authorName}
                   </button>
                 ) : (
-                  <p className="truncate text-[13px] font-semibold text-neutral-950">
+                  <p className={authorNameBaseClass}>
                     {authorName}
                   </p>
                 )}
