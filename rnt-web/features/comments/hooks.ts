@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type SetStateAction } from "react";
 import {
   Comment,
   CreateCommentInput,
@@ -13,12 +13,60 @@ function isAbortError(error: unknown) {
   return error instanceof Error && error.name === "AbortError";
 }
 
+const LIKE_FLUSH_DELAY_MS = 500;
+
+interface PendingLikeMutation {
+  baseComment: Comment;
+  timer: ReturnType<typeof setTimeout>;
+  controller: AbortController | null;
+  resolve: (comment: Comment | null) => void;
+}
+
 export function useComments(pinId: number | null) {
   const [comments, setComments] = useState<Comment[]>([]);
+  const commentsRef = useRef<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const likeControllersRef = useRef<Map<number, AbortController>>(new Map());
   const likeRequestIdsRef = useRef<Map<number, number>>(new Map());
+  const pendingLikeMutationsRef = useRef<
+    Map<number, PendingLikeMutation>
+  >(new Map());
+
+  const setSyncedComments = useCallback(
+    (updater: SetStateAction<Comment[]>) => {
+      const next =
+        typeof updater === "function"
+          ? (updater as (value: Comment[]) => Comment[])(commentsRef.current)
+          : updater;
+
+      commentsRef.current = next;
+      setComments(next);
+    },
+    [],
+  );
+
+  const patchComment = useCallback(
+    (commentId: number, updater: (comment: Comment) => Comment) => {
+      setSyncedComments((prev) =>
+        prev.map((comment) =>
+          comment.id === commentId ? updater(comment) : comment,
+        ),
+      );
+    },
+    [setSyncedComments],
+  );
+
+  const clearPendingLike = useCallback((commentId: number) => {
+    const pendingMutation = pendingLikeMutationsRef.current.get(commentId);
+    if (!pendingMutation) return null;
+
+    clearTimeout(pendingMutation.timer);
+    pendingMutation.controller?.abort();
+    pendingMutation.resolve(null);
+    pendingLikeMutationsRef.current.delete(commentId);
+    return pendingMutation;
+  }, []);
 
   const fetchComments = useCallback(async () => {
     if (!pinId) return;
@@ -27,14 +75,14 @@ export function useComments(pinId: number | null) {
     setError(null);
     try {
       const data = await getCommentsForPinApi(pinId);
-      setComments(data);
+      setSyncedComments(data);
     } catch (err) {
       setError("Failed to load comments");
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [pinId]);
+  }, [pinId, setSyncedComments]);
 
   const addComment = useCallback(async (
     input: CreateCommentInput,
@@ -54,29 +102,34 @@ export function useComments(pinId: number | null) {
       isOptimistic: true,
     };
 
-    setComments((prev) => [...prev, optimisticComment]);
+    setSyncedComments((prev) => [...prev, optimisticComment]);
 
     try {
       const newComment = await createCommentApi(input);
-      setComments((prev) =>
-        prev.map((c) => (c.id === optimisticComment.id ? newComment : c))
+      setSyncedComments((prev) =>
+        prev.map((c) => (c.id === optimisticComment.id ? newComment : c)),
       );
       return newComment;
     } catch (err) {
-      setComments((prev) => prev.filter((c) => c.id !== optimisticComment.id));
+      setSyncedComments((prev) =>
+        prev.filter((c) => c.id !== optimisticComment.id),
+      );
       setError("Failed to add comment");
       console.error(err);
       throw err;
     }
-  }, []);
+  }, [setSyncedComments]);
 
   const removeComment = useCallback(async (commentId: number) => {
     const removedIds = new Set<number>([commentId]);
 
-    setComments((prev) => {
+    setSyncedComments((prev) => {
       const collectReplyIds = (parentId: number) => {
         prev.forEach((comment) => {
-          if (comment.parent_comment_id === parentId && !removedIds.has(comment.id)) {
+          if (
+            comment.parent_comment_id === parentId &&
+            !removedIds.has(comment.id)
+          ) {
             removedIds.add(comment.id);
             collectReplyIds(comment.id);
           }
@@ -92,10 +145,10 @@ export function useComments(pinId: number | null) {
 
     try {
       await deleteCommentApi(commentId);
-      setComments((prev) => prev.filter((c) => !removedIds.has(c.id)));
+      setSyncedComments((prev) => prev.filter((c) => !removedIds.has(c.id)));
       return removedIds.size;
     } catch (err) {
-      setComments((prev) =>
+      setSyncedComments((prev) =>
         prev.map((c) =>
           removedIds.has(c.id) ? { ...c, isDeleting: false } : c
         )
@@ -104,94 +157,96 @@ export function useComments(pinId: number | null) {
       console.error(err);
       throw err;
     }
-  }, []);
+  }, [setSyncedComments]);
 
   const toggleLike = useCallback(async (commentId: number) => {
-    likeControllersRef.current.get(commentId)?.abort();
+    const previousComment = commentsRef.current.find((c) => c.id === commentId);
 
-    let previousComment: Comment | undefined;
-    let optimisticComment: Comment | undefined;
+    if (!previousComment) {
+      return null;
+    }
 
-    setComments((prev) => {
-      previousComment = prev.find((c) => c.id === commentId);
-      if (!previousComment) {
-        return prev;
+    const optimisticComment: Comment = {
+      ...previousComment,
+      viewer_has_liked: !previousComment.viewer_has_liked,
+      likes_count: Math.max(
+        previousComment.likes_count +
+          (previousComment.viewer_has_liked ? -1 : 1),
+        0,
+      ),
+    };
+
+    patchComment(commentId, () => optimisticComment);
+
+    const pendingMutation = clearPendingLike(commentId);
+    if (pendingMutation) {
+      if (
+        !pendingMutation.controller &&
+        optimisticComment.viewer_has_liked === pendingMutation.baseComment.viewer_has_liked
+      ) {
+        return optimisticComment;
       }
-
-      optimisticComment = {
-        ...previousComment,
-        viewer_has_liked: !previousComment.viewer_has_liked,
-        likes_count: Math.max(
-          previousComment.likes_count +
-            (previousComment.viewer_has_liked ? -1 : 1),
-          0
-        ),
-        isLikePending: true,
-      };
-
-      return prev.map((c) =>
-        c.id === commentId ? optimisticComment! : c
-      );
-    });
-
-    if (!previousComment || !optimisticComment) {
-      return;
     }
 
     const requestId = (likeRequestIdsRef.current.get(commentId) ?? 0) + 1;
     likeRequestIdsRef.current.set(commentId, requestId);
-    const controller = new AbortController();
-    likeControllersRef.current.set(commentId, controller);
 
-    try {
-      const result = optimisticComment.viewer_has_liked
-        ? await likeCommentApi(commentId, controller.signal)
-        : await unlikeCommentApi(commentId, controller.signal);
+    return new Promise<Comment | null>((resolve, reject) => {
+      const timer = setTimeout(async () => {
+        const controller = new AbortController();
+        likeControllersRef.current.set(commentId, controller);
 
-      if (likeRequestIdsRef.current.get(commentId) !== requestId) {
-        return;
-      }
+        const currentMutation = pendingLikeMutationsRef.current.get(commentId);
+        if (currentMutation) {
+          currentMutation.controller = controller;
+        }
 
-      setComments((prev) =>
-        prev.map((c) =>
-          c.id === commentId
-            ? {
-                ...c,
-                viewer_has_liked: result.liked,
-                likes_count: result.likes_count,
-                isLikePending: false,
-              }
-            : c
-        )
-      );
-    } catch (err) {
-      if (isAbortError(err)) {
-        return;
-      }
+        try {
+          const result = optimisticComment.viewer_has_liked
+            ? await likeCommentApi(commentId, controller.signal)
+            : await unlikeCommentApi(commentId, controller.signal);
 
-      if (likeRequestIdsRef.current.get(commentId) !== requestId) {
-        return;
-      }
+          if (likeRequestIdsRef.current.get(commentId) !== requestId) {
+            resolve(null);
+            return;
+          }
 
-      setComments((prev) =>
-        prev.map((c) =>
-          c.id === commentId
-            ? {
-                ...previousComment!,
-                isLikePending: false,
-              }
-            : c
-        )
-      );
-      setError("Failed to update comment like");
-      console.error(err);
-      throw err;
-    } finally {
-      if (likeRequestIdsRef.current.get(commentId) === requestId) {
-        likeControllersRef.current.delete(commentId);
-      }
-    }
-  }, []);
+          const resolvedComment: Comment = {
+            ...optimisticComment,
+            viewer_has_liked: result.liked,
+            likes_count: result.likes_count,
+          };
+
+          patchComment(commentId, () => resolvedComment);
+          resolve(resolvedComment);
+        } catch (err) {
+          if (isAbortError(err)) {
+            resolve(null);
+            return;
+          }
+
+          if (likeRequestIdsRef.current.get(commentId) === requestId) {
+            patchComment(commentId, () => previousComment);
+            setError("Failed to update comment like");
+          }
+
+          reject(err);
+        } finally {
+          if (likeRequestIdsRef.current.get(commentId) === requestId) {
+            likeControllersRef.current.delete(commentId);
+            pendingLikeMutationsRef.current.delete(commentId);
+          }
+        }
+      }, LIKE_FLUSH_DELAY_MS);
+
+      pendingLikeMutationsRef.current.set(commentId, {
+        baseComment: pendingMutation?.baseComment ?? previousComment,
+        timer,
+        controller: null,
+        resolve,
+      });
+    });
+  }, [clearPendingLike, patchComment]);
 
   return {
     comments,

@@ -128,52 +128,41 @@ export async function likeCommentById(
   userId: string,
 ): Promise<CommentLikeMutationResult | null> {
   const pool = getPool();
-  const client = await pool.connect();
 
-  try {
-    await client.query("BEGIN");
-
-    const insertResult = await client.query(
-      `
+  const result = await pool.query(
+    `
+    WITH target AS (
+      SELECT id
+      FROM comments
+      WHERE id = $1
+    ),
+    inserted AS (
       INSERT INTO comment_likes (comment_id, user_id)
-      VALUES ($1, $2)
+      SELECT id, $2
+      FROM target
       ON CONFLICT (comment_id, user_id) DO NOTHING
-      RETURNING id;
-      `,
-      [commentId, userId],
-    );
-
-    if (insertResult.rowCount === 0) {
-      const existing = await client.query(
-        `SELECT COALESCE(likes_count, 0) AS likes_count FROM comments WHERE id = $1`,
-        [commentId],
-      );
-      await client.query("COMMIT");
-      return existing.rows[0]
-        ? { liked: true, likes_count: existing.rows[0].likes_count }
-        : null;
-    }
-
-    const updateResult = await client.query(
-      `
+      RETURNING comment_id
+    ),
+    updated AS (
       UPDATE comments
       SET likes_count = COALESCE(likes_count, 0) + 1
       WHERE id = $1
-      RETURNING COALESCE(likes_count, 0) AS likes_count;
-      `,
-      [commentId],
-    );
+        AND EXISTS (SELECT 1 FROM inserted)
+      RETURNING COALESCE(likes_count, 0) AS likes_count
+    )
+    SELECT
+      EXISTS (SELECT 1 FROM target) AS found,
+      true AS liked,
+      COALESCE(
+        (SELECT likes_count FROM updated),
+        (SELECT COALESCE(likes_count, 0) FROM comments WHERE id = $1)
+      ) AS likes_count;
+    `,
+    [commentId, userId],
+  );
 
-    await client.query("COMMIT");
-    return updateResult.rows[0]
-      ? { liked: true, likes_count: updateResult.rows[0].likes_count }
-      : null;
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+  const row = result.rows[0];
+  return row?.found ? { liked: row.liked, likes_count: row.likes_count } : null;
 }
 
 export async function unlikeCommentById(
@@ -181,44 +170,38 @@ export async function unlikeCommentById(
   userId: string,
 ): Promise<CommentLikeMutationResult | null> {
   const pool = getPool();
-  const client = await pool.connect();
 
-  try {
-    await client.query("BEGIN");
-
-    const deleteResult = await client.query(
-      `
+  const result = await pool.query(
+    `
+    WITH target AS (
+      SELECT id
+      FROM comments
+      WHERE id = $1
+    ),
+    deleted AS (
       DELETE FROM comment_likes
-      WHERE comment_id = $1 AND user_id = $2
-      RETURNING id;
-      `,
-      [commentId, userId],
-    );
+      WHERE comment_id = $1
+        AND user_id = $2
+      RETURNING comment_id
+    ),
+    updated AS (
+      UPDATE comments
+      SET likes_count = GREATEST(COALESCE(likes_count, 0) - 1, 0)
+      WHERE id = $1
+        AND EXISTS (SELECT 1 FROM deleted)
+      RETURNING COALESCE(likes_count, 0) AS likes_count
+    )
+    SELECT
+      EXISTS (SELECT 1 FROM target) AS found,
+      false AS liked,
+      COALESCE(
+        (SELECT likes_count FROM updated),
+        (SELECT COALESCE(likes_count, 0) FROM comments WHERE id = $1)
+      ) AS likes_count;
+    `,
+    [commentId, userId],
+  );
 
-    if ((deleteResult.rowCount ?? 0) > 0) {
-      await client.query(
-        `
-        UPDATE comments
-        SET likes_count = GREATEST(COALESCE(likes_count, 0) - 1, 0)
-        WHERE id = $1
-        `,
-        [commentId],
-      );
-    }
-
-    const result = await client.query(
-      `SELECT COALESCE(likes_count, 0) AS likes_count FROM comments WHERE id = $1`,
-      [commentId],
-    );
-
-    await client.query("COMMIT");
-    return result.rows[0]
-      ? { liked: false, likes_count: result.rows[0].likes_count }
-      : null;
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+  const row = result.rows[0];
+  return row?.found ? { liked: row.liked, likes_count: row.likes_count } : null;
 }

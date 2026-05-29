@@ -9,7 +9,7 @@ interface CommentItemProps {
   currentUser: User | null;
   onReply: (commentId: number) => void;
   onDelete: (commentId: number) => Promise<void>;
-  onToggleLike: (commentId: number) => Promise<void>;
+  onToggleLike: (commentId: number) => Promise<Comment | null>;
   onOpenProfile?: (userId: string) => void;
   isFocused?: boolean;
   isReplying: boolean;
@@ -179,6 +179,7 @@ export function CommentItem({
               <button
                 type="button"
                 aria-pressed={comment.viewer_has_liked}
+                aria-label={`${comment.viewer_has_liked ? "Unlike" : "Like"} this comment`}
                 disabled={Boolean(
                   comment.isDeleting || comment.isOptimistic,
                 )}

@@ -11,6 +11,10 @@ function parseTiles(body: any): TileQueryInput['tiles'] | null {
   return valid ? tiles : null;
 }
 
+function getRouteParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export async function createPinHandler(req: AuthenticatedRequest, res: Response) {
   try {
     const pin = await createPin({
@@ -89,7 +93,11 @@ export async function getPinSummariesForTilesHandler(req: Request, res: Response
 
 export async function deletePinHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const pinId = req.params.id;
+    const pinId = getRouteParam(req.params.id);
+    if (!pinId) {
+      return res.status(400).json({ error: 'Invalid pin ID' });
+    }
+
     const deletedPin = await deletePinById(pinId, req.user.id);
 
     if (!deletedPin) {
@@ -104,8 +112,12 @@ export async function deletePinHandler(req: AuthenticatedRequest, res: Response)
 }
 
 export async function likePinHandler(req: AuthenticatedRequest, res: Response) {
-  const pinId = req.params.id;
+  const pinId = getRouteParam(req.params.id);
   const userId = req.user.id;
+
+  if (!pinId) {
+    return res.status(400).json({ error: 'Invalid pin ID' });
+  }
 
   try {
     const result = await likePinById(pinId, userId);
@@ -144,8 +156,12 @@ export async function getPinByIdHandler(req: Request, res: Response) {
 }
 
 export async function unlikePinHandler(req: AuthenticatedRequest, res: Response) {
-  const pinId = req.params.id;
+  const pinId = getRouteParam(req.params.id);
   const userId = req.user.id;
+
+  if (!pinId) {
+    return res.status(400).json({ error: 'Invalid pin ID' });
+  }
 
   try {
     const result = await unlikePinById(pinId, userId);
@@ -163,7 +179,11 @@ export async function unlikePinHandler(req: AuthenticatedRequest, res: Response)
 
 export async function updatePinHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const pinId = req.params.id;
+    const pinId = getRouteParam(req.params.id);
+    if (!pinId) {
+      return res.status(400).json({ error: 'Invalid pin ID' });
+    }
+
     const updatedPin = await updatePinById(pinId, req.user.id, req.body);
 
     if (!updatedPin) {

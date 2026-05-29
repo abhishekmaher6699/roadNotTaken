@@ -1,9 +1,15 @@
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import { createCommentHandler, deleteCommentHandler, getCommentsForPinHandler, likeCommentHandler, unlikeCommentHandler } from './comments.controller';
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { createRateLimitMiddleware } from '../../middleware/rate-limit.middleware';
+import type { AuthenticatedRequest } from '../../middleware/auth.middleware';
 
 const router = Router();
+const authenticated = (
+  handler: (req: AuthenticatedRequest, res: Parameters<RequestHandler>[1]) => Promise<unknown>,
+): RequestHandler => (req, res, next) => {
+  void handler(req as AuthenticatedRequest, res).catch(next);
+};
 const createCommentRateLimit = createRateLimitMiddleware({
   keyPrefix: "comments:create",
   windowMs: 5 * 60 * 1000,
@@ -16,9 +22,9 @@ const likeCommentRateLimit = createRateLimitMiddleware({
 });
 
 router.get('/pins/:pinId/comments', getCommentsForPinHandler);
-router.post('/', authMiddleware, createCommentRateLimit, createCommentHandler);
-router.post('/:id/like', authMiddleware, likeCommentRateLimit, likeCommentHandler);
-router.delete('/:id/like', authMiddleware, likeCommentRateLimit, unlikeCommentHandler);
-router.delete('/:id', authMiddleware, deleteCommentHandler);
+router.post('/', authMiddleware, createCommentRateLimit, authenticated(createCommentHandler));
+router.post('/:id/like', authMiddleware, likeCommentRateLimit, authenticated(likeCommentHandler));
+router.delete('/:id/like', authMiddleware, likeCommentRateLimit, authenticated(unlikeCommentHandler));
+router.delete('/:id', authMiddleware, authenticated(deleteCommentHandler));
 
 export default router;

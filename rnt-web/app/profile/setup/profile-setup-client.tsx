@@ -136,142 +136,186 @@ export function ProfileSetupClient({ email }: ProfileSetupClientProps) {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-100 px-4 py-6 text-neutral-950 sm:px-6">
-      <div className="mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-5xl items-center">
-        <div className="grid w-full grid-cols-1 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 lg:grid-cols-[0.9fr_1.1fr]">
-          <section className="relative min-h-72 overflow-hidden bg-[#121712] p-6 text-white sm:p-8">
-            <div className="absolute inset-0 opacity-70 [background-image:linear-gradient(90deg,rgba(255,255,255,0.09)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.09)_1px,transparent_1px)] [background-size:56px_56px]" />
-            <div className="absolute left-12 top-20 h-2.5 w-2.5 rounded-full bg-emerald-300 shadow-[0_0_0_12px_rgba(110,231,183,0.18)]" />
-            <div className="absolute bottom-20 right-14 h-2.5 w-2.5 rounded-full bg-rose-300 shadow-[0_0_0_12px_rgba(253,164,175,0.18)]" />
-            <div className="absolute left-[-20%] top-[54%] h-px w-[140%] rotate-[-16deg] bg-white/18" />
-            <div className="relative z-10 flex h-full flex-col justify-between">
-              <div>
-                <p className="text-sm font-semibold text-white/70">
-                  Road Not Taken
-                </p>
-                <h1 className="mt-4 max-w-sm text-4xl font-semibold leading-tight tracking-normal">
-                  Create your map identity
-                </h1>
-              </div>
-              <p className="mt-8 max-w-sm text-sm leading-6 text-white/68">
-                Your name, avatar, and location help other explorers recognize
-                the person behind each pin and comment.
+    <main className="relative min-h-screen bg-[#faf6ee] text-[#432e18] px-4 py-8 sm:px-6 flex items-center justify-center overflow-hidden selection:bg-[#dda15e]/30 selection:text-[#432e18]">
+      {/* Decorative Scrapbook Elements */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(#432e18_1px,transparent_1px),linear-gradient(90deg,#432e18_1px,transparent_1px)] [background-size:40px_40px]" />
+        
+        {/* Floating leaf doodle */}
+        <div className="absolute top-[10%] left-[10%] opacity-20 text-[#606c38] animate-sway">
+          <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 12m0-9c4.97 0 9 4.03 9 9 0 2.12-.74 4.07-1.97 5.61L12 12" />
+          </svg>
+        </div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 overflow-hidden rounded-3xl bg-[#fcf9f2] sketch-border sketch-shadow-lg lg:grid-cols-[0.9fr_1.1fr]">
+        {/* Left Side: Scrapbook Brand Pane */}
+        <section className="relative min-h-72 overflow-hidden bg-gradient-to-br from-[#faf6ee] to-[#f5eedb] p-8 text-[#432e18] flex flex-col justify-between border-b lg:border-b-0 lg:border-r-2 border-[#432e18]">
+          <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(#432e18_1px,transparent_1px),linear-gradient(90deg,#432e18_1px,transparent_1px)] [background-size:40px_40px] pointer-events-none" />
+          
+          {/* Subtle sketched graphical nodes */}
+          <div className="absolute left-12 top-20 text-[#606c38] w-8 h-10 animate-sway">
+            <svg viewBox="0 0 24 32" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2 L3 16 H21 L12 2 Z" fill="#606c38" fillOpacity="0.1" />
+              <path d="M12 12 L5 24 H19 L12 12 Z" fill="#606c38" fillOpacity="0.1" />
+              <path d="M12 24v6" />
+            </svg>
+          </div>
+          <div className="absolute bottom-20 right-14 text-[#dda15e] w-8 h-8 animate-doodle-bounce">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="12" cy="12" r="8" fill="#dda15e" fillOpacity="0.1" />
+              <circle cx="12" cy="12" r="4" fill="#dda15e" />
+            </svg>
+          </div>
+          
+          <div className="relative z-10 flex h-full flex-col justify-between gap-12">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-[#606c38]">
+                Road Not Taken
               </p>
+              <h1 className="mt-4 max-w-sm text-4xl font-black leading-tight tracking-tight text-[#432e18] sm:text-5xl font-display">
+                Create your map identity
+              </h1>
             </div>
-          </section>
+            <p className="max-w-sm text-sm leading-relaxed text-[#432e18]/80 font-medium">
+              Choose a handle handle, fill in a brief biography, and upload a profile picture to customize your explorer cards. Let others follow your markers.
+            </p>
+          </div>
+        </section>
 
-          <section className="p-5 sm:p-8">
-            {isLoading ? (
-              <div className="flex min-h-96 items-center justify-center">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-950" />
-              </div>
-            ) : (
-              <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-                {error && (
-                  <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
-                    {error}
-                  </p>
-                )}
+        {/* Right Side: Setup Form Pane */}
+        <section className="p-6 sm:p-8 flex flex-col justify-center">
+          {isLoading ? (
+            <div className="flex min-h-[400px] items-center justify-center">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#432e18]/20 border-t-[#606c38]" />
+            </div>
+          ) : (
+            <form className="space-y-6" onSubmit={handleSubmit} noValidate>
+              {error && (
+                <p className="rounded-xl border-2 border-dashed border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700 flex items-center gap-2 font-semibold">
+                  <svg className="w-4 h-4 shrink-0 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span>{error}</span>
+                </p>
+              )}
 
-                <label className="block">
-                  <span className="text-xs font-semibold text-neutral-500">
-                    Profile picture
-                  </span>
-                  <div className="mt-2 flex items-center gap-3">
+              {/* Avatar picture upload */}
+              <div>
+                <span className="text-xs font-bold text-[#432e18]/70 uppercase tracking-wider block mb-2">
+                  Profile picture
+                </span>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-[#faf6ee] sketch-border p-4 rounded-2xl shadow-sm">
+                  <div className="flex justify-center shrink-0">
                     {form.avatar_url ? (
                       <img
                         src={form.avatar_url}
                         alt=""
-                        className="h-16 w-16 shrink-0 rounded-2xl object-cover"
+                        className="h-16 w-16 rounded-2xl object-cover sketch-border"
                       />
                     ) : (
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-neutral-950 text-lg font-semibold text-white">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#dda15e]/30 text-lg font-bold text-[#432e18] sketch-border select-none">
                         {getInitial(form.display_name || form.username)}
                       </div>
                     )}
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center gap-1.5 min-w-0">
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleAvatarUpload}
                       disabled={isUploading}
-                      className="min-w-0 flex-1 text-sm text-neutral-600 file:mr-3 file:rounded-full file:border-0 file:bg-neutral-950 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white disabled:opacity-60"
+                      className="min-w-0 w-full text-xs text-[#432e18]/60 file:mr-3 file:rounded-full file:border-2 file:border-[#432e18] file:bg-white file:hover:bg-[#faf6ee] file:px-4 file:py-1.5 file:text-xs file:font-bold file:text-[#432e18] file:sketch-btn-transition disabled:opacity-60 cursor-pointer"
                     />
+                    {isUploading && (
+                      <span className="text-[10px] text-[#606c38] flex items-center gap-1.5 font-bold">
+                        <span className="h-2 w-2 animate-ping bg-[#606c38] rounded-full" />
+                        Uploading photo...
+                      </span>
+                    )}
                   </div>
-                  {isUploading && (
-                    <span className="mt-1 block text-xs text-neutral-500">
-                      Uploading...
-                    </span>
-                  )}
-                </label>
+                </div>
+              </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="text-xs font-semibold text-neutral-500">
-                      Display name
-                    </span>
-                    <input
-                      value={form.display_name}
-                      onChange={(event) =>
-                        updateField("display_name", event.target.value)
-                      }
-                      maxLength={40}
-                      className="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none transition focus:border-neutral-500"
-                    />
+              {/* Display & Username */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-[#432e18]/70 uppercase tracking-wider block">
+                    Display Name
                   </label>
-
-                  <label className="block">
-                    <span className="text-xs font-semibold text-neutral-500">
-                      Username
-                    </span>
-                    <input
-                      value={form.username}
-                      onChange={(event) =>
-                        updateField("username", event.target.value)
-                      }
-                      maxLength={32}
-                      className="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none transition focus:border-neutral-500"
-                    />
-                  </label>
+                  <input
+                    value={form.display_name}
+                    onChange={(event) =>
+                      updateField("display_name", event.target.value)
+                    }
+                    maxLength={40}
+                    placeholder="E.g. Arthur Pendragon"
+                    className="w-full rounded-xl bg-[#faf6ee] sketch-border text-[#432e18] px-4 py-3 outline-none transition focus:bg-[#faf6ee]/60 focus:border-[#606c38] placeholder-[#432e18]/30 font-medium text-sm"
+                  />
                 </div>
 
-                <label className="block">
-                  <span className="text-xs font-semibold text-neutral-500">
-                    Location
-                  </span>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-[#432e18]/70 uppercase tracking-wider block">
+                    Username
+                  </label>
                   <input
-                    value={form.location}
+                    value={form.username}
                     onChange={(event) =>
-                      updateField("location", event.target.value)
+                      updateField("username", event.target.value)
                     }
-                    maxLength={80}
-                    className="mt-1.5 w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none transition focus:border-neutral-500"
+                    maxLength={32}
+                    placeholder="username"
+                    className="w-full rounded-xl bg-[#faf6ee] sketch-border text-[#432e18] px-4 py-3 outline-none transition focus:bg-[#faf6ee]/60 focus:border-[#606c38] placeholder-[#432e18]/30 font-medium text-sm"
                   />
-                </label>
+                </div>
+              </div>
 
-                <label className="block">
-                  <span className="text-xs font-semibold text-neutral-500">
-                    Bio
-                  </span>
-                  <textarea
-                    value={form.bio}
-                    onChange={(event) => updateField("bio", event.target.value)}
-                    rows={4}
-                    maxLength={240}
-                    className="mt-1.5 max-h-40 min-h-28 w-full resize-y rounded-xl border border-neutral-200 px-3 py-2.5 text-sm leading-6 outline-none transition focus:border-neutral-500"
-                  />
+              {/* Location */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-[#432e18]/70 uppercase tracking-wider block">
+                  Location
                 </label>
+                <input
+                  value={form.location}
+                  onChange={(event) =>
+                    updateField("location", event.target.value)
+                  }
+                  maxLength={80}
+                  placeholder="E.g. Oregon Woods"
+                  className="w-full rounded-xl bg-[#faf6ee] sketch-border text-[#432e18] px-4 py-3 outline-none transition focus:bg-[#faf6ee]/60 focus:border-[#606c38] placeholder-[#432e18]/30 font-medium text-sm"
+                />
+              </div>
 
-                <button
-                  type="submit"
-                  disabled={isSaving || isUploading}
-                  className="w-full rounded-full bg-neutral-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
-                >
-                  {isSaving ? "Saving..." : "Continue to map"}
-                </button>
-              </form>
-            )}
-          </section>
-        </div>
+              {/* Bio */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-[#432e18]/70 uppercase tracking-wider block">
+                  Biography
+                </label>
+                <textarea
+                  value={form.bio}
+                  onChange={(event) => updateField("bio", event.target.value)}
+                  rows={3}
+                  maxLength={240}
+                  placeholder="Log details on the locations you sketch..."
+                  className="max-h-36 min-h-24 w-full resize-y rounded-xl bg-[#faf6ee] sketch-border text-[#432e18] px-4 py-3 outline-none transition focus:bg-[#faf6ee]/60 focus:border-[#606c38] placeholder-[#432e18]/30 font-medium text-sm leading-relaxed"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSaving || isUploading}
+                className="w-full rounded-xl bg-[#606c38] text-white py-3.5 text-sm font-bold sketch-border sketch-shadow sketch-btn-transition hover:bg-[#505a2e] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSaving ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-100 border-t-white" />
+                ) : null}
+                <span>{isSaving ? "Saving details..." : "Continue to map"}</span>
+              </button>
+            </form>
+          )}
+        </section>
+
       </div>
     </main>
   );

@@ -10,7 +10,7 @@ interface CommentThreadProps {
   replySubmittingCommentId: number | null;
   onReply: (commentId: number) => void;
   onDelete: (commentId: number) => Promise<void>;
-  onToggleLike: (commentId: number) => Promise<void>;
+  onToggleLike: (commentId: number) => Promise<Comment | null>;
   onSubmitReply: (parentCommentId: number, content: string) => Promise<void>;
   onOpenProfile?: (userId: string) => void;
   focusedCommentId?: number | null;

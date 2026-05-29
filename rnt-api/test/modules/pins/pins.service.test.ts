@@ -14,12 +14,20 @@ vi.mock('../../../src/config/db', () => ({
 
 describe('pins.service', () => {
   let mockQuery: ReturnType<typeof vi.fn>;
+  let mockClientQuery: ReturnType<typeof vi.fn>;
+  let mockRelease: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockQuery = vi.fn();
+    mockClientQuery = vi.fn();
+    mockRelease = vi.fn();
     (dbModule.getPool as any).mockReturnValue({
       query: mockQuery,
+      connect: vi.fn().mockResolvedValue({
+        query: mockClientQuery,
+        release: mockRelease,
+      }),
     });
   });
 
@@ -81,17 +89,18 @@ describe('pins.service', () => {
   });
 
   it('searches public profile fields instead of legacy posted_by values', async () => {
-    mockQuery
+    mockClientQuery
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
     await searchPins({ query: 'abhishek' });
 
-    const searchSql = mockQuery.mock.calls[1][0] as string;
+    const searchSql = mockClientQuery.mock.calls[1][0] as string;
 
     expect(searchSql).toContain('LEFT JOIN profiles');
     expect(searchSql).toContain('profiles.display_name');
     expect(searchSql).toContain('profiles.username');
     expect(searchSql).not.toContain('posted_by ILIKE');
+    expect(mockRelease).toHaveBeenCalled();
   });
 });
