@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/api-client";
 import type {
   Profile,
+  ProfileSearchResult,
   PublicProfileResponse,
   UpdateProfileInput,
 } from "./types";
@@ -18,4 +19,17 @@ export function updateMyProfileApi(data: UpdateProfileInput) {
 
 export function getPublicProfileApi(userId: string) {
   return apiClient(`/profiles/${encodeURIComponent(userId)}`) as Promise<PublicProfileResponse>;
+}
+
+export function searchProfilesApi(
+  query: string,
+  limit: number = 8,
+  signal?: AbortSignal,
+) {
+  const params = new URLSearchParams({
+    q: query,
+    limit: String(limit),
+  });
+
+  return apiClient(`/profiles/search?${params}`, { signal }) as Promise<ProfileSearchResult[]>;
 }

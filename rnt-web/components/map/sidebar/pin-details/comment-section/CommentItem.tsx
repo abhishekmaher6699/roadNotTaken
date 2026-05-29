@@ -80,6 +80,7 @@ export function CommentItem({
     comment.author?.display_name ||
     comment.author?.username ||
     "Anonymous";
+  const avatarUrl = comment.author?.avatar_url;
   const initial = authorName.trim().charAt(0).toUpperCase() || "?";
   const createdAt = comment.created_at
     ? new Date(comment.created_at).toLocaleDateString(undefined, {
@@ -111,12 +112,20 @@ export function CommentItem({
                   ? onToggleCollapse(comment.id)
                   : undefined
             }
-            className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition ${
+            className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-semibold transition ${
               comment.user_id && onOpenProfile ? "hover:ring-2 hover:ring-neutral-200" : ""
             } ${getAvatarColor(comment.user_id ?? comment.posted_by ?? "A")}`}
             aria-label="Open profile"
           >
-            {isCollapsed && replyCount > 0 ? "+" : initial}
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              initial
+            )}
           </button>
 
           <div className="min-w-0 flex-1">

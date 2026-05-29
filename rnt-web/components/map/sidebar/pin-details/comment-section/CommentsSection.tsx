@@ -59,7 +59,7 @@ export function CommentsSection({
 
       await addComment(
         { pin_id: pinId, content },
-        { id: author?.id, postedBy: author?.email ?? "Anonymous" },
+        { id: author?.id, postedBy: author ? "You" : "Anonymous" },
       );
       onCommentCountChange?.(1);
     } finally {
@@ -88,7 +88,7 @@ export function CommentsSection({
           parent_comment_id: parentCommentId,
           content,
         },
-        { id: author?.id, postedBy: author?.email ?? "Anonymous" },
+        { id: author?.id, postedBy: author ? "You" : "Anonymous" },
       );
       onCommentCountChange?.(1);
     } finally {

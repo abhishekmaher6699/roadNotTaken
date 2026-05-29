@@ -1,6 +1,7 @@
 import type L from "leaflet";
 import { LatLng } from "leaflet";
 import { Pin, TileSummary } from "@/features/pins/types";
+import type { ProfileSearchResult } from "@/features/profiles";
 import { ServerAuthUser } from "@/lib/server-auth";
 import type { PinFilters } from "@/features/filter";
 
@@ -53,12 +54,14 @@ export interface MapPageClientProps {
 export interface SearchOverlayProps {
   query: string;
   suggestions: Pin[];
+  userSuggestions: ProfileSearchResult[];
   isSearching: boolean;
   isResultsPanelOpen: boolean;
   setQuery: (q: string) => void;
   search: () => void;
   clear: () => void;
   onSelectPin: (pin: Pin) => void;
+  onSelectUser: (user: ProfileSearchResult) => void;
 }
 
 export interface FilterOverlayProps {

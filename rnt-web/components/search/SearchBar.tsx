@@ -2,27 +2,32 @@
 
 import { useRef, KeyboardEvent } from "react";
 import { Pin } from "@/features/pins";
+import type { ProfileSearchResult } from "@/features/profiles";
 import { SearchSuggestions } from "./SearchSuggestions";
 
 interface SearchBarProps {
   query: string;
   suggestions: Pin[];
+  userSuggestions: ProfileSearchResult[];
   isSearching: boolean;
   isResultsPanelOpen: boolean;
   onQueryChange: (q: string) => void;
   onSearch: () => void;
   onSelectPin: (pin: Pin) => void;
+  onSelectUser: (user: ProfileSearchResult) => void;
   onClear: () => void;
 }
 
 export function SearchBar({
   query,
   suggestions,
+  userSuggestions,
   isSearching,
   isResultsPanelOpen,
   onQueryChange,
   onSearch,
   onSelectPin,
+  onSelectUser,
   onClear,
 }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,6 +41,11 @@ export function SearchBar({
   function handleSelect(pin: Pin) {
     onQueryChange(pin.title);
     onSelectPin(pin);
+  }
+
+  function handleSelectUser(user: ProfileSearchResult) {
+    onQueryChange(user.display_name || user.username || "User");
+    onSelectUser(user);
   }
 
   // Show dropdown only when user is actively typing, not when results panel took over.
@@ -108,9 +118,11 @@ export function SearchBar({
           anchorRef={containerRef}
 
           suggestions={suggestions}
+          userSuggestions={userSuggestions}
           isSearching={isSearching}
           query={query}
           onSelect={handleSelect}
+          onSelectUser={handleSelectUser}
           onDismiss={() => onQueryChange("")}
         />
       )}

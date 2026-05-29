@@ -3,9 +3,10 @@ import { getOptionalAuthenticatedUser } from "../../middleware/auth.middleware";
 import {
   getPublicProfile,
   getOrCreateProfile,
-  ProfilesServiceError,
+  searchProfiles,
   updateProfile,
 } from "./profiles.service";
+import { ProfilesServiceError } from "./profiles.utils";
 
 export async function getMyProfileHandler(req: any, res: Response) {
   try {
@@ -49,5 +50,22 @@ export async function getPublicProfileHandler(req: any, res: Response) {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Failed to fetch profile" });
+  }
+}
+
+export async function searchProfilesHandler(req: any, res: Response) {
+  try {
+    const query = typeof req.query.q === "string" ? req.query.q : "";
+    const limitParam = parseInt(req.query.limit as string, 10);
+    const limit =
+      Number.isFinite(limitParam) && limitParam > 0
+        ? Math.min(limitParam, 50)
+        : 8;
+
+    const profiles = await searchProfiles(query, limit);
+    return res.json(profiles);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Failed to search profiles" });
   }
 }

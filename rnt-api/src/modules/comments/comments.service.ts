@@ -40,8 +40,7 @@ function buildCommentSelectFragment(viewerUserId?: string | null, tableName = "c
       ),
       'avatar_url', (
         SELECT profiles.avatar_url FROM profiles WHERE profiles.user_id = ${tableName}.user_id
-      ),
-      'email', ${tableName}.posted_by
+      )
     ) AS author,
     COALESCE(${tableName}.likes_count, 0) AS likes_count,
     ${likedExpression} AS viewer_has_liked,

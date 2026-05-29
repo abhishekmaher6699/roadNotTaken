@@ -31,7 +31,7 @@ export async function createCommentHandler(req: any, res: Response) {
       pin_id: parsedPinId,
       content,
       parent_comment_id: parentCommentId,
-      posted_by: user.email ?? req.body.posted_by,
+      posted_by: undefined,
       user_id: user.id,
     });
 

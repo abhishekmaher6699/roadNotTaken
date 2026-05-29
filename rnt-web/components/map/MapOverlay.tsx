@@ -30,15 +30,17 @@ export function MapOverlay({
       <div className="pointer-events-auto absolute left-3 right-16 top-3 flex items-center gap-2 sm:left-1/2 sm:right-auto sm:top-4 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:px-4">
         <div className="min-w-0 flex-1">
           <SearchBar
-            query={search.query}
-            suggestions={search.suggestions}
-            isSearching={search.isSearching}
-            isResultsPanelOpen={search.isResultsPanelOpen}
-            onQueryChange={search.setQuery}
-            onSearch={search.search}
-            onSelectPin={search.onSelectPin}
-            onClear={search.clear}
-          />
+          query={search.query}
+          suggestions={search.suggestions}
+          userSuggestions={search.userSuggestions}
+          isSearching={search.isSearching}
+          isResultsPanelOpen={search.isResultsPanelOpen}
+          onQueryChange={search.setQuery}
+          onSearch={search.search}
+          onSelectPin={search.onSelectPin}
+          onSelectUser={search.onSelectUser}
+          onClear={search.clear}
+        />
         </div>
         <div className="shrink-0">
           <FilterButton

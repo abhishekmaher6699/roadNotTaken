@@ -16,6 +16,7 @@ import { getPinApi } from "@/features/pins/api";
 import { useDisplayedPins, type Pin } from "@/features/pins";
 import { usePinFilters } from "@/features/filter";
 import { getMyProfileApi } from "@/features/profiles";
+import type { ProfileSearchResult } from "@/features/profiles";
 import { loadLocation } from "@/components/map/controls";
 import type { MapPageClientProps } from "@/types/mapTypes";
 
@@ -121,6 +122,11 @@ export function MapPageClient({ user }: MapPageClientProps) {
     search.clear();
   }
 
+  function handleSearchSelectUser(profile: ProfileSearchResult) {
+    handleOpenProfile(profile.user_id);
+    search.clear();
+  }
+
   async function handleOpenProfilePin(pinId: string, commentId?: number) {
     const pin =
       pins.find((candidate) => String(candidate.id) === String(pinId)) ??
@@ -161,12 +167,14 @@ export function MapPageClient({ user }: MapPageClientProps) {
         search={{
           query: search.query,
           suggestions: search.suggestions,
+          userSuggestions: search.userSuggestions,
           isSearching: search.isSearching,
           isResultsPanelOpen: search.isResultsPanelOpen,
           setQuery: search.setQuery,
           search: search.search,
           clear: search.clear,
           onSelectPin: handleSearchSelectPin,
+          onSelectUser: handleSearchSelectUser,
         }}
         filter={{
           filters,
@@ -227,8 +235,10 @@ export function MapPageClient({ user }: MapPageClientProps) {
         open={search.isResultsPanelOpen}
         query={search.query}
         results={search.results}
+        userResults={search.userResults}
         isSearching={search.isSearching}
         onSelect={handleSearchSelectPin}
+        onSelectUser={handleSearchSelectUser}
         onClose={search.clear}
       />
     </div>

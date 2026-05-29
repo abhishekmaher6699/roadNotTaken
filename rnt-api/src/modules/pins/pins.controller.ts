@@ -10,7 +10,7 @@ export async function createPinHandler(req: any, res: any) {
     const pin = await createPin({
       ...req.body,
       user_id: user.id,
-      posted_by: user.email ?? req.body.posted_by,
+      posted_by: undefined,
     });
     res.status(201).json(pin);
   } catch (error) {

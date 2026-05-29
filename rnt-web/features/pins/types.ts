@@ -10,7 +10,6 @@ export interface Pin {
     display_name?: string | null;
     username?: string | null;
     avatar_url?: string | null;
-    email?: string | null;
   } | null;
   access_level?: string | null;
   latitude: number;

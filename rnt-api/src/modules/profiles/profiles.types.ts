@@ -48,3 +48,15 @@ export interface PublicProfileResponse {
     }>;
   };
 }
+
+export interface ProfileSearchResult {
+  user_id: string;
+  username: string | null;
+  display_name: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  location: string | null;
+  total_karma: number;
+  pin_count: number;
+  comment_count: number;
+}

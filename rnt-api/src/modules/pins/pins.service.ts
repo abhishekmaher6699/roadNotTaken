@@ -42,8 +42,7 @@ function buildPinSelectFragment(
       ),
       'avatar_url', (
         SELECT profiles.avatar_url FROM profiles WHERE profiles.user_id = ${tableName}.user_id
-      ),
-      'email', ${tableName}.posted_by
+      )
     ) AS author,
     ${tableName}.latitude,
     ${tableName}.longitude,
@@ -483,23 +482,36 @@ export async function searchPins({
 
         -- Popularity: tiny tiebreaker only
         + LOG(GREATEST(score, 0) + 1) * 0.05
+
+        -- Profile identity: lets people find pins by public profile names.
+        + GREATEST(
+            COALESCE(similarity(profiles.display_name, $1), 0),
+            COALESCE(similarity(profiles.username, $1), 0)
+          ) * 1.1
       ) AS relevance
 
     FROM pins
+    LEFT JOIN profiles
+      ON profiles.user_id = pins.user_id
     WHERE status != 'deleted'
       AND (
         -- Exact substring (always include, high recall)
         title ILIKE $2
         OR address ILIKE $2
-        OR posted_by ILIKE $2
+        OR profiles.display_name ILIKE $2
+        OR profiles.username ILIKE $2
         OR category ILIKE $2
 
         -- Word-level containment: query word found inside title
         OR $1 <% title
+        OR $1 <% profiles.display_name
+        OR $1 <% profiles.username
 
         -- Whole-string trigram fuzzy (controlled by set_limit)
         OR title % $1
         OR address % $1
+        OR profiles.display_name % $1
+        OR profiles.username % $1
 
         -- Per-word fuzzy: each word of query matched against title/address
         -- Enables "haz khas" -> "hauz khas" without matching unrelated pins
@@ -507,7 +519,12 @@ export async function searchPins({
           SELECT 1
           FROM unnest(string_to_array($1, ' ')) AS q(word)
           WHERE LENGTH(word) >= 3
-            AND (word % title OR word % address)
+            AND (
+              word % title
+              OR word % address
+              OR word % profiles.display_name
+              OR word % profiles.username
+            )
         )
 
         -- Phonetic: only strong matches (> 3 filters out loose soundex hits)

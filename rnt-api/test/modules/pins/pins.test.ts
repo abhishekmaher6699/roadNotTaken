@@ -166,8 +166,9 @@ describe('Pins routes', () => {
     });
     expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO pins'),
-      expect.arrayContaining(['mock-user', 'owner@example.com'])
+      expect.arrayContaining(['mock-user'])
     );
+    expect(mockQuery.mock.calls[0][1]).not.toContain('owner@example.com');
   });
 
   it('returns 401 when create pin auth token is invalid', async () => {

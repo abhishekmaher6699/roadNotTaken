@@ -10,7 +10,6 @@ export interface Comment {
     display_name: string | null;
     username: string | null;
     avatar_url: string | null;
-    email?: string | null;
   };
   likes_count: number;
   viewer_has_liked: boolean;

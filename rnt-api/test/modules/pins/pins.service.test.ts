@@ -4,6 +4,7 @@ import {
   createPin,
   getPinSummariesForTiles,
   getPinsForTiles,
+  searchPins,
   updatePinById,
 } from '../../../src/modules/pins/pins.service';
 
@@ -77,5 +78,20 @@ describe('pins.service', () => {
 
     expect(result).toEqual([]);
     expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it('searches public profile fields instead of legacy posted_by values', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    await searchPins({ query: 'abhishek' });
+
+    const searchSql = mockQuery.mock.calls[1][0] as string;
+
+    expect(searchSql).toContain('LEFT JOIN profiles');
+    expect(searchSql).toContain('profiles.display_name');
+    expect(searchSql).toContain('profiles.username');
+    expect(searchSql).not.toContain('posted_by ILIKE');
   });
 });
