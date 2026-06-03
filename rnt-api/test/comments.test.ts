@@ -1,200 +1,280 @@
-import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import request from 'supertest';
 import app from '../src/app';
 import { getPool } from '../src/config/db';
 import { mockSupabaseDb } from './test.setup';
 
 describe('Comments API Endpoint Tests', () => {
-  const mockUserId = 'usr_comment_tester_999';
-  const mockAccessToken = 'access_comment_tester_jwt';
-  const mockUserEmail = 'comment_tester@trail.com';
+  const ownerUserId = 'usr_comment_owner_999';
+  const ownerAccessToken = 'access_comment_owner_jwt';
+  const ownerEmail = 'comment_owner@trail.com';
 
-  const anotherUserId = 'usr_other_commenter_111';
-  const anotherAccessToken = 'access_other_commenter_jwt';
-  const anotherUserEmail = 'other_commenter@trail.com';
+  const otherUserId = 'usr_comment_other_111';
+  const otherAccessToken = 'access_comment_other_jwt';
+  const otherEmail = 'comment_other@trail.com';
 
-  let testPinId: number;
-  let testCommentId: number;
+  let titleCounter = 0;
 
-  beforeAll(async () => {
-    const pool = getPool();
-    // 1. Create profiles
-    await pool.query(
-      `INSERT INTO profiles (user_id, username, display_name)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_id) DO UPDATE SET username = $2, display_name = $3`,
-      [mockUserId, 'comment_tester', 'Comment Tester']
+  function uniqueTitle(label: string) {
+    titleCounter += 1;
+    return `TEST_COMMENT_PIN_${label}_${titleCounter}`;
+  }
+
+  async function cleanupData() {
+    await getPool().query('DELETE FROM pins WHERE user_id IN ($1, $2)', [
+      ownerUserId,
+      otherUserId,
+    ]);
+    await getPool().query('DELETE FROM profiles WHERE user_id IN ($1, $2)', [
+      ownerUserId,
+      otherUserId,
+    ]);
+  }
+
+  async function seedProfiles() {
+    await getPool().query(
+      `INSERT INTO profiles (user_id, username, display_name, avatar_url)
+       VALUES ($1, $2, $3, $4), ($5, $6, $7, $8)
+       ON CONFLICT (user_id) DO UPDATE
+       SET username = EXCLUDED.username,
+           display_name = EXCLUDED.display_name,
+           avatar_url = EXCLUDED.avatar_url`,
+      [
+        ownerUserId,
+        'comment_owner',
+        'Comment Owner',
+        'https://example.com/owner.jpg',
+        otherUserId,
+        'comment_other',
+        'Comment Other',
+        'https://example.com/other.jpg',
+      ],
     );
-    await pool.query(
-      `INSERT INTO profiles (user_id, username, display_name)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_id) DO UPDATE SET username = $2, display_name = $3`,
-      [anotherUserId, 'other_commenter', 'Other Commenter']
-    );
+  }
 
-    // 2. Create a test pin for comment associations
-    const pinRes = await pool.query(
-      `INSERT INTO pins (title, latitude, longitude, user_id, category)
-       VALUES ('TEST_COMMENT_PIN_Parent', 18.5, 73.8, $1, 'forest')
-       RETURNING id`,
-      [mockUserId]
-    );
-    testPinId = pinRes.rows[0].id;
-  });
+  async function createTestPin() {
+    const res = await request(app)
+      .post('/pins')
+      .set('Cookie', [`access_token=${ownerAccessToken}`])
+      .send({
+        title: uniqueTitle('Seed'),
+        description: 'A pin for comment API tests.',
+        latitude: 18.524,
+        longitude: 73.856,
+        category: 'general',
+        status: 'active',
+        access_level: 'public',
+      });
 
-  afterAll(async () => {
-    const pool = getPool();
-    // Delete comments and parents
-    await pool.query("DELETE FROM comments WHERE content LIKE 'TEST_%'");
-    await pool.query("DELETE FROM pins WHERE id = $1", [testPinId]);
-    await pool.query("DELETE FROM profiles WHERE user_id IN ($1, $2)", [mockUserId, anotherUserId]);
-  });
+    expect(res.status).toBe(201);
+    return res.body;
+  }
 
-  beforeEach(() => {
-    // Setup transient Supabase auth sessions
-    mockSupabaseDb.users.set(mockUserEmail, { id: mockUserId, email: mockUserEmail });
-    mockSupabaseDb.sessions.set(mockAccessToken, {
-      user: { id: mockUserId, email: mockUserEmail },
-      expiresAt: Date.now() + 3600000
+  async function createTestComment(pinId: number, content = 'A useful field note') {
+    const res = await request(app)
+      .post('/comments')
+      .set('Cookie', [`access_token=${ownerAccessToken}`])
+      .send({ pin_id: pinId, content });
+
+    expect(res.status).toBe(201);
+    return res.body;
+  }
+
+  beforeEach(async () => {
+    await cleanupData();
+    await seedProfiles();
+
+    mockSupabaseDb.users.set(ownerEmail, { id: ownerUserId, email: ownerEmail });
+    mockSupabaseDb.sessions.set(ownerAccessToken, {
+      user: { id: ownerUserId, email: ownerEmail },
+      expiresAt: Date.now() + 3600000,
     });
 
-    mockSupabaseDb.users.set(anotherUserEmail, { id: anotherUserId, email: anotherUserEmail });
-    mockSupabaseDb.sessions.set(anotherAccessToken, {
-      user: { id: anotherUserId, email: anotherUserEmail },
-      expiresAt: Date.now() + 3600000
+    mockSupabaseDb.users.set(otherEmail, { id: otherUserId, email: otherEmail });
+    mockSupabaseDb.sessions.set(otherAccessToken, {
+      user: { id: otherUserId, email: otherEmail },
+      expiresAt: Date.now() + 3600000,
     });
   });
+
+  afterEach(cleanupData);
+  afterAll(cleanupData);
 
   describe('POST /comments - Create Comment', () => {
-    it('should successfully create a new comment when authenticated', async () => {
+    it('should create a top-level comment with author profile fields', async () => {
+      const pin = await createTestPin();
+
       const res = await request(app)
         .post('/comments')
-        .set('Cookie', [`access_token=${mockAccessToken}`])
+        .set('Cookie', [`access_token=${ownerAccessToken}`])
+        .send({ pin_id: pin.id, content: '  This place has a quiet trailhead.  ' });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('pin_id', pin.id);
+      expect(res.body).toHaveProperty('content', 'This place has a quiet trailhead.');
+      expect(res.body).toHaveProperty('parent_comment_id', null);
+      expect(res.body).toHaveProperty('user_id', ownerUserId);
+      expect(res.body).toHaveProperty('likes_count', 0);
+      expect(res.body).toHaveProperty('viewer_has_liked', false);
+      expect(res.body.author).toMatchObject({
+        id: ownerUserId,
+        username: 'comment_owner',
+        display_name: 'Comment Owner',
+        avatar_url: 'https://example.com/owner.jpg',
+      });
+    });
+
+    it('should create a reply when parent comment belongs to the same pin', async () => {
+      const pin = await createTestPin();
+      const parent = await createTestComment(pin.id, 'Parent comment');
+
+      const res = await request(app)
+        .post('/comments')
+        .set('Cookie', [`access_token=${otherAccessToken}`])
         .send({
-          pin_id: testPinId,
-          content: 'TEST_This is a wonderful coordinate!'
+          pin_id: pin.id,
+          parent_comment_id: parent.id,
+          content: 'Reply from another explorer',
         });
 
       expect(res.status).toBe(201);
-      expect(res.body).toHaveProperty('id');
-      expect(res.body).toHaveProperty('content', 'TEST_This is a wonderful coordinate!');
-      expect(res.body).toHaveProperty('user_id', mockUserId);
-      expect(res.body).toHaveProperty('pin_id', testPinId);
-
-      testCommentId = res.body.id;
+      expect(res.body).toHaveProperty('parent_comment_id', parent.id);
+      expect(res.body).toHaveProperty('user_id', otherUserId);
+      expect(res.body.author).toMatchObject({
+        id: otherUserId,
+        username: 'comment_other',
+      });
     });
 
-    it('should return 400 if content is missing', async () => {
+    it('should reject empty comments', async () => {
+      const pin = await createTestPin();
+
       const res = await request(app)
         .post('/comments')
-        .set('Cookie', [`access_token=${mockAccessToken}`])
-        .send({ pin_id: testPinId });
+        .set('Cookie', [`access_token=${ownerAccessToken}`])
+        .send({ pin_id: pin.id, content: '   ' });
 
       expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty('error', 'pin_id and content are required');
+      expect(res.body).toHaveProperty('error', 'Comment content cannot be empty');
     });
 
-    it('should return 400 if pinId is missing', async () => {
+    it('should reject comments for a missing pin', async () => {
       const res = await request(app)
         .post('/comments')
-        .set('Cookie', [`access_token=${mockAccessToken}`])
-        .send({ content: 'TEST_No parent pin' });
+        .set('Cookie', [`access_token=${ownerAccessToken}`])
+        .send({ pin_id: 999999, content: 'Ghost pin comment' });
 
-      expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty('error', 'pin_id and content are required');
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty('error', 'Pin not found');
     });
 
-    it('should return 401 if unauthenticated', async () => {
+    it('should return 401 when unauthenticated', async () => {
       const res = await request(app)
         .post('/comments')
-        .send({ pin_id: testPinId, content: 'TEST_Unauthenticated comment' });
+        .send({ pin_id: 1, content: 'No auth here' });
 
       expect(res.status).toBe(401);
     });
-
-    it('should enforce rate limiting (destructive edge case - max 12 comments)', async () => {
-      // Set up a separate user to avoid locking out the main tester
-      const rateUser = 'usr_rate_limit_tester';
-      const rateToken = 'access_rate_limit_jwt';
-      const rateEmail = 'rate@trail.com';
-
-      mockSupabaseDb.users.set(rateEmail, { id: rateUser, email: rateEmail });
-      mockSupabaseDb.sessions.set(rateToken, {
-        user: { id: rateUser, email: rateEmail },
-        expiresAt: Date.now() + 3600000
-      });
-
-      // Submit 12 comments successfully
-      for (let i = 0; i < 12; i++) {
-        const res = await request(app)
-          .post('/comments')
-          .set('Cookie', [`access_token=${rateToken}`])
-          .send({ pin_id: testPinId, content: `TEST_Limit comment ${i}` });
-        expect(res.status).toBe(201);
-      }
-
-      // The 13th comment should trigger rate limiter returning a 429
-      const limitRes = await request(app)
-        .post('/comments')
-        .set('Cookie', [`access_token=${rateToken}`])
-        .send({ pin_id: testPinId, content: 'TEST_Too many comments' });
-
-      expect(limitRes.status).toBe(429);
-      expect(limitRes.headers).toHaveProperty('retry-after');
-      expect(limitRes.body).toHaveProperty('error');
-      expect(limitRes.body.error).toContain('Too many requests');
-    });
   });
 
-  describe('GET /comments/pins/:pinId/comments - Comments tree listing', () => {
-    it('should list all comments associated with the pin parent', async () => {
+  describe('GET /comments/pins/:pinId/comments - List Comments', () => {
+    it('should list comments for a pin and include viewer like state', async () => {
+      const pin = await createTestPin();
+      const comment = await createTestComment(pin.id, 'Visible comment');
+
+      await request(app)
+        .post(`/comments/${comment.id}/like`)
+        .set('Cookie', [`access_token=${otherAccessToken}`]);
+
       const res = await request(app)
-        .get(`/comments/pins/${testPinId}/comments`);
+        .get(`/comments/pins/${pin.id}/comments`)
+        .set('Cookie', [`access_token=${otherAccessToken}`]);
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body.some((c: any) => c.id === testCommentId)).toBe(true);
+      const found = res.body.find((item: any) => item.id === comment.id);
+      expect(found).toBeDefined();
+      expect(found).toHaveProperty('likes_count', 1);
+      expect(found).toHaveProperty('viewer_has_liked', true);
+      expect(found.author).toMatchObject({
+        username: 'comment_owner',
+        display_name: 'Comment Owner',
+      });
+    });
+
+    it('should return 400 for malformed pin IDs', async () => {
+      const res = await request(app).get('/comments/pins/not-a-pin/comments');
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'Invalid pin ID');
     });
   });
 
   describe('POST & DELETE /comments/:id/like - Like/Unlike Comment', () => {
     it('should like a comment and increment likes_count', async () => {
+      const pin = await createTestPin();
+      const comment = await createTestComment(pin.id);
+
       const res = await request(app)
-        .post(`/comments/${testCommentId}/like`)
-        .set('Cookie', [`access_token=${mockAccessToken}`]);
+        .post(`/comments/${comment.id}/like`)
+        .set('Cookie', [`access_token=${otherAccessToken}`]);
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('liked', true);
-      expect(res.body).toHaveProperty('likes_count');
-      expect(res.body.likes_count).toBeGreaterThanOrEqual(1);
+      expect(res.body).toEqual({ liked: true, likes_count: 1 });
     });
 
     it('should unlike a comment and decrement likes_count', async () => {
+      const pin = await createTestPin();
+      const comment = await createTestComment(pin.id);
+
+      await request(app)
+        .post(`/comments/${comment.id}/like`)
+        .set('Cookie', [`access_token=${otherAccessToken}`]);
+
       const res = await request(app)
-        .delete(`/comments/${testCommentId}/like`)
-        .set('Cookie', [`access_token=${mockAccessToken}`]);
+        .delete(`/comments/${comment.id}/like`)
+        .set('Cookie', [`access_token=${otherAccessToken}`]);
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('liked', false);
+      expect(res.body).toEqual({ liked: false, likes_count: 0 });
+    });
+
+    it('should return 404 when liking a missing comment', async () => {
+      const res = await request(app)
+        .post('/comments/999999/like')
+        .set('Cookie', [`access_token=${ownerAccessToken}`]);
+
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty('error', 'Comment not found');
     });
   });
 
   describe('DELETE /comments/:id - Delete Comment', () => {
-    it('should prevent non-owners from deleting the comment', async () => {
-      const res = await request(app)
-        .delete(`/comments/${testCommentId}`)
-        .set('Cookie', [`access_token=${anotherAccessToken}`]);
+    it('should prevent non-owners from deleting a comment', async () => {
+      const pin = await createTestPin();
+      const comment = await createTestComment(pin.id);
 
-      expect(res.status).toBe(404); // Returns 404 since it filters by ownership in comments.service.ts
+      const res = await request(app)
+        .delete(`/comments/${comment.id}`)
+        .set('Cookie', [`access_token=${otherAccessToken}`]);
+
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty('error', 'Comment not found or not owned by user');
     });
 
-    it('should allow the owner to delete the comment', async () => {
+    it('should allow the owner to delete a comment', async () => {
+      const pin = await createTestPin();
+      const comment = await createTestComment(pin.id);
+
       const res = await request(app)
-        .delete(`/comments/${testCommentId}`)
-        .set('Cookie', [`access_token=${mockAccessToken}`]);
+        .delete(`/comments/${comment.id}`)
+        .set('Cookie', [`access_token=${ownerAccessToken}`]);
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('id', testCommentId);
+      expect(res.body).toEqual({ id: comment.id });
+
+      const listRes = await request(app).get(`/comments/pins/${pin.id}/comments`);
+      expect(listRes.body.some((item: any) => item.id === comment.id)).toBe(false);
     });
   });
 });

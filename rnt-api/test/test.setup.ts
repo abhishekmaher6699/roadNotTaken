@@ -1,10 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { vi, beforeEach, afterAll } from 'vitest';
-import { getPool } from '../src/config/db';
-
-
+import { vi, beforeEach } from 'vitest';
 
 export const mockSupabaseDb = {
   users: new Map<string, any>(),
@@ -147,13 +144,3 @@ vi.mock('../src/config/supabase', () => {
     }
   };
 });
-
-afterAll(async () => {
-  try {
-    const pool = getPool();
-    await pool.end();
-  } catch (err) {
-    // Ignore error if database pool wasn't initialized or set up
-  }
-});
-
