@@ -21,7 +21,7 @@ export default async function Home() {
       {/* Decorative Scrapbook Elements (Background Doodles) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         {/* Subtle grid lines like drafting paper */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(#432e18_1px,transparent_1px),linear-gradient(90deg,#432e18_1px,transparent_1px)] [background-size:40px_40px]" />
+        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(#432e18_1px,transparent_1px),linear-gradient(90deg,#432e18_1px,transparent_1px)] [bg-size:40px_40px]" />
         
         {/* Sketched leaves floating around */}
         <div className="absolute top-[12%] left-[6%] animate-sway opacity-30 text-[#606c38]">
@@ -85,7 +85,7 @@ export default async function Home() {
               <span className="text-[#606c38] relative inline-block">
                 beaten path.
                 {/* Hand drawn scribble line under title */}
-                <svg className="absolute left-0 bottom-[-8px] w-full h-3 text-[#dda15e]" viewBox="0 0 200 10" fill="none" preserveAspectRatio="none">
+                <svg className="absolute left-0 -bottom-2 w-full h-3 text-[#dda15e]" viewBox="0 0 200 10" fill="none" preserveAspectRatio="none">
                   <path d="M2 8 C 50 2, 100 2, 198 8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                 </svg>
               </span>
@@ -117,10 +117,10 @@ export default async function Home() {
           {/* Right Visual: Illustrative 2D Map Journal Mockup */}
           <div className="lg:col-span-6 relative flex justify-center">
             {/* The Journal Container */}
-            <div className="relative w-full max-w-lg aspect-square sm:aspect-[4/3] lg:aspect-square bg-[#fcf9f2] sketch-border sketch-shadow-lg rounded-3xl p-5 overflow-hidden animate-sway-delayed">
+            <div className="relative w-full max-w-lg aspect-square sm:aspect-4/3 lg:aspect-square bg-[#fcf9f2] sketch-border sketch-shadow-lg rounded-3xl p-5 overflow-hidden animate-sway-delayed">
               
               {/* Journal Grid & Map Compass */}
-              <div className="absolute inset-0 bg-[radial-gradient(#432e18_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
+              <div className="absolute inset-0 bg-[radial-gradient(#432e18_1px,transparent_1px)] [bg-size:24px_24px] opacity-10 pointer-events-none" />
               
               {/* Compass Rose Doodle */}
               <div className="absolute top-6 right-6 text-[#dda15e] w-12 h-12 opacity-60">
@@ -181,7 +181,7 @@ export default async function Home() {
               </div>
 
               {/* Floating Polaroids card component */}
-              <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-80 bg-white sketch-border p-3.5 shadow-md rounded-xl flex flex-col gap-2 relative">
+              <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-80 bg-white sketch-border p-3.5 shadow-md rounded-xl flex flex-col gap-2">
                 {/* Polaroid scotch tape */}
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-5.5 bg-[#e9c46a]/65 -rotate-2 sketch-border border-dashed flex items-center justify-center text-[8px] font-bold text-[#432e18]/80 select-none">
                   PIN #124

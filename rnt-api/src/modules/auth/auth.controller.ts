@@ -32,8 +32,31 @@ function getCredentials(body: AuthBody) {
   if (!email || !password) {
     throw new Error("Email and password required");
   }
+  if (typeof email !== "string" || typeof password !== "string") {
+    throw new Error("Email and password must be strings");
+  }
 
   return { email, password };
+}
+
+function getSignupErrorStatus(message: string) {
+  if (
+    message === "Email and password required" ||
+    message === "Email and password must be strings"
+  ) {
+    return 400;
+  }
+  if (message === "User already exists") {
+    return 409;
+  }
+  return 500;
+}
+
+function getLoginErrorStatus(message: string) {
+  return message === "Email and password required" ||
+    message === "Email and password must be strings"
+    ? 400
+    : 401;
 }
 
 // Persists the Supabase session in secure cookies after a successful auth flow.
@@ -72,7 +95,7 @@ export async function signupHandler(req: Request, res: Response) {
     });
   } catch (err: any) {
     console.error(err);
-    res.status(err.message === "Email and password required" ? 400 : 500).json({
+    res.status(getSignupErrorStatus(err.message)).json({
       error: err.message,
     });
   }
@@ -95,7 +118,7 @@ export async function loginHandler(req: Request, res: Response) {
     });
   } catch (err: any) {
     console.error(err);
-    res.status(401).json({ error: err.message });
+    res.status(getLoginErrorStatus(err.message)).json({ error: err.message });
   }
 }
 
