@@ -73,6 +73,7 @@ export function PinDetailsSidebar({
   onEdit,
   onDelete,
   onToggleLike,
+  onToggleVisit,
   onOpenProfile,
   focusedCommentId,
   onCommentCountChange,
@@ -107,6 +108,10 @@ export function PinDetailsSidebar({
     await onToggleLike(pin);
   };
 
+  const handleVisitClick = async () => {
+    await onToggleVisit(pin);
+  };
+
   return (
     <>
       <MapSidebarShell
@@ -134,6 +139,15 @@ export function PinDetailsSidebar({
                 count={pin.likes_count}
                 onClick={handleLikeClick}
                 label="Like"
+                className="min-h-0 px-3 py-1.5 text-xs [&>svg]:h-3.5 [&>svg]:w-3.5"
+              />
+              <LikeButton
+                liked={pin.viewer_has_visited}
+                count={pin.visits_count}
+                onClick={handleVisitClick}
+                label="Visit"
+                activeLabel="Visited"
+                tone="visit"
                 className="min-h-0 px-3 py-1.5 text-xs [&>svg]:h-3.5 [&>svg]:w-3.5"
               />
               {isOwner && (

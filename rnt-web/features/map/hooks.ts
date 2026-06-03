@@ -51,6 +51,7 @@ export function useMapPageState() {
     editPin,
     removePin,
     togglePinLike,
+    togglePinVisit,
     updatePinCommentCount,
     loadTiles,
     loadTileSummaries,
@@ -168,7 +169,9 @@ export function useMapPageState() {
         ? {
             ...updatedPin,
             likes_count: current.likes_count,
+            visits_count: current.visits_count,
             viewer_has_liked: current.viewer_has_liked,
+            viewer_has_visited: current.viewer_has_visited,
           }
         : updatedPin,
     );
@@ -226,6 +229,63 @@ export function useMapPageState() {
         const stillOptimistic =
           current.viewer_has_liked === optimisticPin.viewer_has_liked &&
           current.likes_count === optimisticPin.likes_count;
+
+        return stillOptimistic ? previousPin : current;
+      });
+      throw error;
+    }
+  };
+
+  const getOptimisticVisitedPin = (pin: Pin): Pin => ({
+    ...pin,
+    viewer_has_visited: !pin.viewer_has_visited,
+    visits_count: Math.max(
+      pin.visits_count + (pin.viewer_has_visited ? -1 : 1),
+      0,
+    ),
+  });
+
+  const handleTogglePinVisit = async (pin: Pin) => {
+    let previousPin = pin;
+    let optimisticPin = getOptimisticVisitedPin(pin);
+
+    setSelectedPin((current) => {
+      if (!current || current.id !== pin.id) {
+        return current;
+      }
+
+      previousPin = current;
+      optimisticPin = getOptimisticVisitedPin(current);
+      return optimisticPin;
+    });
+
+    try {
+      const updatedPin = await togglePinVisit(pin.id, previousPin);
+
+      if (!updatedPin) {
+        return;
+      }
+
+      setSelectedPin((current) => {
+        if (!current || current.id !== pin.id) {
+          return current;
+        }
+
+        const stillOptimistic =
+          current.viewer_has_visited === optimisticPin.viewer_has_visited &&
+          current.visits_count === optimisticPin.visits_count;
+
+        return stillOptimistic ? updatedPin : current;
+      });
+    } catch (error) {
+      setSelectedPin((current) => {
+        if (!current || current.id !== pin.id) {
+          return current;
+        }
+
+        const stillOptimistic =
+          current.viewer_has_visited === optimisticPin.viewer_has_visited &&
+          current.visits_count === optimisticPin.visits_count;
 
         return stillOptimistic ? previousPin : current;
       });
@@ -300,6 +360,7 @@ export function useMapPageState() {
     handleUpdatePin,
     handleDeletePin,
     handleTogglePinLike,
+    handleTogglePinVisit,
     handleCommentCountChange,
     handleClearSelection,
     handleCloseSidebar,

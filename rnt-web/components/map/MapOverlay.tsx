@@ -50,6 +50,7 @@ export function MapOverlay({
             onToggleCategory={filter.onToggleCategory}
             onToggleStatus={filter.onToggleStatus}
             onToggleAccessLevel={filter.onToggleAccessLevel}
+            onToggleVisitedOnly={filter.onToggleVisitedOnly}
             onClear={filter.onClearFilters}
           />
         </div>

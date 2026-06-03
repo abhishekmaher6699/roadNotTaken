@@ -14,6 +14,7 @@ interface FilterButtonProps {
   onToggleCategory: (value: string) => void;
   onToggleStatus: (value: string) => void;
   onToggleAccessLevel: (value: string) => void;
+  onToggleVisitedOnly: () => void;
   onClear: () => void;
 }
 
@@ -59,6 +60,7 @@ export function FilterButton({
   onToggleCategory,
   onToggleStatus,
   onToggleAccessLevel,
+  onToggleVisitedOnly,
   onClear,
 }: FilterButtonProps) {
   const [open, setOpen] = useState(false);
@@ -138,6 +140,22 @@ export function FilterButton({
           </div>
 
           <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+                Travel
+              </p>
+              <button
+                type="button"
+                onClick={onToggleVisitedOnly}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-150 ${
+                  filters.visitedOnly
+                    ? "bg-neutral-900 text-white shadow-sm"
+                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                }`}
+              >
+                Visited
+              </button>
+            </div>
             <ChipGroup
               label="Category"
               options={CATEGORY_OPTIONS}

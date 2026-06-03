@@ -6,6 +6,7 @@ const EMPTY_FILTERS: PinFilters = {
   categories: [],
   statuses: [],
   accessLevels: [],
+  visitedOnly: false,
 };
 
 function toggle(arr: string[], value: string): string[] {
@@ -19,7 +20,8 @@ export function usePinFilters() {
     () =>
       filters.categories.length +
       filters.statuses.length +
-      filters.accessLevels.length,
+      filters.accessLevels.length +
+      (filters.visitedOnly ? 1 : 0),
     [filters]
   );
 
@@ -42,6 +44,11 @@ export function usePinFilters() {
   const toggleAccessLevel = useCallback(
     (value: string) =>
       setFilters((f) => ({ ...f, accessLevels: toggle(f.accessLevels, value) })),
+    []
+  );
+
+  const toggleVisitedOnly = useCallback(
+    () => setFilters((f) => ({ ...f, visitedOnly: !f.visitedOnly })),
     []
   );
 
@@ -68,6 +75,9 @@ export function usePinFilters() {
         ) {
           return false;
         }
+        if (filters.visitedOnly && !pin.viewer_has_visited) {
+          return false;
+        }
         return true;
       });
     },
@@ -83,5 +93,6 @@ export function usePinFilters() {
     toggleCategory,
     toggleStatus,
     toggleAccessLevel,
+    toggleVisitedOnly,
   };
 }

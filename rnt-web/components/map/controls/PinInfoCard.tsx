@@ -107,6 +107,17 @@ export function PinInfoCard({
             </svg>
             {pin.comment_count} comments
           </span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              className="h-3 w-3"
+              fill="currentColor"
+            >
+              <path d="M10 2.5a6.5 6.5 0 0 1 6.5 6.5c0 3.9-6.5 8.5-6.5 8.5S3.5 12.9 3.5 9A6.5 6.5 0 0 1 10 2.5Zm2.8 4.7-3.7 3.7-1.7-1.7-1.1 1.1 2.8 2.8 4.8-4.8-1.1-1.1Z" />
+            </svg>
+            {pin.visits_count} visits
+          </span>
         </div>
 
         {pin.description && (

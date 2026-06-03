@@ -21,8 +21,10 @@ export interface Pin {
   score?: number | null;
   user_id?: string;
   likes_count: number;
+  visits_count: number;
   comment_count: number;
   viewer_has_liked: boolean;
+  viewer_has_visited: boolean;
   created_at?: string | null;
   updated_at?: string | null;
 }

@@ -13,6 +13,11 @@ export interface LikeMutationResponse {
   likes_count: number;
 }
 
+export interface VisitMutationResponse {
+  visited: boolean;
+  visits_count: number;
+}
+
 export function getPinsApi() {
   return apiClient("/pins") as Promise<Pin[]>;
 }
@@ -75,6 +80,18 @@ export function unlikePinApi(id: string, signal?: AbortSignal) {
     method: "DELETE",
     signal,
   }) as Promise<LikeMutationResponse>;
+}
+
+export function visitPinApi(id: string) {
+  return apiClient(`/pins/${id}/visit`, {
+    method: "POST",
+  }) as Promise<VisitMutationResponse>;
+}
+
+export function unvisitPinApi(id: string) {
+  return apiClient(`/pins/${id}/visit`, {
+    method: "DELETE",
+  }) as Promise<VisitMutationResponse>;
 }
 
 export function searchPinsApi(

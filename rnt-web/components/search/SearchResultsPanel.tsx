@@ -152,6 +152,9 @@ export function SearchResultsPanel({
                             <div className="flex items-center gap-1 rounded-full border border-rose-100 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">
                               {pin.likes_count} likes
                             </div>
+                            <div className="flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                              {pin.visits_count} visits
+                            </div>
                             {authorId ? (
                               <button
                                 type="button"

@@ -70,6 +70,7 @@ export interface FilterOverlayProps {
   onToggleCategory: (value: string) => void;
   onToggleStatus: (value: string) => void;
   onToggleAccessLevel: (value: string) => void;
+  onToggleVisitedOnly: () => void;
   onClearFilters: () => void;
 }
 

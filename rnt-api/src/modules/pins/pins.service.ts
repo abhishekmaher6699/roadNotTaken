@@ -5,6 +5,7 @@ import {
   SearchPinsInput,
   TileQueryInput,
   UpdatePinInput,
+  VisitMutationResult,
 } from "./pins.types";
 import { getViewportPinLimit } from "./pins.helpers";
 import {
@@ -25,6 +26,14 @@ function buildPinSelectFragment(
         FROM pin_likes
         WHERE pin_likes.pin_id = ${tableName}.id
           AND pin_likes.user_id = ${viewerUserIdParam}
+      )`
+    : "false";
+  const visitedExpression = viewerUserId
+    ? `EXISTS (
+        SELECT 1
+        FROM pin_visits
+        WHERE pin_visits.pin_id = ${tableName}.id
+          AND pin_visits.user_id = ${viewerUserIdParam}
       )`
     : "false";
 
@@ -55,12 +64,14 @@ function buildPinSelectFragment(
     ${tableName}.thumbnail_url,
     ${tableName}.image_urls,
     COALESCE(${tableName}.likes_count, 0) AS likes_count,
+    COALESCE(${tableName}.visits_count, 0) AS visits_count,
     (
       SELECT COUNT(*)
       FROM comments
       WHERE comments.pin_id = ${tableName}.id
     )::integer AS comment_count,
     ${likedExpression} AS viewer_has_liked,
+    ${visitedExpression} AS viewer_has_visited,
     ${tableName}.score,
     ${tableName}.created_at,
     ${tableName}.updated_at
@@ -95,33 +106,19 @@ export async function createPin(data: CreatePinInput) {
 
   const result = await pool.query(
     `
-    INSERT INTO pins (
-      title, category, address, status, posted_by, access_level, description, thumbnail_url, image_urls, latitude, longitude, user_id, geom
+    WITH inserted_pin AS (
+      INSERT INTO pins (
+        title, category, address, status, posted_by, access_level, description, thumbnail_url, image_urls, latitude, longitude, user_id, geom
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+        ST_SetSRID(ST_MakePoint($11, $10), 4326)
+      )
+      RETURNING *
     )
-    VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-      ST_SetSRID(ST_MakePoint($11, $10), 4326)
-    )
-    RETURNING
-      id,
-      user_id,
-      posted_by,
-      latitude,
-      longitude,
-      title,
-      category,
-      address,
-      status,
-      access_level,
-      description,
-      thumbnail_url,
-      image_urls,
-      COALESCE(likes_count, 0) AS likes_count,
-      0::integer AS comment_count,
-      false AS viewer_has_liked,
-      score,
-      created_at,
-      updated_at;
+    SELECT
+      ${buildPinSelectFragment(user_id, "inserted_pin", "$12")}
+    FROM inserted_pin;
     `,
     [
       title,
@@ -221,42 +218,24 @@ export async function updatePinById(
 
   const result = await pool.query(
     `
-    UPDATE pins
-    SET
-      title = $3,
-      category = $4,
-      address = $5,
-      status = $6,
-      access_level = $7,
-      description = $8,
-      thumbnail_url = $9,
-      image_urls = $10,
-      updated_at = NOW()
-    WHERE id = $1 AND user_id = $2
-    RETURNING
-      id,
-      user_id,
-      posted_by,
-      latitude,
-      longitude,
-      title,
-      category,
-      address,
-      status,
-      access_level,
-      description,
-      thumbnail_url,
-      image_urls,
-      COALESCE(likes_count, 0) AS likes_count,
-      (
-        SELECT COUNT(*)
-        FROM comments
-        WHERE comments.pin_id = pins.id
-      )::integer AS comment_count,
-      false AS viewer_has_liked,
-      score,
-      created_at,
-      updated_at;
+    WITH updated_pin AS (
+      UPDATE pins
+      SET
+        title = $3,
+        category = $4,
+        address = $5,
+        status = $6,
+        access_level = $7,
+        description = $8,
+        thumbnail_url = $9,
+        image_urls = $10,
+        updated_at = NOW()
+      WHERE id = $1 AND user_id = $2
+      RETURNING *
+    )
+    SELECT
+      ${buildPinSelectFragment(userId, "updated_pin", "$2")}
+    FROM updated_pin;
     `,
     [
       id,
@@ -677,4 +656,88 @@ export async function unlikePinById(
   } finally {
     client.release();
   }
+}
+
+export async function visitPinById(
+  pinId: string,
+  userId: string,
+): Promise<VisitMutationResult | null> {
+  const pool = getPool();
+
+  const result = await pool.query(
+    `
+    WITH target AS (
+      SELECT id
+      FROM pins
+      WHERE id = $1::integer
+    ),
+    inserted AS (
+      INSERT INTO pin_visits (pin_id, user_id)
+      SELECT id, $2
+      FROM target
+      ON CONFLICT (pin_id, user_id) DO NOTHING
+      RETURNING pin_id
+    ),
+    updated AS (
+      UPDATE pins
+      SET visits_count = COALESCE(visits_count, 0) + 1
+      WHERE id IN (SELECT pin_id FROM inserted)
+      RETURNING COALESCE(visits_count, 0) AS visits_count
+    )
+    SELECT
+      EXISTS (SELECT 1 FROM target) AS found,
+      true AS visited,
+      COALESCE(
+        (SELECT visits_count FROM updated),
+        (SELECT COALESCE(visits_count, 0) FROM pins WHERE id = $1::integer)
+      ) AS visits_count;
+    `,
+    [pinId, userId],
+  );
+
+  const row = result.rows[0];
+  return row?.found
+    ? { visited: row.visited, visits_count: row.visits_count }
+    : null;
+}
+
+export async function unvisitPinById(
+  pinId: string,
+  userId: string,
+): Promise<VisitMutationResult | null> {
+  const pool = getPool();
+
+  const result = await pool.query(
+    `
+    WITH target AS (
+      SELECT id
+      FROM pins
+      WHERE id = $1::integer
+    ),
+    deleted AS (
+      DELETE FROM pin_visits
+      WHERE pin_id = $1::integer AND user_id = $2
+      RETURNING pin_id
+    ),
+    updated AS (
+      UPDATE pins
+      SET visits_count = GREATEST(COALESCE(visits_count, 0) - 1, 0)
+      WHERE id IN (SELECT pin_id FROM deleted)
+      RETURNING COALESCE(visits_count, 0) AS visits_count
+    )
+    SELECT
+      EXISTS (SELECT 1 FROM target) AS found,
+      false AS visited,
+      COALESCE(
+        (SELECT visits_count FROM updated),
+        (SELECT COALESCE(visits_count, 0) FROM pins WHERE id = $1::integer)
+      ) AS visits_count;
+    `,
+    [pinId, userId],
+  );
+
+  const row = result.rows[0];
+  return row?.found
+    ? { visited: row.visited, visits_count: row.visits_count }
+    : null;
 }

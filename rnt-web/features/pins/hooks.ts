@@ -4,7 +4,9 @@ import {
   deletePinApi,
   likePinApi,
   unlikePinApi,
+  unvisitPinApi,
   updatePinApi,
+  visitPinApi,
 } from "./api";
 import type {
   CreatePinInput,
@@ -34,8 +36,10 @@ import type { MapViewport } from "@/types/mapTypes";
 
 const LIKE_FLUSH_DELAY_MS = 500;
 
-function getSocialScore(pin: Pick<Pin, "likes_count" | "comment_count">) {
-  return pin.likes_count + pin.comment_count * 2;
+function getSocialScore(
+  pin: Pick<Pin, "likes_count" | "comment_count" | "visits_count">,
+) {
+  return pin.likes_count + pin.comment_count * 2 + pin.visits_count;
 }
 
 function areSummaryListsEqual(
@@ -425,6 +429,45 @@ export function usePins() {
     });
   };
 
+  const togglePinVisit = async (pinId: string, fallbackPin?: Pin) => {
+    const previousPin = findPinInCache(pinId) ?? fallbackPin ?? null;
+
+    if (!previousPin) {
+      return null;
+    }
+
+    const optimisticPin: Pin = {
+      ...previousPin,
+      viewer_has_visited: !previousPin.viewer_has_visited,
+      visits_count: Math.max(
+        previousPin.visits_count + (previousPin.viewer_has_visited ? -1 : 1),
+        0,
+      ),
+    };
+    optimisticPin.score = getSocialScore(optimisticPin);
+
+    patchPinInCache(pinId, () => optimisticPin);
+
+    try {
+      const result = optimisticPin.viewer_has_visited
+        ? await visitPinApi(pinId)
+        : await unvisitPinApi(pinId);
+
+      const resolvedPin: Pin = {
+        ...optimisticPin,
+        viewer_has_visited: result.visited,
+        visits_count: result.visits_count,
+      };
+      resolvedPin.score = getSocialScore(resolvedPin);
+
+      patchPinInCache(pinId, () => resolvedPin);
+      return resolvedPin;
+    } catch (error) {
+      patchPinInCache(pinId, () => previousPin);
+      throw error;
+    }
+  };
+
   return {
     pins,
     tileSummaries,
@@ -432,6 +475,7 @@ export function usePins() {
     editPin,
     removePin,
     togglePinLike,
+    togglePinVisit,
     updatePinCommentCount,
     loadTiles,
     loadTileSummaries,

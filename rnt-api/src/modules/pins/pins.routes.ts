@@ -1,5 +1,5 @@
 import { Router, type RequestHandler } from 'express';
-import { createPinHandler, deletePinHandler, getPinByIdHandler, getPinSummariesForTilesHandler, getPinsForTilesHandler, getPinsHandler, likePinHandler, searchPinsHandler, unlikePinHandler, updatePinHandler } from './pins.controller';
+import { createPinHandler, deletePinHandler, getPinByIdHandler, getPinSummariesForTilesHandler, getPinsForTilesHandler, getPinsHandler, likePinHandler, searchPinsHandler, unlikePinHandler, unvisitPinHandler, updatePinHandler, visitPinHandler } from './pins.controller';
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { createRateLimitMiddleware } from '../../middleware/rate-limit.middleware';
 import type { AuthenticatedRequest } from '../../middleware/auth.middleware';
@@ -15,6 +15,11 @@ const likePinRateLimit = createRateLimitMiddleware({
   windowMs: 60 * 1000,
   max: 60,
 });
+const visitPinRateLimit = createRateLimitMiddleware({
+  keyPrefix: "pins:visit",
+  windowMs: 60 * 1000,
+  max: 60,
+});
 
 router.get('/', getPinsHandler);
 router.get('/search', searchPinsHandler);
@@ -25,6 +30,8 @@ router.get('/:id', getPinByIdHandler);
 router.post('/', authMiddleware, authenticated(createPinHandler));
 router.post('/:id/like', authMiddleware, likePinRateLimit, authenticated(likePinHandler));
 router.delete('/:id/like', authMiddleware, likePinRateLimit, authenticated(unlikePinHandler));
+router.post('/:id/visit', authMiddleware, visitPinRateLimit, authenticated(visitPinHandler));
+router.delete('/:id/visit', authMiddleware, visitPinRateLimit, authenticated(unvisitPinHandler));
 router.put('/:id', authMiddleware, authenticated(updatePinHandler));
 router.delete('/:id', authMiddleware, authenticated(deletePinHandler));
 

@@ -62,6 +62,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleUpdatePin,
     handleDeletePin,
     handleTogglePinLike,
+    handleTogglePinVisit,
     handleCommentCountChange,
     handleClearSelection,
     handleCloseSidebar,
@@ -81,6 +82,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     toggleCategory,
     toggleStatus,
     toggleAccessLevel,
+    toggleVisitedOnly,
   } = usePinFilters();
 
   const filteredPins = isFiltersActive ? applyFilters(pins) : pins;
@@ -182,6 +184,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
           onToggleCategory: toggleCategory,
           onToggleStatus: toggleStatus,
           onToggleAccessLevel: toggleAccessLevel,
+          onToggleVisitedOnly: toggleVisitedOnly,
           onClearFilters: clearFilters,
         }}
         onViewDetails={handleViewDetails}
@@ -217,6 +220,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onEdit={handleStartEditPin}
         onDelete={handleDeletePin}
         onToggleLike={handleTogglePinLike}
+        onToggleVisit={handleTogglePinVisit}
         onOpenProfile={handleOpenProfile}
         focusedCommentId={focusedCommentId}
         onCommentCountChange={handleCommentCountChange}

@@ -29,6 +29,11 @@ export interface LikeMutationResult {
   likes_count: number;
 }
 
+export interface VisitMutationResult {
+  visited: boolean;
+  visits_count: number;
+}
+
 export interface TileQueryInput {
   tiles: Array<{
     x: number;

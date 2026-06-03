@@ -8,6 +8,7 @@ export interface PinDetailsSidebarProps {
   onEdit: () => void;
   onDelete: (pinId: string) => Promise<void>;
   onToggleLike: (pin: Pin) => Promise<void>;
+  onToggleVisit: (pin: Pin) => Promise<void>;
   onOpenProfile?: (userId: string) => void;
   focusedCommentId?: number | null;
   onCommentCountChange?: (pinId: string, delta: number) => void;

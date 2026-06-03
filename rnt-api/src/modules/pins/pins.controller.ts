@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthenticatedRequest, getOptionalAuthenticatedUser } from '../../middleware/auth.middleware';
-import { createPin, deletePinById, getAllPins, getPinById, getPinSummariesForTiles, getPinsForTiles, likePinById, searchPins, unlikePinById, updatePinById } from './pins.service';
+import { createPin, deletePinById, getAllPins, getPinById, getPinSummariesForTiles, getPinsForTiles, likePinById, searchPins, unlikePinById, unvisitPinById, updatePinById, visitPinById } from './pins.service';
 import { TileQueryInput } from './pins.types';
 
 function parseTiles(body: any): TileQueryInput['tiles'] | null {
@@ -174,6 +174,50 @@ export async function unlikePinHandler(req: AuthenticatedRequest, res: Response)
   } catch (error) {
     console.error('[pins:unlike] failed', { pinId, userId, error });
     return res.status(500).json({ error: 'Failed to unlike pin' });
+  }
+}
+
+export async function visitPinHandler(req: AuthenticatedRequest, res: Response) {
+  const pinId = getRouteParam(req.params.id);
+  const userId = req.user.id;
+
+  if (!pinId) {
+    return res.status(400).json({ error: 'Invalid pin ID' });
+  }
+
+  try {
+    const result = await visitPinById(pinId, userId);
+
+    if (!result) {
+      return res.status(404).json({ error: 'Pin not found' });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('[pins:visit] failed', { pinId, userId, error });
+    return res.status(500).json({ error: 'Failed to mark pin visited' });
+  }
+}
+
+export async function unvisitPinHandler(req: AuthenticatedRequest, res: Response) {
+  const pinId = getRouteParam(req.params.id);
+  const userId = req.user.id;
+
+  if (!pinId) {
+    return res.status(400).json({ error: 'Invalid pin ID' });
+  }
+
+  try {
+    const result = await unvisitPinById(pinId, userId);
+
+    if (!result) {
+      return res.status(404).json({ error: 'Pin not found' });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('[pins:unvisit] failed', { pinId, userId, error });
+    return res.status(500).json({ error: 'Failed to unmark pin visited' });
   }
 }
 
