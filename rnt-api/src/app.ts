@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { getPool } from './config/db';
@@ -49,5 +49,19 @@ if (process.env.NODE_ENV !== "production") {
     }
   });
 }
+
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  console.error("Unhandled request error:", {
+    method: req.method,
+    url: req.originalUrl,
+    error: err,
+  });
+
+  return res.status(500).json({ error: "Internal server error" });
+});
 
 export default app;

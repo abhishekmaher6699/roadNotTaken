@@ -28,6 +28,6 @@ export async function getServerProfile() {
     return (await response.json()) as Profile;
   } catch (error) {
     console.error("Failed to reach profile API from Next server:", error);
-    return null;
+    throw new Error("Profile service is unavailable");
   }
 }

@@ -32,6 +32,6 @@ export async function getServerAuthUser() {
     return data.user;
   } catch (error) {
     console.error("Failed to reach auth API from Next server:", error);
-    return null;
+    throw new Error("Authentication service is unavailable");
   }
 }
