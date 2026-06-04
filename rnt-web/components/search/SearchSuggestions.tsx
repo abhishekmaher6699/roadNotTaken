@@ -86,12 +86,13 @@ export function SearchSuggestions({
   return createPortal(
     <div
       ref={containerRef}
-      className="pointer-events-auto rounded-2xl border border-white/20 bg-white/90 shadow-2xl backdrop-blur-xl z-4000"
+      className="pointer-events-auto z-4000 overflow-y-auto overscroll-contain rounded-2xl border border-white/20 bg-white/90 shadow-2xl backdrop-blur-xl"
       style={{
         position: "absolute",
         top: rect.bottom + 8,
         left: rect.left,
         width: rect.width,
+        maxHeight: `min(28rem, calc(100vh - ${rect.bottom + 24}px))`,
       }}
     >
       {isSearching && suggestions.length === 0 && userSuggestions.length === 0 && (

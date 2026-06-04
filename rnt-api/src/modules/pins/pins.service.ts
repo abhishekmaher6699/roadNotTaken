@@ -298,10 +298,13 @@ export async function getPinsForTiles(
         ) AS tile_rank
       FROM requested_tiles
       JOIN pins
-        ON pins.longitude >= requested_tiles.west
-       AND pins.longitude < requested_tiles.east
-       AND pins.latitude >= requested_tiles.south
-       AND pins.latitude < requested_tiles.north
+        ON pins.geom && ST_MakeEnvelope(
+          requested_tiles.west,
+          requested_tiles.south,
+          requested_tiles.east,
+          requested_tiles.north,
+          4326
+        )::geography
     )
     SELECT
       ${buildPinSelectFragment(viewerUserId, "ranked_tile_pins")}
@@ -356,10 +359,13 @@ SELECT
   MAX(pins.score) AS top_score
 FROM requested_tiles
 LEFT JOIN pins
-  ON pins.longitude >= requested_tiles.west
- AND pins.longitude < requested_tiles.east
- AND pins.latitude >= requested_tiles.south
- AND pins.latitude < requested_tiles.north
+  ON pins.geom && ST_MakeEnvelope(
+    requested_tiles.west,
+    requested_tiles.south,
+    requested_tiles.east,
+    requested_tiles.north,
+    4326
+  )::geography
 GROUP BY requested_tiles.x, requested_tiles.y, requested_tiles.z `,
   );
 
@@ -403,7 +409,7 @@ export async function searchPins({
 
   const distanceScore = hasCenter
     ? `LEAST(1.0, EXP(-ST_Distance(
-          ST_MakePoint(longitude, latitude)::geography,
+          pins.geom,
           ST_MakePoint($4, $5)::geography
         ) / 8000.0))`
     : `0`;
@@ -421,7 +427,7 @@ export async function searchPins({
       ${
         hasCenter
           ? `ST_Distance(
-              ST_MakePoint(longitude, latitude)::geography,
+              pins.geom,
               ST_MakePoint($4, $5)::geography
             ) AS distance,`
           : `NULL AS distance,`
@@ -521,6 +527,7 @@ export async function searchPins({
         OR $1 <% title
         OR $1 <% profiles.display_name
         OR $1 <% profiles.username
+        OR $1 <% address
 
         -- Whole-string trigram fuzzy (controlled by set_limit)
         OR title % $1

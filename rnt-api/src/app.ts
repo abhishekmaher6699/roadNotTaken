@@ -13,6 +13,8 @@ const app = express();
 
 const webUrl = process.env.WEB_URL || "http://localhost:3000";
 
+app.set("trust proxy", 1);
+
 app.use(
   cors({
     origin: webUrl,
