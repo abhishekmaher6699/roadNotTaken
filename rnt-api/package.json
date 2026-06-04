@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "vitest run --pool threads --dir test --silent=passed-only",
-    "test:watch": "vitest --pool threads --dir test",
+    "test": "vitest run --pool threads --silent=passed-only",
+    "test:watch": "vitest --pool threads",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
@@ -22,6 +22,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "helmet": "^8.2.0",
     "node-pg-migrate": "^8.0.4",
     "pg": "^8.20.0"
   },

@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { getPool } from './config/db';
 
 
@@ -15,13 +16,14 @@ const webUrl = process.env.WEB_URL || "http://localhost:3000";
 
 app.set("trust proxy", 1);
 
+app.use(helmet());
 app.use(
   cors({
     origin: webUrl,
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 
 
 app.use('/pins', pinsRoutes)
@@ -35,15 +37,17 @@ app.get('/', (req, res) => {
   res.send('API running ');
 });
 
-app.get('/db-test', async (req, res) => {
-  try {
-    const pool = getPool();
-    const result = await pool.query('SELECT NOW()');
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.log('DB connection error:', err);
-    res.status(500).json({ error: 'DB connection failed' });
-  }
-});
+if (process.env.NODE_ENV !== "production") {
+  app.get('/db-test', async (req, res) => {
+    try {
+      const pool = getPool();
+      const result = await pool.query('SELECT NOW()');
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.log('DB connection error:', err);
+      res.status(500).json({ error: 'DB connection failed' });
+    }
+  });
+}
 
 export default app;

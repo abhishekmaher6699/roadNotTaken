@@ -17,8 +17,30 @@ function getRouteParam(value: string | string[] | undefined) {
 
 export async function createPinHandler(req: AuthenticatedRequest, res: Response) {
   try {
+    const {
+      title,
+      category,
+      address,
+      status,
+      access_level,
+      description,
+      thumbnail_url,
+      image_urls,
+      latitude,
+      longitude,
+    } = req.body;
+
     const pin = await createPin({
-      ...req.body,
+      title,
+      category,
+      address,
+      status,
+      access_level,
+      description,
+      thumbnail_url,
+      image_urls,
+      latitude,
+      longitude,
       user_id: req.user.id,
       posted_by: undefined,
     });
