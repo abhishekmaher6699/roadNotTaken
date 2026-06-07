@@ -2,6 +2,8 @@ import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { getPool } from './config/db';
+import { requestLogger } from './middleware/request-logger.middleware';
+import { logger } from './utils/logger';
 
 
 import pinsRoutes from "./modules/pins/pins.routes"
@@ -17,6 +19,7 @@ const webUrl = process.env.WEB_URL || "http://localhost:3000";
 app.set("trust proxy", 1);
 
 app.use(helmet());
+app.use(requestLogger);
 app.use(
   cors({
     origin: webUrl,
@@ -44,7 +47,7 @@ if (process.env.NODE_ENV !== "production") {
       const result = await pool.query('SELECT NOW()');
       res.json(result.rows[0]);
     } catch (err) {
-      console.log('DB connection error:', err);
+      logger.error('DB connection error', { error: err });
       res.status(500).json({ error: 'DB connection failed' });
     }
   });
@@ -55,7 +58,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     return next(err);
   }
 
-  console.error("Unhandled request error:", {
+  logger.error("Unhandled request error", {
     method: req.method,
     url: req.originalUrl,
     error: err,

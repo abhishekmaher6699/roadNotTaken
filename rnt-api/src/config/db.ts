@@ -1,4 +1,6 @@
 import { Pool } from 'pg';
+import { attachDbObservability } from './db-observability';
+import { logger } from '../utils/logger';
 
 let pool: Pool | null = null;
 
@@ -24,8 +26,10 @@ export function getPool() {
     });
 
     pool.on("error", (err) => {
-      console.error("Unexpected idle database client error:", err);
+      logger.error("Unexpected idle database client error", { error: err });
     });
+
+    attachDbObservability(pool);
   }
 
   return pool;
