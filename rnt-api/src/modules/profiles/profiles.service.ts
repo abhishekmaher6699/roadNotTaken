@@ -1,4 +1,4 @@
-import { getPool } from "../../config/db";
+import { queryDb } from "../../config/db";
 import type {
   Profile,
   ProfileSearchResult,
@@ -18,11 +18,10 @@ export async function getOrCreateProfile(
   userId: string,
   email?: string | null,
 ): Promise<Profile> {
-  const pool = getPool();
+  await queryDb("profiles.ensure", profileQueries.ensureProfile, [userId]);
 
-  await pool.query(profileQueries.ensureProfile, [userId]);
-
-  const result = await pool.query(
+  const result = await queryDb(
+    "profiles.me",
     profileQueries.getProfileByUserId,
     [userId],
   );
@@ -38,7 +37,6 @@ export async function updateProfile(
   input: UpdateProfileInput,
   email?: string | null,
 ): Promise<Profile> {
-  const pool = getPool();
   const current = await getOrCreateProfile(userId, email);
   const normalized = normalizeProfileInput(input);
 
@@ -56,7 +54,8 @@ export async function updateProfile(
   };
 
   try {
-    const result = await pool.query(
+    const result = await queryDb(
+      "profiles.update",
       profileQueries.updateProfile,
       [
         userId,
@@ -85,11 +84,10 @@ export async function updateProfile(
 export async function getPublicProfile(
   userId: string,
 ): Promise<PublicProfileResponse | null> {
-  const pool = getPool();
+  await queryDb("profiles.public.ensure", profileQueries.ensurePublicProfile, [userId]);
 
-  await pool.query(profileQueries.ensurePublicProfile, [userId]);
-
-  const result = await pool.query(
+  const result = await queryDb(
+    "profiles.public",
     profileQueries.getPublicProfile,
     [userId],
   );
@@ -98,11 +96,13 @@ export async function getPublicProfile(
   if (!row) return null;
 
   const [pinsResult, commentsResult] = await Promise.all([
-    pool.query(
+    queryDb(
+      "profiles.public.pins",
       profileQueries.getPublicProfilePins,
       [userId],
     ),
-    pool.query(
+    queryDb(
+      "profiles.public.comments",
       profileQueries.getPublicProfileComments,
       [userId],
     ),
@@ -137,14 +137,14 @@ export async function searchProfiles(
   query: string,
   limit = 8,
 ): Promise<ProfileSearchResult[]> {
-  const pool = getPool();
   const term = query.trim();
 
   if (term.length < 2) {
     return [];
   }
 
-  const result = await pool.query(
+  const result = await queryDb(
+    "profiles.search",
     profileQueries.searchProfiles,
     [term, `%${term}%`, limit],
   );

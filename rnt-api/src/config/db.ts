@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
-import { attachDbObservability } from './db-observability';
+import type { QueryConfig, QueryConfigValues, QueryResult, QueryResultRow } from 'pg';
+import { attachDbObservability, withDbQueryName } from './db-observability';
 import { logger } from '../utils/logger';
 
 let pool: Pool | null = null;
@@ -43,4 +44,16 @@ export async function closePool() {
   const currentPool = pool;
   pool = null;
   await currentPool.end();
+}
+
+export function queryDb<R extends QueryResultRow = any, I = any[]>(
+  name: string,
+  queryText: string | QueryConfig<I>,
+  values?: QueryConfigValues<I>,
+): Promise<QueryResult<R>> {
+  return withDbQueryName(name, () => getPool().query<R, I>(queryText as any, values as any));
+}
+
+export function runDbQueryWithName<T>(name: string, run: () => T): T {
+  return withDbQueryName(name, run);
 }

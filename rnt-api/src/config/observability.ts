@@ -14,8 +14,19 @@ function getNumberEnv(name: string, fallback: number) {
 }
 
 export const observabilityConfig = {
-  requestLoggingEnabled: getBooleanEnv("REQUEST_LOGGING_ENABLED", true),
-  requestLoggingIncludeOptions: getBooleanEnv("REQUEST_LOGGING_INCLUDE_OPTIONS", false),
-  dbQueryLoggingEnabled: getBooleanEnv("DB_QUERY_LOGGING_ENABLED", true),
-  dbSlowQueryMs: getNumberEnv("DB_SLOW_QUERY_MS", 300),
+  get requestLoggingEnabled() {
+    return getBooleanEnv("REQUEST_LOGGING_ENABLED", true);
+  },
+
+  get requestLoggingIncludeOptions() {
+    return getBooleanEnv("REQUEST_LOGGING_INCLUDE_OPTIONS", false);
+  },
+
+  get dbQueryLoggingEnabled() {
+    return getBooleanEnv("DB_QUERY_LOGGING_ENABLED", true);
+  },
+
+  get dbSlowQueryMs() {
+    return getNumberEnv("DB_SLOW_QUERY_MS", 300);
+  },
 };

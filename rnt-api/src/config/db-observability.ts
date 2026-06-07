@@ -1,6 +1,17 @@
+import { AsyncLocalStorage } from "async_hooks";
 import type { Pool } from "pg";
 import { observabilityConfig } from "./observability";
 import { logger } from "../utils/logger";
+
+const queryNameStorage = new AsyncLocalStorage<string>();
+
+export function withDbQueryName<T>(name: string, run: () => T): T {
+  return queryNameStorage.run(name, run);
+}
+
+function getCurrentQueryName() {
+  return queryNameStorage.getStore();
+}
 
 function summarizeSql(sql: unknown) {
   const text =
@@ -14,10 +25,17 @@ function summarizeSql(sql: unknown) {
 }
 
 function logQueryTiming(startedAt: bigint, thresholdMs: number, sql: unknown) {
+  if (!observabilityConfig.dbQueryLoggingEnabled) {
+    return;
+  }
+
   const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
 
   if (durationMs >= thresholdMs) {
+    const name = getCurrentQueryName();
+
     logger.warn("Slow database query", {
+      ...(name ? { name } : {}),
       duration_ms: Math.round(durationMs),
       threshold_ms: thresholdMs,
       sql: summarizeSql(sql),
@@ -26,24 +44,26 @@ function logQueryTiming(startedAt: bigint, thresholdMs: number, sql: unknown) {
 }
 
 function logQueryError(startedAt: bigint, sql: unknown, error: unknown) {
+  if (!observabilityConfig.dbQueryLoggingEnabled) {
+    return;
+  }
+
   const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+  const name = getCurrentQueryName();
 
   logger.error("Database query failed", {
+    ...(name ? { name } : {}),
     duration_ms: Math.round(durationMs),
     sql: summarizeSql(sql),
     error,
   });
 }
 
-export function attachDbObservability(pool: Pool) {
-  if (!observabilityConfig.dbQueryLoggingEnabled) {
-    return;
-  }
-
-  const originalQuery = pool.query.bind(pool) as (...args: any[]) => unknown;
-  const slowQueryThresholdMs = observabilityConfig.dbSlowQueryMs;
-
-  const observedQuery = (...args: any[]) => {
+function observeQuery(
+  originalQuery: (...args: any[]) => unknown,
+  slowQueryThresholdMs: number,
+) {
+  return (...args: any[]) => {
     const startedAt = process.hrtime.bigint();
     const callback = args[args.length - 1];
 
@@ -77,6 +97,46 @@ export function attachDbObservability(pool: Pool) {
 
     return result;
   };
+}
 
-  pool.query = observedQuery as unknown as Pool["query"];
+const observedClients = new WeakSet<object>();
+
+function attachClientObservability(client: { query: (...args: any[]) => unknown }, slowQueryThresholdMs: number) {
+  if (observedClients.has(client)) {
+    return;
+  }
+
+  observedClients.add(client);
+  client.query = observeQuery(client.query.bind(client), slowQueryThresholdMs);
+}
+
+export function attachDbObservability(pool: Pool) {
+  const originalQuery = pool.query.bind(pool) as (...args: any[]) => unknown;
+  const originalConnect = pool.connect.bind(pool) as (...args: any[]) => unknown;
+
+  pool.query = observeQuery(originalQuery, observabilityConfig.dbSlowQueryMs) as unknown as Pool["query"];
+  pool.connect = ((...args: any[]) => {
+    const callback = args[0];
+
+    if (typeof callback === "function") {
+      return originalConnect((error: unknown, client: any, done: unknown) => {
+        if (client) {
+          attachClientObservability(client, observabilityConfig.dbSlowQueryMs);
+        }
+
+        callback(error, client, done);
+      });
+    }
+
+    const result = originalConnect(...args);
+
+    if (result && typeof (result as Promise<unknown>).then === "function") {
+      return (result as Promise<any>).then((client) => {
+        attachClientObservability(client, observabilityConfig.dbSlowQueryMs);
+        return client;
+      });
+    }
+
+    return result;
+  }) as unknown as Pool["connect"];
 }

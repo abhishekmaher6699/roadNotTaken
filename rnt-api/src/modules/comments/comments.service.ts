@@ -1,4 +1,4 @@
-import { getPool } from "../../config/db";
+import { queryDb } from "../../config/db";
 import {
   Comment,
   CommentLikeMutationResult,
@@ -22,7 +22,6 @@ export class CommentsServiceError extends Error {
 }
 
 export async function createComment(input: CreateCommentInput & { user_id: string }): Promise<Comment> {
-  const pool = getPool();
   const { pin_id, posted_by, user_id, parent_comment_id = null } = input;
   const content = input.content.trim();
 
@@ -37,7 +36,8 @@ export async function createComment(input: CreateCommentInput & { user_id: strin
     );
   }
 
-  const pinResult = await pool.query(
+  const pinResult = await queryDb(
+    "comments.create.find_pin",
     commentQueries.findPinById,
     [pin_id],
   );
@@ -47,7 +47,8 @@ export async function createComment(input: CreateCommentInput & { user_id: strin
   }
 
   if (parent_comment_id != null) {
-    const parentCommentResult = await pool.query(
+    const parentCommentResult = await queryDb(
+      "comments.create.find_parent",
       commentQueries.findParentCommentForPin,
       [parent_comment_id, pin_id],
     );
@@ -60,7 +61,8 @@ export async function createComment(input: CreateCommentInput & { user_id: strin
     }
   }
 
-  const result = await pool.query(
+  const result = await queryDb(
+    "comments.create",
     commentQueries.createComment,
     [pin_id, user_id, content, posted_by, parent_comment_id]
   );
@@ -73,7 +75,6 @@ export async function getCommentsForPin(
   viewerUserId?: string | null,
   pageInput: CommentPageInput = {},
 ): Promise<CommentPage> {
-  const pool = getPool();
   const { cursor, limit } = prepareCommentPage(pageInput);
   const pageParams: (number | string)[] = [pin_id];
 
@@ -88,14 +89,15 @@ export async function getCommentsForPin(
   const limitParam = `$${pageParams.length}`;
 
   const [topLevelResult, countResult] = await Promise.all([
-    pool.query(
+    queryDb(
+      "comments.page.roots",
       commentQueries.getTopLevelCommentPage({
         cursorIdParam,
         limitParam,
       }),
       pageParams,
     ),
-    pool.query(commentQueries.countCommentsForPin, [pin_id]),
+    queryDb("comments.page.count", commentQueries.countCommentsForPin, [pin_id]),
   ]);
   const topLevelRows = topLevelResult.rows as Pick<Comment, "id">[];
   const visibleRootIds = topLevelRows.slice(0, limit).map((row) => row.id);
@@ -109,7 +111,8 @@ export async function getCommentsForPin(
       commentParams.push(viewerUserId);
     }
 
-    const commentsResult = await pool.query(
+    const commentsResult = await queryDb(
+      "comments.page.threads",
       commentQueries.getCommentsForThreadRoots({
         viewerUserId,
         rootIdsParam: "$1",
@@ -129,9 +132,8 @@ export async function getCommentsForPin(
 }
 
 export async function deleteCommentById(comment_id: number, user_id: string): Promise<Comment | null> {
-  const pool = getPool();
-
-  const result = await pool.query(
+  const result = await queryDb(
+    "comments.delete",
     commentQueries.deleteComment,
     [comment_id, user_id]
   );
@@ -143,9 +145,8 @@ export async function likeCommentById(
   commentId: number,
   userId: string,
 ): Promise<CommentLikeMutationResult | null> {
-  const pool = getPool();
-
-  const result = await pool.query(
+  const result = await queryDb(
+    "comments.like",
     commentQueries.likeComment,
     [commentId, userId],
   );
@@ -158,9 +159,8 @@ export async function unlikeCommentById(
   commentId: number,
   userId: string,
 ): Promise<CommentLikeMutationResult | null> {
-  const pool = getPool();
-
-  const result = await pool.query(
+  const result = await queryDb(
+    "comments.unlike",
     commentQueries.unlikeComment,
     [commentId, userId],
   );

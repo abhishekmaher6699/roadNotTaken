@@ -1,4 +1,4 @@
-import { getPool } from "../../config/db";
+import { getPool, queryDb, runDbQueryWithName } from "../../config/db";
 import {
   CreatePinInput,
   LikeMutationResult,
@@ -20,8 +20,6 @@ import {
 import { buildPinPage, preparePinPage } from "./pins.pagination";
 
 export async function createPin(data: CreatePinInput) {
-  const pool = getPool();
-
   const {
     title,
     category,
@@ -45,7 +43,8 @@ export async function createPin(data: CreatePinInput) {
         ? [resolvedThumbnail]
         : [];
 
-  const result = await pool.query(
+  const result = await queryDb(
+    "pins.create",
     pinQueries.createPin(user_id),
     [
       title,
@@ -70,7 +69,6 @@ export async function getAllPins(
   viewerUserId?: string | null,
   pageInput: PinPageInput = {},
 ): Promise<PinPage> {
-  const pool = getPool();
   const { cursor, limit } = preparePinPage(pageInput);
   const params: (number | string)[] = [];
 
@@ -103,7 +101,8 @@ export async function getAllPins(
   params.push(limit + 1);
   const limitParam = `$${params.length}`;
 
-  const result = await pool.query(
+  const result = await queryDb(
+    "pins.list",
     pinQueries.getAllPins({
       viewerUserId,
       cursorClause,
@@ -117,11 +116,11 @@ export async function getAllPins(
 }
 
 export async function getPinById(id: string, viewerUserId?: string | null) {
-  const pool = getPool();
   const params = viewerUserId ? [viewerUserId, id] : [id];
   const idParam = viewerUserId ? "$2" : "$1";
 
-  const result = await pool.query(
+  const result = await queryDb(
+    "pins.by_id",
     pinQueries.getPinById(viewerUserId, idParam),
     params,
   );
@@ -130,9 +129,8 @@ export async function getPinById(id: string, viewerUserId?: string | null) {
 }
 
 export async function deletePinById(id: string, userId: string) {
-  const pool = getPool();
-
-  const result = await pool.query(
+  const result = await queryDb(
+    "pins.delete",
     pinQueries.deletePin,
     [id, userId],
   );
@@ -145,8 +143,6 @@ export async function updatePinById(
   userId: string,
   data: UpdatePinInput,
 ) {
-  const pool = getPool();
-
   const {
     title,
     category,
@@ -166,7 +162,8 @@ export async function updatePinById(
         ? [resolvedThumbnail]
         : [];
 
-  const result = await pool.query(
+  const result = await queryDb(
+    "pins.update",
     pinQueries.updatePin(userId),
     [
       id,
@@ -193,7 +190,6 @@ export async function getPinsForTiles(
     return [];
   }
 
-  const pool = getPool();
   // How:
   // - Use the highest zoom from the request batch to choose the final viewport cap.
   // - Prepare every requested tile with geographic bounds and a per-tile pin limit.
@@ -205,7 +201,8 @@ export async function getPinsForTiles(
   const tileValuesSql = buildRankedTileValuesSql(requestedTiles);
   const params = viewerUserId ? [viewerUserId] : [];
 
-  const result = await pool.query(
+  const result = await queryDb(
+    "pins.tiles.query",
     pinQueries.getPinsForTiles({ tileValuesSql, viewportPinLimit, viewerUserId }),
     params,
   );
@@ -218,7 +215,6 @@ export async function getPinSummariesForTiles({ tiles }: TileQueryInput) {
     return [];
   }
 
-  const pool = getPool();
   // How:
   // - Prepare each incoming tile with its geographic bounds.
   // - Turn those tiles into one inline SQL table.
@@ -226,7 +222,8 @@ export async function getPinSummariesForTiles({ tiles }: TileQueryInput) {
   const requestedTiles = buildSummaryRequestedTiles(tiles);
   const tileValuesSql = buildSummaryTileValuesSql(requestedTiles);
 
-  const result = await pool.query(
+  const result = await queryDb(
+    "pins.tiles.summary",
     pinQueries.getPinSummariesForTiles(tileValuesSql),
   );
 
@@ -279,16 +276,18 @@ export async function searchPins({
   // query to prevent it from leaking to other callers through the pool.
   const client = await pool.connect();
   try {
-    await client.query(`SELECT set_limit($1)`, [threshold]);
-    const result = await client.query(
-      pinQueries.searchPins({
-        viewerUserId,
-        viewerUserIdParam,
-        hasCenter: Boolean(hasCenter),
-        distanceScore,
-      }),
-      params,
-    );
+    const result = await runDbQueryWithName("pins.search", async () => {
+      await client.query(`SELECT set_limit($1)`, [threshold]);
+      return client.query(
+        pinQueries.searchPins({
+          viewerUserId,
+          viewerUserIdParam,
+          hasCenter: Boolean(hasCenter),
+          distanceScore,
+        }),
+        params,
+      );
+    });
     return result.rows;
   } finally {
     client.release();
@@ -303,33 +302,35 @@ export async function likePinById(
   const client = await pool.connect();
 
   try {
-    await client.query(pinQueries.begin);
+    return await runDbQueryWithName("pins.like", async () => {
+      await client.query(pinQueries.begin);
 
-    const insertResult = await client.query(
-      pinQueries.insertPinLike,
-      [pinId, userId],
-    );
+      const insertResult = await client.query(
+        pinQueries.insertPinLike,
+        [pinId, userId],
+      );
 
-    if (insertResult.rowCount === 0) {
-      const existing = await client.query(
-        pinQueries.getPinLikesCount,
+      if (insertResult.rowCount === 0) {
+        const existing = await client.query(
+          pinQueries.getPinLikesCount,
+          [pinId],
+        );
+        await client.query(pinQueries.commit);
+        return existing.rows[0]
+          ? { liked: true, likes_count: existing.rows[0].likes_count }
+          : null;
+      }
+
+      const updateResult = await client.query(
+        pinQueries.incrementPinLikes,
         [pinId],
       );
+
       await client.query(pinQueries.commit);
-      return existing.rows[0]
-        ? { liked: true, likes_count: existing.rows[0].likes_count }
+      return updateResult.rows[0]
+        ? { liked: true, likes_count: updateResult.rows[0].likes_count }
         : null;
-    }
-
-    const updateResult = await client.query(
-      pinQueries.incrementPinLikes,
-      [pinId],
-    );
-
-    await client.query(pinQueries.commit);
-    return updateResult.rows[0]
-      ? { liked: true, likes_count: updateResult.rows[0].likes_count }
-      : null;
+    });
   } catch (error) {
     await client.query(pinQueries.rollback);
     throw error;
@@ -346,29 +347,31 @@ export async function unlikePinById(
   const client = await pool.connect();
 
   try {
-    await client.query(pinQueries.begin);
+    return await runDbQueryWithName("pins.unlike", async () => {
+      await client.query(pinQueries.begin);
 
-    const deleteResult = await client.query(
-      pinQueries.deletePinLike,
-      [pinId, userId],
-    );
+      const deleteResult = await client.query(
+        pinQueries.deletePinLike,
+        [pinId, userId],
+      );
 
-    if ((deleteResult.rowCount ?? 0) > 0) {
-      await client.query(
-        pinQueries.decrementPinLikes,
+      if ((deleteResult.rowCount ?? 0) > 0) {
+        await client.query(
+          pinQueries.decrementPinLikes,
+          [pinId],
+        );
+      }
+
+      const pinResult = await client.query(
+        pinQueries.getPinLikesCount,
         [pinId],
       );
-    }
 
-    const pinResult = await client.query(
-      pinQueries.getPinLikesCount,
-      [pinId],
-    );
-
-    await client.query(pinQueries.commit);
-    return pinResult.rows[0]
-      ? { liked: false, likes_count: pinResult.rows[0].likes_count }
-      : null;
+      await client.query(pinQueries.commit);
+      return pinResult.rows[0]
+        ? { liked: false, likes_count: pinResult.rows[0].likes_count }
+        : null;
+    });
   } catch (error) {
     await client.query(pinQueries.rollback);
     throw error;
@@ -381,9 +384,8 @@ export async function visitPinById(
   pinId: string,
   userId: string,
 ): Promise<VisitMutationResult | null> {
-  const pool = getPool();
-
-  const result = await pool.query(
+  const result = await queryDb(
+    "pins.visit",
     pinQueries.visitPin,
     [pinId, userId],
   );
@@ -398,9 +400,8 @@ export async function unvisitPinById(
   pinId: string,
   userId: string,
 ): Promise<VisitMutationResult | null> {
-  const pool = getPool();
-
-  const result = await pool.query(
+  const result = await queryDb(
+    "pins.unvisit",
     pinQueries.unvisitPin,
     [pinId, userId],
   );
