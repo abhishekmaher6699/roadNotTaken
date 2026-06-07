@@ -8,75 +8,13 @@ import {
   VisitMutationResult,
 } from "./pins.types";
 import { getViewportPinLimit } from "./pins.helpers";
+import { pinQueries } from "./pins.queries";
 import {
   buildRankedRequestedTiles,
   buildRankedTileValuesSql,
   buildSummaryRequestedTiles,
   buildSummaryTileValuesSql,
 } from "./pins.tile-queries";
-
-function buildPinSelectFragment(
-  viewerUserId?: string | null,
-  tableName = "pins",
-  viewerUserIdParam = "$1",
-) {
-  const likedExpression = viewerUserId
-    ? `EXISTS (
-        SELECT 1
-        FROM pin_likes
-        WHERE pin_likes.pin_id = ${tableName}.id
-          AND pin_likes.user_id = ${viewerUserIdParam}
-      )`
-    : "false";
-  const visitedExpression = viewerUserId
-    ? `EXISTS (
-        SELECT 1
-        FROM pin_visits
-        WHERE pin_visits.pin_id = ${tableName}.id
-          AND pin_visits.user_id = ${viewerUserIdParam}
-      )`
-    : "false";
-
-  return `
-    ${tableName}.id,
-    ${tableName}.user_id,
-    ${tableName}.posted_by,
-    json_build_object(
-      'id', ${tableName}.user_id,
-      'display_name', (
-        SELECT profiles.display_name FROM profiles WHERE profiles.user_id = ${tableName}.user_id
-      ),
-      'username', (
-        SELECT profiles.username FROM profiles WHERE profiles.user_id = ${tableName}.user_id
-      ),
-      'avatar_url', (
-        SELECT profiles.avatar_url FROM profiles WHERE profiles.user_id = ${tableName}.user_id
-      )
-    ) AS author,
-    ${tableName}.latitude,
-    ${tableName}.longitude,
-    ${tableName}.title,
-    ${tableName}.category,
-    ${tableName}.address,
-    ${tableName}.status,
-    ${tableName}.access_level,
-    ${tableName}.description,
-    ${tableName}.thumbnail_url,
-    ${tableName}.image_urls,
-    COALESCE(${tableName}.likes_count, 0) AS likes_count,
-    COALESCE(${tableName}.visits_count, 0) AS visits_count,
-    (
-      SELECT COUNT(*)
-      FROM comments
-      WHERE comments.pin_id = ${tableName}.id
-    )::integer AS comment_count,
-    ${likedExpression} AS viewer_has_liked,
-    ${visitedExpression} AS viewer_has_visited,
-    ${tableName}.score,
-    ${tableName}.created_at,
-    ${tableName}.updated_at
-  `;
-}
 
 export async function createPin(data: CreatePinInput) {
   const pool = getPool();
@@ -105,21 +43,7 @@ export async function createPin(data: CreatePinInput) {
         : [];
 
   const result = await pool.query(
-    `
-    WITH inserted_pin AS (
-      INSERT INTO pins (
-        title, category, address, status, posted_by, access_level, description, thumbnail_url, image_urls, latitude, longitude, user_id, geom
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-        ST_SetSRID(ST_MakePoint($11, $10), 4326)
-      )
-      RETURNING *
-    )
-    SELECT
-      ${buildPinSelectFragment(user_id, "inserted_pin", "$12")}
-    FROM inserted_pin;
-    `,
+    pinQueries.createPin(user_id),
     [
       title,
       category ?? "general",
@@ -144,12 +68,7 @@ export async function getAllPins(viewerUserId?: string | null) {
   const params = viewerUserId ? [viewerUserId] : [];
 
   const result = await pool.query(
-    `
-    SELECT
-      ${buildPinSelectFragment(viewerUserId)}
-    FROM pins
-    ORDER BY score DESC NULLS LAST, created_at DESC, id DESC
-    `,
+    pinQueries.getAllPins(viewerUserId),
     params,
   );
 
@@ -162,13 +81,7 @@ export async function getPinById(id: string, viewerUserId?: string | null) {
   const idParam = viewerUserId ? "$2" : "$1";
 
   const result = await pool.query(
-    `
-    SELECT
-      ${buildPinSelectFragment(viewerUserId)}
-    FROM pins
-    WHERE id = ${idParam}::integer
-    LIMIT 1;
-    `,
+    pinQueries.getPinById(viewerUserId, idParam),
     params,
   );
 
@@ -179,11 +92,7 @@ export async function deletePinById(id: string, userId: string) {
   const pool = getPool();
 
   const result = await pool.query(
-    `
-    DELETE FROM pins
-    WHERE id = $1 AND user_id = $2
-    RETURNING id;
-    `,
+    pinQueries.deletePin,
     [id, userId],
   );
 
@@ -217,26 +126,7 @@ export async function updatePinById(
         : [];
 
   const result = await pool.query(
-    `
-    WITH updated_pin AS (
-      UPDATE pins
-      SET
-        title = $3,
-        category = $4,
-        address = $5,
-        status = $6,
-        access_level = $7,
-        description = $8,
-        thumbnail_url = $9,
-        image_urls = $10,
-        updated_at = NOW()
-      WHERE id = $1 AND user_id = $2
-      RETURNING *
-    )
-    SELECT
-      ${buildPinSelectFragment(userId, "updated_pin", "$2")}
-    FROM updated_pin;
-    `,
+    pinQueries.updatePin(userId),
     [
       id,
       userId,
@@ -275,45 +165,7 @@ export async function getPinsForTiles(
   const params = viewerUserId ? [viewerUserId] : [];
 
   const result = await pool.query(
-    `
-    -- Each request tile becomes a geographic box with its own zoom-aware pin cap.
-    -- How:
-    -- 1. requested_tiles is an inline table of the incoming tile boxes.
-    -- 2. ranked_tile_pins joins every matching pin against those boxes.
-    -- 3. ROW_NUMBER ranks pins independently inside each tile.
-    -- 4. The outer query keeps only the top pins per tile and then applies one final viewport cap.
-    WITH requested_tiles (x, y, z, west, east, south, north, pin_limit) AS (
-      VALUES ${tileValuesSql}
-    ),
-    ranked_tile_pins AS (
-      SELECT
-        requested_tiles.x AS tile_x,
-        requested_tiles.y AS tile_y,
-        requested_tiles.z AS tile_z,
-        requested_tiles.pin_limit,
-        ${buildPinSelectFragment(viewerUserId, "pins")},
-        ROW_NUMBER() OVER (
-          PARTITION BY requested_tiles.x, requested_tiles.y, requested_tiles.z
-          ORDER BY pins.score DESC NULLS LAST, pins.created_at DESC, pins.id DESC
-        ) AS tile_rank
-      FROM requested_tiles
-      JOIN pins
-        ON pins.geom && ST_MakeEnvelope(
-          requested_tiles.west,
-          requested_tiles.south,
-          requested_tiles.east,
-          requested_tiles.north,
-          4326
-        )::geography
-    )
-    SELECT
-      ${buildPinSelectFragment(viewerUserId, "ranked_tile_pins")}
-    FROM ranked_tile_pins
-    -- Hybrid limiting: first cap per tile, then cap the combined viewport result.
-    WHERE tile_rank <= pin_limit
-    ORDER BY score DESC NULLS LAST, created_at DESC, id DESC
-    LIMIT ${viewportPinLimit}
-    `,
+    pinQueries.getPinsForTiles({ tileValuesSql, viewportPinLimit, viewerUserId }),
     params,
   );
 
@@ -334,39 +186,7 @@ export async function getPinSummariesForTiles({ tiles }: TileQueryInput) {
   const tileValuesSql = buildSummaryTileValuesSql(requestedTiles);
 
   const result = await pool.query(
-    `
-    WITH requested_tiles (x, y, z, west, east, south, north) AS (
-      VALUES ${tileValuesSql}
-    )
-    -- Low zooms use summaries so the map still signals where activity exists.
-    -- How:
-    -- 1. Join pins to requested tile boxes by latitude/longitude range.
-    -- 2. Group by tile key.
-    -- 3. Compute one centroid marker with AVG(lat/lng), plus count and top_score.
-SELECT
-  requested_tiles.x,
-  requested_tiles.y,
-  requested_tiles.z,
-  COALESCE(
-    AVG(pins.latitude),
-    AVG((requested_tiles.south + requested_tiles.north) / 2)
-  )::double precision AS latitude,
-  COALESCE(
-    AVG(pins.longitude),
-    AVG((requested_tiles.west + requested_tiles.east) / 2)
-  )::double precision AS longitude,
-  COUNT(pins.id)::integer AS pin_count,
-  MAX(pins.score) AS top_score
-FROM requested_tiles
-LEFT JOIN pins
-  ON pins.geom && ST_MakeEnvelope(
-    requested_tiles.west,
-    requested_tiles.south,
-    requested_tiles.east,
-    requested_tiles.north,
-    4326
-  )::geography
-GROUP BY requested_tiles.x, requested_tiles.y, requested_tiles.z `,
+    pinQueries.getPinSummariesForTiles(tileValuesSql),
   );
 
   return result.rows;
@@ -420,143 +240,12 @@ export async function searchPins({
   try {
     await client.query(`SELECT set_limit($1)`, [threshold]);
     const result = await client.query(
-    `
-    SELECT
-      ${buildPinSelectFragment(viewerUserId, "pins", viewerUserIdParam)},
-
-      ${
-        hasCenter
-          ? `ST_Distance(
-              pins.geom,
-              ST_MakePoint($4, $5)::geography
-            ) AS distance,`
-          : `NULL AS distance,`
-      }
-
-      (
-        -- Exact and phrase matches should dominate partial word matches.
-        CASE
-          WHEN LOWER(title) = LOWER($1) THEN 12.0
-          WHEN LOWER(title) LIKE LOWER($2) THEN 8.0
-          WHEN LOWER(COALESCE(address, '')) LIKE LOWER($2) THEN 4.0
-          ELSE 0
-        END
-
-        -- Query-word coverage: a pin matching all words in "hinjewadi tech park"
-        -- should beat pins that only match "hinjewadi".
-        + COALESCE((
-          SELECT AVG(
-            CASE
-              WHEN EXISTS (
-                SELECT 1
-                FROM unnest(
-                  string_to_array(
-                    LOWER(CONCAT_WS(' ', title, address, category)),
-                    ' '
-                  )
-                ) AS document_words(document_word)
-                WHERE document_word = LOWER(qword)
-                  OR document_word LIKE LOWER(qword) || '%'
-                  OR similarity(document_word, LOWER(qword)) >= 0.72
-              ) THEN 1.0
-              ELSE 0.0
-            END
-          )
-          FROM unnest(string_to_array(LOWER($1), ' ')) AS qword
-          WHERE LENGTH(qword) >= 3
-        ), 0) * 5.0
-
-        -- Position-independent word match against title
-        -- "India Gate..." and "Gateway of India..." both score 1.0 for "india"
-        -- "cafe prem" and "hauz khas cafe cluster" both score 1.0 for "cafe"
-        + COALESCE((
-          SELECT MAX(similarity(LOWER($1), word))
-          FROM unnest(string_to_array(LOWER(title), ' ')) AS word
-          WHERE LENGTH(word) >= LENGTH($1) - 1
-        ), 0) * 3.0
-
-        -- Address similarity (whole string fine here, addresses are structured)
-        + COALESCE(similarity(address, $1), 0) * 1.2
-
-        -- Multi-word query: best per-word match across title words
-        -- Helps "hauz khas" match "Hauz Khas Cafe Cluster"
-        + COALESCE((
-            SELECT MAX(
-              (
-                SELECT MAX(similarity(LOWER(qword), tword))
-                FROM unnest(string_to_array(LOWER(title), ' ')) AS tword
-              )
-            )
-            FROM unnest(string_to_array(LOWER($1), ' ')) AS qword
-            WHERE LENGTH(qword) >= 3
-          ), 0) * 1.0
-
-        -- Phonetic tiebreaker (very small, just catches "pune" -> "poon" type typos)
-        + (GREATEST(
-            difference(title, $1),
-            COALESCE(difference(address, $1), 0)
-          ) / 4.0) * 0.2
-
-        -- Distance: decisive for equal text scores, near-zero across cities
-        -- 8km half-life: within city scores high, other cities score ~0
-        + ${distanceScore} * 3.0
-
-        -- Popularity: tiny tiebreaker only
-        + LOG(GREATEST(score, 0) + 1) * 0.05
-
-        -- Profile identity: lets people find pins by public profile names.
-        + GREATEST(
-            COALESCE(similarity(profiles.display_name, $1), 0),
-            COALESCE(similarity(profiles.username, $1), 0)
-          ) * 1.1
-      ) AS relevance
-
-    FROM pins
-    LEFT JOIN profiles
-      ON profiles.user_id = pins.user_id
-    WHERE status != 'deleted'
-      AND (
-        -- Exact substring (always include, high recall)
-        title ILIKE $2
-        OR address ILIKE $2
-        OR profiles.display_name ILIKE $2
-        OR profiles.username ILIKE $2
-        OR category ILIKE $2
-
-        -- Word-level containment: query word found inside title
-        OR $1 <% title
-        OR $1 <% profiles.display_name
-        OR $1 <% profiles.username
-        OR $1 <% address
-
-        -- Whole-string trigram fuzzy (controlled by set_limit)
-        OR title % $1
-        OR address % $1
-        OR profiles.display_name % $1
-        OR profiles.username % $1
-
-        -- Per-word fuzzy: each word of query matched against title/address
-        -- Enables "haz khas" -> "hauz khas" without matching unrelated pins
-        OR EXISTS (
-          SELECT 1
-          FROM unnest(string_to_array($1, ' ')) AS q(word)
-          WHERE LENGTH(word) >= 3
-            AND (
-              word % title
-              OR word % address
-              OR word % profiles.display_name
-              OR word % profiles.username
-            )
-        )
-
-        -- Phonetic: only strong matches (> 3 filters out loose soundex hits)
-        OR difference(title, $1) > 3
-        OR difference(address, $1) > 3
-      )
-
-    ORDER BY relevance DESC, score DESC NULLS LAST, created_at DESC
-    LIMIT $3;
-    `,
+      pinQueries.searchPins({
+        viewerUserId,
+        viewerUserIdParam,
+        hasCenter: Boolean(hasCenter),
+        distanceScore,
+      }),
       params,
     );
     return result.rows;
@@ -573,45 +262,35 @@ export async function likePinById(
   const client = await pool.connect();
 
   try {
-    await client.query("BEGIN");
+    await client.query(pinQueries.begin);
 
     const insertResult = await client.query(
-      `
-      INSERT INTO pin_likes (pin_id, user_id)
-      VALUES ($1::integer, $2)
-      ON CONFLICT (pin_id, user_id) DO NOTHING
-      RETURNING id;
-      `,
+      pinQueries.insertPinLike,
       [pinId, userId],
     );
 
     if (insertResult.rowCount === 0) {
       const existing = await client.query(
-        `SELECT COALESCE(likes_count, 0) AS likes_count FROM pins WHERE id = $1::integer`,
+        pinQueries.getPinLikesCount,
         [pinId],
       );
-      await client.query("COMMIT");
+      await client.query(pinQueries.commit);
       return existing.rows[0]
         ? { liked: true, likes_count: existing.rows[0].likes_count }
         : null;
     }
 
     const updateResult = await client.query(
-      `
-      UPDATE pins
-      SET likes_count = COALESCE(likes_count, 0) + 1
-      WHERE id = $1::integer
-      RETURNING COALESCE(likes_count, 0) AS likes_count;
-      `,
+      pinQueries.incrementPinLikes,
       [pinId],
     );
 
-    await client.query("COMMIT");
+    await client.query(pinQueries.commit);
     return updateResult.rows[0]
       ? { liked: true, likes_count: updateResult.rows[0].likes_count }
       : null;
   } catch (error) {
-    await client.query("ROLLBACK");
+    await client.query(pinQueries.rollback);
     throw error;
   } finally {
     client.release();
@@ -626,39 +305,31 @@ export async function unlikePinById(
   const client = await pool.connect();
 
   try {
-    await client.query("BEGIN");
+    await client.query(pinQueries.begin);
 
     const deleteResult = await client.query(
-      `
-      DELETE FROM pin_likes
-      WHERE pin_id = $1::integer AND user_id = $2
-      RETURNING id;
-      `,
+      pinQueries.deletePinLike,
       [pinId, userId],
     );
 
     if ((deleteResult.rowCount ?? 0) > 0) {
       await client.query(
-        `
-        UPDATE pins
-        SET likes_count = GREATEST(COALESCE(likes_count, 0) - 1, 0)
-        WHERE id = $1::integer
-        `,
+        pinQueries.decrementPinLikes,
         [pinId],
       );
     }
 
     const pinResult = await client.query(
-      `SELECT COALESCE(likes_count, 0) AS likes_count FROM pins WHERE id = $1::integer`,
+      pinQueries.getPinLikesCount,
       [pinId],
     );
 
-    await client.query("COMMIT");
+    await client.query(pinQueries.commit);
     return pinResult.rows[0]
       ? { liked: false, likes_count: pinResult.rows[0].likes_count }
       : null;
   } catch (error) {
-    await client.query("ROLLBACK");
+    await client.query(pinQueries.rollback);
     throw error;
   } finally {
     client.release();
@@ -672,33 +343,7 @@ export async function visitPinById(
   const pool = getPool();
 
   const result = await pool.query(
-    `
-    WITH target AS (
-      SELECT id
-      FROM pins
-      WHERE id = $1::integer
-    ),
-    inserted AS (
-      INSERT INTO pin_visits (pin_id, user_id)
-      SELECT id, $2
-      FROM target
-      ON CONFLICT (pin_id, user_id) DO NOTHING
-      RETURNING pin_id
-    ),
-    updated AS (
-      UPDATE pins
-      SET visits_count = COALESCE(visits_count, 0) + 1
-      WHERE id IN (SELECT pin_id FROM inserted)
-      RETURNING COALESCE(visits_count, 0) AS visits_count
-    )
-    SELECT
-      EXISTS (SELECT 1 FROM target) AS found,
-      true AS visited,
-      COALESCE(
-        (SELECT visits_count FROM updated),
-        (SELECT COALESCE(visits_count, 0) FROM pins WHERE id = $1::integer)
-      ) AS visits_count;
-    `,
+    pinQueries.visitPin,
     [pinId, userId],
   );
 
@@ -715,31 +360,7 @@ export async function unvisitPinById(
   const pool = getPool();
 
   const result = await pool.query(
-    `
-    WITH target AS (
-      SELECT id
-      FROM pins
-      WHERE id = $1::integer
-    ),
-    deleted AS (
-      DELETE FROM pin_visits
-      WHERE pin_id = $1::integer AND user_id = $2
-      RETURNING pin_id
-    ),
-    updated AS (
-      UPDATE pins
-      SET visits_count = GREATEST(COALESCE(visits_count, 0) - 1, 0)
-      WHERE id IN (SELECT pin_id FROM deleted)
-      RETURNING COALESCE(visits_count, 0) AS visits_count
-    )
-    SELECT
-      EXISTS (SELECT 1 FROM target) AS found,
-      false AS visited,
-      COALESCE(
-        (SELECT visits_count FROM updated),
-        (SELECT COALESCE(visits_count, 0) FROM pins WHERE id = $1::integer)
-      ) AS visits_count;
-    `,
+    pinQueries.unvisitPin,
     [pinId, userId],
   );
 

@@ -1,5 +1,6 @@
 import { getPool } from "../../config/db";
 import { Comment, CommentLikeMutationResult, CreateCommentInput } from "./comments.types";
+import { commentQueries } from "./comments.queries";
 
 const MAX_COMMENT_LENGTH = 1000;
 
@@ -11,46 +12,6 @@ export class CommentsServiceError extends Error {
     super(message);
     this.name = "CommentsServiceError";
   }
-}
-
-function buildCommentSelectFragment(
-  viewerUserId?: string | null,
-  tableName = "comments",
-  viewerUserIdParam = "$2",
-) {
-  const likedExpression = viewerUserId
-    ? `EXISTS (
-        SELECT 1
-        FROM comment_likes
-        WHERE comment_likes.comment_id = ${tableName}.id
-          AND comment_likes.user_id = ${viewerUserIdParam}
-      )`
-    : "false";
-
-  return `
-    ${tableName}.id,
-    ${tableName}.pin_id,
-    ${tableName}.parent_comment_id,
-    ${tableName}.user_id,
-    ${tableName}.content,
-    ${tableName}.posted_by,
-    json_build_object(
-      'id', ${tableName}.user_id,
-      'display_name', (
-        SELECT profiles.display_name FROM profiles WHERE profiles.user_id = ${tableName}.user_id
-      ),
-      'username', (
-        SELECT profiles.username FROM profiles WHERE profiles.user_id = ${tableName}.user_id
-      ),
-      'avatar_url', (
-        SELECT profiles.avatar_url FROM profiles WHERE profiles.user_id = ${tableName}.user_id
-      )
-    ) AS author,
-    COALESCE(${tableName}.likes_count, 0) AS likes_count,
-    ${likedExpression} AS viewer_has_liked,
-    ${tableName}.created_at,
-    ${tableName}.updated_at
-  `;
 }
 
 export async function createComment(input: CreateCommentInput & { user_id: string }): Promise<Comment> {
@@ -70,7 +31,7 @@ export async function createComment(input: CreateCommentInput & { user_id: strin
   }
 
   const pinResult = await pool.query(
-    `SELECT id FROM pins WHERE id = $1`,
+    commentQueries.findPinById,
     [pin_id],
   );
 
@@ -80,7 +41,7 @@ export async function createComment(input: CreateCommentInput & { user_id: strin
 
   if (parent_comment_id != null) {
     const parentCommentResult = await pool.query(
-      `SELECT id FROM comments WHERE id = $1 AND pin_id = $2`,
+      commentQueries.findParentCommentForPin,
       [parent_comment_id, pin_id],
     );
 
@@ -93,7 +54,7 @@ export async function createComment(input: CreateCommentInput & { user_id: strin
   }
 
   const result = await pool.query(
-    `INSERT INTO comments (pin_id, user_id, content, posted_by, parent_comment_id) VALUES ($1, $2, $3, $4, $5) RETURNING ${buildCommentSelectFragment(null)}`,
+    commentQueries.createComment,
     [pin_id, user_id, content, posted_by, parent_comment_id]
   );
 
@@ -105,7 +66,7 @@ export async function getCommentsForPin(pin_id: number, viewerUserId?: string | 
   const params = viewerUserId ? [pin_id, viewerUserId] : [pin_id];
 
   const result = await pool.query(
-    `SELECT ${buildCommentSelectFragment(viewerUserId)} FROM comments WHERE pin_id = $1 ORDER BY created_at ASC`,
+    commentQueries.getCommentsForPin(viewerUserId),
     params
   );
 
@@ -116,7 +77,7 @@ export async function deleteCommentById(comment_id: number, user_id: string): Pr
   const pool = getPool();
 
   const result = await pool.query(
-    `DELETE FROM comments WHERE id = $1 AND user_id = $2 RETURNING ${buildCommentSelectFragment(null)}`,
+    commentQueries.deleteComment,
     [comment_id, user_id]
   );
 
@@ -130,34 +91,7 @@ export async function likeCommentById(
   const pool = getPool();
 
   const result = await pool.query(
-    `
-    WITH target AS (
-      SELECT id
-      FROM comments
-      WHERE id = $1
-    ),
-    inserted AS (
-      INSERT INTO comment_likes (comment_id, user_id)
-      SELECT id, $2
-      FROM target
-      ON CONFLICT (comment_id, user_id) DO NOTHING
-      RETURNING comment_id
-    ),
-    updated AS (
-      UPDATE comments
-      SET likes_count = COALESCE(likes_count, 0) + 1
-      WHERE id = $1
-        AND EXISTS (SELECT 1 FROM inserted)
-      RETURNING COALESCE(likes_count, 0) AS likes_count
-    )
-    SELECT
-      EXISTS (SELECT 1 FROM target) AS found,
-      true AS liked,
-      COALESCE(
-        (SELECT likes_count FROM updated),
-        (SELECT COALESCE(likes_count, 0) FROM comments WHERE id = $1)
-      ) AS likes_count;
-    `,
+    commentQueries.likeComment,
     [commentId, userId],
   );
 
@@ -172,33 +106,7 @@ export async function unlikeCommentById(
   const pool = getPool();
 
   const result = await pool.query(
-    `
-    WITH target AS (
-      SELECT id
-      FROM comments
-      WHERE id = $1
-    ),
-    deleted AS (
-      DELETE FROM comment_likes
-      WHERE comment_id = $1
-        AND user_id = $2
-      RETURNING comment_id
-    ),
-    updated AS (
-      UPDATE comments
-      SET likes_count = GREATEST(COALESCE(likes_count, 0) - 1, 0)
-      WHERE id = $1
-        AND EXISTS (SELECT 1 FROM deleted)
-      RETURNING COALESCE(likes_count, 0) AS likes_count
-    )
-    SELECT
-      EXISTS (SELECT 1 FROM target) AS found,
-      false AS liked,
-      COALESCE(
-        (SELECT likes_count FROM updated),
-        (SELECT COALESCE(likes_count, 0) FROM comments WHERE id = $1)
-      ) AS likes_count;
-    `,
+    commentQueries.unlikeComment,
     [commentId, userId],
   );
 
