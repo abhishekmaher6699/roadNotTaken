@@ -82,13 +82,25 @@ export const pinQueries = {
     `;
   },
 
-  getAllPins(viewerUserId?: string | null) {
+  getAllPins({
+    viewerUserId,
+    cursorClause,
+    limitParam,
+    viewerUserIdParam,
+  }: {
+    viewerUserId?: string | null;
+    cursorClause: string;
+    limitParam: string;
+    viewerUserIdParam: string;
+  }) {
     return `
       SELECT
-        ${buildPinSelectFragment(viewerUserId)}
+        ${buildPinSelectFragment(viewerUserId, "pins", viewerUserIdParam)}
       FROM pins
       LEFT JOIN profiles ON profiles.user_id = pins.user_id
+      ${cursorClause}
       ORDER BY score DESC NULLS LAST, created_at DESC, id DESC
+      LIMIT ${limitParam}
     `;
   },
 

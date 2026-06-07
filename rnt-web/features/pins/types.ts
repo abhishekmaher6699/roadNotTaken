@@ -75,6 +75,12 @@ export interface TilePinsResponse {
   tiles: TileCoordinates[];
 }
 
+export interface PinPageResponse {
+  pins: Pin[];
+  next_cursor: string | null;
+  has_more: boolean;
+}
+
 export interface TileSummary {
   x: number;
   y: number;

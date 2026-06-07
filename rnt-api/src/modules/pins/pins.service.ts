@@ -6,6 +6,8 @@ import {
   TileQueryInput,
   UpdatePinInput,
   VisitMutationResult,
+  PinPage,
+  PinPageInput,
 } from "./pins.types";
 import { getViewportPinLimit } from "./pins.helpers";
 import { pinQueries } from "./pins.queries";
@@ -15,6 +17,7 @@ import {
   buildSummaryRequestedTiles,
   buildSummaryTileValuesSql,
 } from "./pins.tile-queries";
+import { buildPinPage, preparePinPage } from "./pins.pagination";
 
 export async function createPin(data: CreatePinInput) {
   const pool = getPool();
@@ -63,16 +66,54 @@ export async function createPin(data: CreatePinInput) {
   return result.rows[0];
 }
 
-export async function getAllPins(viewerUserId?: string | null) {
+export async function getAllPins(
+  viewerUserId?: string | null,
+  pageInput: PinPageInput = {},
+): Promise<PinPage> {
   const pool = getPool();
-  const params = viewerUserId ? [viewerUserId] : [];
+  const { cursor, limit } = preparePinPage(pageInput);
+  const params: (number | string)[] = [];
+
+  if (viewerUserId) {
+    params.push(viewerUserId);
+  }
+
+  const viewerUserIdParam = viewerUserId ? "$1" : "$1";
+  let cursorClause = "";
+
+  if (cursor) {
+    params.push(cursor.score, cursor.created_at, cursor.id);
+    const scoreParam = `$${params.length - 2}`;
+    const createdAtParam = `$${params.length - 1}`;
+    const idParam = `$${params.length}`;
+
+    cursorClause = `
+      WHERE (
+        COALESCE(pins.score, -2147483648),
+        pins.created_at,
+        pins.id
+      ) < (
+        ${scoreParam}::integer,
+        ${createdAtParam}::timestamp,
+        ${idParam}::integer
+      )
+    `;
+  }
+
+  params.push(limit + 1);
+  const limitParam = `$${params.length}`;
 
   const result = await pool.query(
-    pinQueries.getAllPins(viewerUserId),
+    pinQueries.getAllPins({
+      viewerUserId,
+      cursorClause,
+      limitParam,
+      viewerUserIdParam,
+    }),
     params,
   );
 
-  return result.rows;
+  return buildPinPage(result.rows, limit);
 }
 
 export async function getPinById(id: string, viewerUserId?: string | null) {

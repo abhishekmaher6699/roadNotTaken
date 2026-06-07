@@ -133,10 +133,33 @@ describe('Pins API Endpoint Tests', () => {
       const res = await request(app).get('/pins');
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      const found = res.body.find((p: any) => p.id === pin.id);
+      expect(Array.isArray(res.body.pins)).toBe(true);
+      expect(typeof res.body.has_more).toBe('boolean');
+      expect(res.body).toHaveProperty('next_cursor');
+      const found = res.body.pins.find((p: any) => p.id === pin.id);
       expect(found).toBeDefined();
       expect(found).toHaveProperty('title', pin.title);
+    });
+
+    it('should paginate pins with a cursor', async () => {
+      await createTestPin(uniqueTitle('PageFirst'));
+      await createTestPin(uniqueTitle('PageSecond'));
+
+      const firstPage = await request(app).get('/pins?limit=1');
+
+      expect(firstPage.status).toBe(200);
+      expect(firstPage.body.pins).toHaveLength(1);
+      expect(firstPage.body).toHaveProperty('has_more', true);
+      expect(typeof firstPage.body.next_cursor).toBe('string');
+
+      const secondPage = await request(app)
+        .get(`/pins?limit=1&cursor=${encodeURIComponent(firstPage.body.next_cursor)}`);
+
+      expect(secondPage.status).toBe(200);
+      expect(secondPage.body.pins).toHaveLength(1);
+      expect(secondPage.body.pins[0].id).not.toBe(firstPage.body.pins[0].id);
+      expect(typeof secondPage.body.has_more).toBe('boolean');
+      expect(secondPage.body).toHaveProperty('next_cursor');
     });
   });
 

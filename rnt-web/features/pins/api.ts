@@ -2,6 +2,7 @@ import { apiClient } from "@/lib/api-client";
 import {
   CreatePinInput,
   Pin,
+  PinPageResponse,
   TileCoordinates,
   TilePinsResponse,
   TileSummariesResponse,
@@ -19,7 +20,7 @@ export interface VisitMutationResponse {
 }
 
 export function getPinsApi() {
-  return apiClient("/pins") as Promise<Pin[]>;
+  return apiClient("/pins") as Promise<PinPageResponse>;
 }
 
 export function getPinApi(id: string) {

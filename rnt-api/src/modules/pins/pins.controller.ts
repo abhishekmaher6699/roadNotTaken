@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest, getOptionalAuthenticatedUser } from '../../middleware/auth.middleware';
 import { createPin, deletePinById, getAllPins, getPinById, getPinSummariesForTiles, getPinsForTiles, likePinById, searchPins, unlikePinById, unvisitPinById, updatePinById, visitPinById } from './pins.service';
 import { TileQueryInput } from './pins.types';
+import { parsePinPageQuery } from './pins.pagination';
 
 function parseTiles(body: any): TileQueryInput['tiles'] | null {
   const tiles: TileQueryInput['tiles'] = Array.isArray(body?.tiles) ? body.tiles : [];
@@ -56,8 +57,8 @@ export async function createPinHandler(req: AuthenticatedRequest, res: Response)
 export async function getPinsHandler(req: Request, res: Response) {
   try {
     const user = await getOptionalAuthenticatedUser(req);
-    const pins = await getAllPins(user?.id);
-    res.json(pins);
+    const pinsPage = await getAllPins(user?.id, parsePinPageQuery(req.query));
+    res.json(pinsPage);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch pins' });

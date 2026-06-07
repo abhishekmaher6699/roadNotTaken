@@ -52,6 +52,17 @@ export interface TileSummary {
   top_score: number | null;
 }
 
+export interface PinPage {
+  pins: any[];
+  next_cursor: string | null;
+  has_more: boolean;
+}
+
+export interface PinPageInput {
+  cursor?: string | null;
+  limit?: number;
+}
+
 export interface SearchPinsInput {
   query: string;
   limit?: number;
