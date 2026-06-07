@@ -3,6 +3,15 @@ import { createPinHandler, deletePinHandler, getPinByIdHandler, getPinSummariesF
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { createRateLimitMiddleware } from '../../middleware/rate-limit.middleware';
 import type { AuthenticatedRequest } from '../../middleware/auth.middleware';
+import { validate } from '../../middleware/validate.middleware';
+import {
+  createPinBodySchema,
+  pinListQuerySchema,
+  searchPinsQuerySchema,
+  summaryTileQueryBodySchema,
+  tileQueryBodySchema,
+  updatePinBodySchema,
+} from './pins.validation';
 
 const router = Router();
 const authenticated = (
@@ -21,18 +30,18 @@ const visitPinRateLimit = createRateLimitMiddleware({
   max: 60,
 });
 
-router.get('/', getPinsHandler);
-router.get('/search', searchPinsHandler);
-router.post('/tiles/query', getPinsForTilesHandler);
-router.post('/tiles/summary', getPinSummariesForTilesHandler);
+router.get('/', validate({ query: pinListQuerySchema }), getPinsHandler);
+router.get('/search', validate({ query: searchPinsQuerySchema }), searchPinsHandler);
+router.post('/tiles/query', validate({ body: tileQueryBodySchema }), getPinsForTilesHandler);
+router.post('/tiles/summary', validate({ body: summaryTileQueryBodySchema }), getPinSummariesForTilesHandler);
 router.get('/:id', getPinByIdHandler);
 
-router.post('/', authMiddleware, authenticated(createPinHandler));
+router.post('/', authMiddleware, validate({ body: createPinBodySchema }), authenticated(createPinHandler));
 router.post('/:id/like', authMiddleware, likePinRateLimit, authenticated(likePinHandler));
 router.delete('/:id/like', authMiddleware, likePinRateLimit, authenticated(unlikePinHandler));
 router.post('/:id/visit', authMiddleware, visitPinRateLimit, authenticated(visitPinHandler));
 router.delete('/:id/visit', authMiddleware, visitPinRateLimit, authenticated(unvisitPinHandler));
-router.put('/:id', authMiddleware, authenticated(updatePinHandler));
+router.put('/:id', authMiddleware, validate({ body: updatePinBodySchema }), authenticated(updatePinHandler));
 router.delete('/:id', authMiddleware, authenticated(deletePinHandler));
 
 export default router;

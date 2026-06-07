@@ -123,7 +123,29 @@ export function PinDetailsSidebar({
         size="wide"
       >
         <div className="space-y-3 pb-4">
-          <PinDetailsHero pin={pin} />
+          <PinDetailsHero
+            pin={pin}
+            actions={
+              isOwner ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={onEdit}
+                    className="rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-xs font-semibold text-white shadow-sm backdrop-blur transition hover:bg-white/25"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="rounded-full border border-red-200/30 bg-red-500/80 px-3 py-1.5 text-xs font-semibold text-white shadow-sm backdrop-blur transition hover:bg-red-500"
+                  >
+                    Delete
+                  </button>
+                </>
+              ) : undefined
+            }
+          />
 
           <div className="flex flex-col gap-2.5 rounded-2xl border border-neutral-200 bg-white px-3.5 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
@@ -151,24 +173,6 @@ export function PinDetailsSidebar({
                 tone="visit"
                 className="min-h-0 px-3 py-1.5 text-xs [&>svg]:h-3.5 [&>svg]:w-3.5"
               />
-              {isOwner && (
-                <>
-                  <button
-                    type="button"
-                    onClick={onEdit}
-                    className="rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-100"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
             </div>
           </div>
 

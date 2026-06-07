@@ -108,7 +108,7 @@ export function getVisibleTiles(bounds: ViewportBounds, zoom: number) {
 export function getVisibleSummaryTiles(
   bounds: ViewportBounds,
   zoom: number,
-  padding = 1,
+  padding = 0,
 ) {
   const summaryZoom = Math.min(
     MAX_SUMMARY_TILE_ZOOM,

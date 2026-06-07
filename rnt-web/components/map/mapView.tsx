@@ -34,6 +34,7 @@ export default function MapView({
   draftPin,
   flyToTarget,
   initialCenter,
+  initialZoom,
   onAddPin,
   onViewportChange,
   onSelectPin,
@@ -46,7 +47,7 @@ export default function MapView({
     <MapContainer
       ref={mapRef}
       center={initialCenter}
-      zoom={14}
+      zoom={initialZoom}
       className="z-0 h-full w-full"
       zoomControl={false}
       attributionControl={false}
@@ -83,7 +84,7 @@ export default function MapView({
       ))}
 
       {tileSummaries
-        .filter((summary) => summary.pin_count > 0) // ✅ ADD THIS
+        .filter((summary) => summary.pin_count > 0)
         .map((summary) => (
           <Marker
             key={`${summary.z}-${summary.x}-${summary.y}`}

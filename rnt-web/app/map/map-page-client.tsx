@@ -25,14 +25,35 @@ const MapView = dynamic(() => import("@/components/map/mapView"), {
 });
 
 const DEFAULT_CENTER: [number, number] = [18.52, 73.85];
+const DEFAULT_ZOOM = 14;
+const MAP_VIEW_STORAGE_KEY = "rnt_last_map_view";
 
-function getInitialCenter(): [number, number] {
+function getInitialMapView(): { center: [number, number]; zoom: number } {
+  try {
+    const raw = localStorage.getItem(MAP_VIEW_STORAGE_KEY);
+    const saved = raw ? JSON.parse(raw) : null;
+    const lat = Number(saved?.lat);
+    const lng = Number(saved?.lng);
+    const zoom = Number(saved?.zoom);
+
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return {
+        center: [lat, lng],
+        zoom: Number.isFinite(zoom) ? zoom : DEFAULT_ZOOM,
+      };
+    }
+  } catch {}
+
   const saved = loadLocation();
-  return saved ? [saved.lat, saved.lng] : DEFAULT_CENTER;
+  return {
+    center: saved ? [saved.lat, saved.lng] : DEFAULT_CENTER,
+    zoom: DEFAULT_ZOOM,
+  };
 }
 
 export function MapPageClient({ user }: MapPageClientProps) {
-  const [initialCenter] = useState<[number, number]>(getInitialCenter);
+  const [{ center: initialCenter, zoom: initialZoom }] =
+    useState(getInitialMapView);
   const mapRef = useRef<L.Map | null>(null);
   const [flyToTarget, setFlyToTarget] = useState<{ lat: number; lng: number } | null>(null);
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
@@ -153,6 +174,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         draftPin={draftPin}
         flyToTarget={flyToTarget}
         initialCenter={initialCenter}
+        initialZoom={initialZoom}
         onAddPin={handleAddPin}
         onViewportChange={handleViewportChange}
         onSelectPin={setSelectedPin}

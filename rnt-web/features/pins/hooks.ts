@@ -175,9 +175,7 @@ export function usePins() {
       inFlightSummaryTilesRef
     );
 
-    if (missingTiles.length === 0 || activeSummaryTiles.length === 0) {
-      setActiveSummaryTiles(tiles);
-    }
+    setActiveSummaryTiles(tiles);
 
     await fetchSummaryTiles(missingTiles, {
       inFlightSummaryTilesRef,

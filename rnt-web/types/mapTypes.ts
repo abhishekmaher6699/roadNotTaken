@@ -37,6 +37,7 @@ export type MapViewProps = {
   draftPin: PendingPin | null;
   flyToTarget: { lat: number; lng: number } | null;
   initialCenter: [number, number];
+  initialZoom: number;
   onAddPin: (latlng: LatLng) => void;
   onViewportChange: (viewport: MapViewport) => void;
   onSelectPin: (pin: Pin) => void;

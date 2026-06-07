@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { PinInfoCardProps } from "./types";
 import {
   getAuthorInitial,
@@ -41,11 +42,15 @@ export function PinInfoCard({
   return (
     <div className="overflow-hidden rounded-2xl bg-white/95 shadow-lg ring-1 ring-black/10 backdrop-blur">
       {previewImageUrl && (
-        <img
-          src={previewImageUrl}
-          alt={pin.title}
-          className="h-36 w-full object-contain sm:h-44"
-        />
+        <div className="relative h-36 w-full sm:h-44">
+          <Image
+            src={previewImageUrl}
+            alt={pin.title}
+            fill
+            sizes="(max-width: 640px) 100vw, 360px"
+            className="object-contain"
+          />
+        </div>
       )}
 
       <div className="p-3.5 sm:p-4">
@@ -68,11 +73,15 @@ export function PinInfoCard({
             className="mt-2 flex max-w-full items-center gap-2 text-left"
           >
             {authorAvatarUrl ? (
-              <img
-                src={authorAvatarUrl}
-                alt=""
-                className="h-6 w-6 shrink-0 rounded-full object-cover"
-              />
+              <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full">
+                <Image
+                  src={authorAvatarUrl}
+                  alt=""
+                  fill
+                  sizes="24px"
+                  className="object-cover"
+                />
+              </span>
             ) : (
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-950 text-[10px] font-semibold text-white">
                 {getAuthorInitial(authorName)}

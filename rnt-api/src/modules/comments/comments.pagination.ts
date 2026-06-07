@@ -36,7 +36,11 @@ export function parseCommentPageQuery(query: {
   limit?: unknown;
 }): CommentPageInput {
   const limit =
-    typeof query.limit === "string" ? parseInt(query.limit, 10) : undefined;
+    typeof query.limit === "number"
+      ? query.limit
+      : typeof query.limit === "string"
+        ? parseInt(query.limit, 10)
+        : undefined;
 
   return {
     cursor: typeof query.cursor === "string" ? query.cursor : null,

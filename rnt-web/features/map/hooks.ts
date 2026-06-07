@@ -16,7 +16,8 @@ import { getVisibleSummaryTiles, getVisibleTiles, MIN_PIN_ZOOM } from "@/feature
 
 const BASEMAP_STORAGE_KEY = "rnt_basemap";
 const BASEMAP_CHANGE_EVENT = "rnt:basemap-change";
-const RAW_PIN_LAYER_ZOOM = MIN_PIN_ZOOM + 0.25;
+const MAP_VIEW_STORAGE_KEY = "rnt_last_map_view";
+const RAW_PIN_LAYER_ZOOM = MIN_PIN_ZOOM;
 
 function readStoredBasemap(): BasemapMode {
   if (typeof window === "undefined") {
@@ -127,8 +128,18 @@ export function useMapPageState() {
 
     viewportDebounceRef.current = setTimeout(() => {
       setViewport(vp);
+      try {
+        localStorage.setItem(
+          MAP_VIEW_STORAGE_KEY,
+          JSON.stringify({
+            lat: (vp.north + vp.south) / 2,
+            lng: (vp.east + vp.west) / 2,
+            zoom: vp.zoom,
+          }),
+        );
+      } catch {}
 
-      if (vp.zoom < RAW_PIN_LAYER_ZOOM) {
+      if (vp.zoom <= RAW_PIN_LAYER_ZOOM) {
         void loadTileSummaries(getVisibleSummaryTiles(vp, vp.zoom));
         void loadTiles([], vp);
         return;

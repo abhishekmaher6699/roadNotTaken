@@ -3,6 +3,11 @@ import { createCommentHandler, deleteCommentHandler, getCommentsForPinHandler, l
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { createRateLimitMiddleware } from '../../middleware/rate-limit.middleware';
 import type { AuthenticatedRequest } from '../../middleware/auth.middleware';
+import { validate } from '../../middleware/validate.middleware';
+import {
+  commentPageQuerySchema,
+  createCommentBodySchema,
+} from './comments.validation';
 
 const router = Router();
 const authenticated = (
@@ -21,8 +26,18 @@ const likeCommentRateLimit = createRateLimitMiddleware({
   max: 60,
 });
 
-router.get('/pins/:pinId/comments', getCommentsForPinHandler);
-router.post('/', authMiddleware, createCommentRateLimit, authenticated(createCommentHandler));
+router.get(
+  '/pins/:pinId/comments',
+  validate({ query: commentPageQuerySchema }),
+  getCommentsForPinHandler,
+);
+router.post(
+  '/',
+  authMiddleware,
+  createCommentRateLimit,
+  validate({ body: createCommentBodySchema }),
+  authenticated(createCommentHandler),
+);
 router.post('/:id/like', authMiddleware, likeCommentRateLimit, authenticated(likeCommentHandler));
 router.delete('/:id/like', authMiddleware, likeCommentRateLimit, authenticated(unlikeCommentHandler));
 router.delete('/:id', authMiddleware, authenticated(deleteCommentHandler));

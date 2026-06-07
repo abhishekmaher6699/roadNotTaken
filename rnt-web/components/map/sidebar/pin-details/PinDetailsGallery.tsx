@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import type { Pin } from "@/features/pins";
 import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 import Lightbox from "yet-another-react-lightbox";
@@ -85,11 +86,15 @@ export function PinDetailsGallery({ pin }: PinDetailsGalleryProps) {
               }}
               className="group relative overflow-hidden rounded-xl border border-neutral-200 text-left"
             >
-              <img
-                src={getOptimizedCloudinaryUrl(item.src, "gallery-preview") ?? item.src}
-                alt={`${pin.title} ${index + 1}`}
-                className="h-20 w-full object-cover transition duration-300 group-hover:scale-[1.03] sm:h-24"
-              />
+              <span className="relative block h-20 w-full sm:h-24">
+                <Image
+                  src={getOptimizedCloudinaryUrl(item.src, "gallery-preview") ?? item.src}
+                  alt={`${pin.title} ${index + 1}`}
+                  fill
+                  sizes="(max-width: 640px) 30vw, 160px"
+                  className="object-cover transition duration-300 group-hover:scale-[1.03]"
+                />
+              </span>
               {showOverflow && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-sm font-semibold text-white">
                   +{remaining}
