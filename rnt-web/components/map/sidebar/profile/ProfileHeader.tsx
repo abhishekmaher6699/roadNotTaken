@@ -1,4 +1,5 @@
 import type { PublicProfileResponse } from "@/features/profiles";
+import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 import { formatDate, getInitial } from "./utils";
 
 interface ProfileHeaderProps {
@@ -26,8 +27,10 @@ export function ProfileHeader({
         <div className="flex items-start gap-3">
           {user.avatar_url ? (
             <img
-              src={user.avatar_url}
+              src={getOptimizedCloudinaryUrl(user.avatar_url, "avatar") ?? user.avatar_url}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="h-20 w-20 shrink-0 rounded-2xl object-cover"
             />
           ) : (

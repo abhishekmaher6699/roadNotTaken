@@ -12,6 +12,7 @@ import type {
 import { pinFormSchema } from "./validation";
 
 const MAX_IMAGES = 10;
+const MAX_PIN_IMAGE_BYTES = 8 * 1024 * 1024;
 
 const initialFormState: PinFormState = {
   title: "",
@@ -84,6 +85,18 @@ function buildUpdatePinPayload(values: PinFormState): UpdatePinInput {
     thumbnail_url: thumbnailUrl,
     image_url: thumbnailUrl,
   };
+}
+
+function validateSelectedImages(files: File[]) {
+  const invalidType = files.find((file) => !file.type.startsWith("image/"));
+  if (invalidType) {
+    throw new Error("Only image files can be uploaded");
+  }
+
+  const oversized = files.find((file) => file.size > MAX_PIN_IMAGE_BYTES);
+  if (oversized) {
+    throw new Error("Each image must be 8MB or smaller");
+  }
 }
 
 export function usePinForm({
@@ -176,6 +189,7 @@ export function usePinForm({
 
     try {
       setError(null);
+      validateSelectedImages(files);
       setIsUploading(true);
       const uploadedUrls = await Promise.all(
         files.map((file) => uploadImage(file))

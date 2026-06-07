@@ -1,4 +1,5 @@
 import { getInitial } from "./utils";
+import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 
 export interface ProfileFormState {
   display_name: string;
@@ -63,8 +64,10 @@ export function ProfileEditForm({
         <div className="mt-1 flex items-center gap-3">
           {form.avatar_url ? (
             <img
-              src={form.avatar_url}
+              src={getOptimizedCloudinaryUrl(form.avatar_url, "avatar") ?? form.avatar_url}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="h-12 w-12 shrink-0 rounded-xl object-cover"
             />
           ) : (

@@ -11,6 +11,7 @@ import {
 } from "@/features/pins/author";
 import type { ProfileSearchResult } from "@/features/profiles";
 import { highlight } from "@/components/search/highlight";
+import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 
 interface SearchResultsPanelProps {
   open: boolean;
@@ -175,8 +176,10 @@ export function SearchResultsPanel({
                               >
                                 {authorAvatarUrl ? (
                                   <img
-                                    src={authorAvatarUrl}
+                                    src={getOptimizedCloudinaryUrl(authorAvatarUrl, "avatar") ?? authorAvatarUrl}
                                     alt=""
+                                    loading="lazy"
+                                    decoding="async"
                                     className="h-5 w-5 shrink-0 rounded-full object-cover"
                                   />
                                 ) : (
@@ -232,8 +235,10 @@ export function SearchResultsPanel({
                         >
                           {user.avatar_url ? (
                             <img
-                              src={user.avatar_url}
+                              src={getOptimizedCloudinaryUrl(user.avatar_url, "avatar") ?? user.avatar_url}
                               alt=""
+                              loading="lazy"
+                              decoding="async"
                               className="h-11 w-11 shrink-0 rounded-full object-cover"
                             />
                           ) : (

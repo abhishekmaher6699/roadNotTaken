@@ -335,6 +335,22 @@ describe('Pins API Endpoint Tests', () => {
       expect(res.body.summaries.some((summary: any) => summary.pin_count > 0)).toBe(true);
     });
 
+    it('should allow larger summary tile batches than raw pin tile batches', async () => {
+      const summaryTiles = Array.from({ length: 65 }, (_, index) => ({
+        x: 2888 + index,
+        y: 1833,
+        z: 12,
+      }));
+
+      const res = await request(app)
+        .post('/pins/tiles/summary')
+        .send({ tiles: summaryTiles });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('tiles');
+      expect(res.body.tiles).toHaveLength(summaryTiles.length);
+    });
+
     it('should return 400 for invalid tile boundaries', async () => {
       const res = await request(app)
         .post('/pins/tiles/query')

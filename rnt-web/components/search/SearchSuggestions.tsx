@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Pin } from "@/features/pins/types";
 import type { ProfileSearchResult } from "@/features/profiles";
 import { highlight } from "@/components/search/highlight";
+import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 
 const CATEGORY_COLORS: Record<string, string> = {
   general: "#6b7280",
@@ -191,8 +192,10 @@ export function SearchSuggestions({
               >
                 {user.avatar_url ? (
                   <img
-                    src={user.avatar_url}
+                    src={getOptimizedCloudinaryUrl(user.avatar_url, "avatar") ?? user.avatar_url}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className="h-8 w-8 shrink-0 rounded-full object-cover"
                   />
                 ) : (

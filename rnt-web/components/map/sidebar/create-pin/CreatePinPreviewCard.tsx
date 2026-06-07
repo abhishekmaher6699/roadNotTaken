@@ -18,6 +18,8 @@ export function CreatePinPreviewCard({
       <img
         src={previewImageUrl}
         alt={pin.title}
+        loading="lazy"
+        decoding="async"
         className="h-36 w-full object-cover"
       />
       <div className="flex items-center justify-between px-4 py-3">

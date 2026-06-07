@@ -30,6 +30,8 @@ export function UploadedImageGrid({
             <img
               src={getOptimizedCloudinaryUrl(imageUrl, "thumbnail") ?? imageUrl}
               alt={`Uploaded ${index + 1}`}
+              loading="lazy"
+              decoding="async"
               className="h-24 w-full object-cover"
             />
             <div className="space-y-1 p-2">
