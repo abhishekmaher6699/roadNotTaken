@@ -411,7 +411,7 @@ export async function searchPins({
     ? `LEAST(1.0, EXP(-ST_Distance(
           pins.geom,
           ST_MakePoint($4, $5)::geography
-        ) / 8000.0))`
+        ) / 80000.0))`
     : `0`;
 
   // set_limit is a session-level setting — must run on the same connection as the search
