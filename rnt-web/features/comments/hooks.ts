@@ -5,6 +5,7 @@ import {
   createCommentApi,
   deleteCommentApi,
   getCommentsForPinApi,
+  invalidateCommentsForPin,
   likeCommentApi,
   unlikeCommentApi,
 } from "./api";
@@ -183,6 +184,9 @@ export function useComments(pinId: number | null) {
 
     try {
       await deleteCommentApi(commentId);
+      if (pinId) {
+        invalidateCommentsForPin(pinId);
+      }
       setSyncedComments((prev) => prev.filter((c) => !removedIds.has(c.id)));
       setCommentCount((current) =>
         current == null ? current : Math.max(current - removedIds.size, 0),
@@ -198,7 +202,7 @@ export function useComments(pinId: number | null) {
       console.error(err);
       throw err;
     }
-  }, [setSyncedComments]);
+  }, [pinId, setSyncedComments]);
 
   const toggleLike = useCallback(async (commentId: number) => {
     const previousComment = commentsRef.current.find((c) => c.id === commentId);
@@ -247,6 +251,10 @@ export function useComments(pinId: number | null) {
             ? await likeCommentApi(commentId, controller.signal)
             : await unlikeCommentApi(commentId, controller.signal);
 
+          if (pinId) {
+            invalidateCommentsForPin(pinId);
+          }
+
           if (likeRequestIdsRef.current.get(commentId) !== requestId) {
             resolve(null);
             return;
@@ -287,7 +295,7 @@ export function useComments(pinId: number | null) {
         resolve,
       });
     });
-  }, [clearPendingLike, patchComment]);
+  }, [clearPendingLike, patchComment, pinId]);
 
   return {
     comments,

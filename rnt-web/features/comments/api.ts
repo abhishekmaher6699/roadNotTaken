@@ -40,10 +40,56 @@ export interface CommentPageResponse {
   comment_count: number;
 }
 
+const COMMENT_PAGE_CACHE_TTL_MS = 15_000;
+
+const commentPageCache = new Map<
+  string,
+  {
+    data: CommentPageResponse;
+    expiresAt: number;
+  }
+>();
+const commentPageRequests = new Map<string, Promise<CommentPageResponse>>();
+
+function getCommentPageCacheKey(
+  pinId: number,
+  options: { cursor?: string | null; limit?: number },
+) {
+  return `${pinId}:${options.cursor ?? ""}:${options.limit ?? ""}`;
+}
+
+export function invalidateCommentsForPin(pinId: number) {
+  const prefix = `${pinId}:`;
+
+  for (const key of commentPageCache.keys()) {
+    if (key.startsWith(prefix)) {
+      commentPageCache.delete(key);
+    }
+  }
+
+  for (const key of commentPageRequests.keys()) {
+    if (key.startsWith(prefix)) {
+      commentPageRequests.delete(key);
+    }
+  }
+}
+
 export function getCommentsForPinApi(
   pinId: number,
   options: { cursor?: string | null; limit?: number } = {},
 ) {
+  const cacheKey = getCommentPageCacheKey(pinId, options);
+  const cached = commentPageCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return Promise.resolve(cached.data);
+  }
+
+  const activeRequest = commentPageRequests.get(cacheKey);
+  if (activeRequest) {
+    return activeRequest;
+  }
+
   const params = new URLSearchParams();
 
   if (options.cursor) {
@@ -57,14 +103,30 @@ export function getCommentsForPinApi(
   const query = params.toString();
   const path = `/comments/pins/${pinId}/comments${query ? `?${query}` : ""}`;
 
-  return apiClient(path) as Promise<CommentPageResponse>;
+  const request = (apiClient(path) as Promise<CommentPageResponse>)
+    .then((data) => {
+      commentPageCache.set(cacheKey, {
+        data,
+        expiresAt: Date.now() + COMMENT_PAGE_CACHE_TTL_MS,
+      });
+      return data;
+    })
+    .finally(() => {
+      commentPageRequests.delete(cacheKey);
+    });
+
+  commentPageRequests.set(cacheKey, request);
+  return request;
 }
 
-export function createCommentApi(data: CreateCommentInput) {
-  return apiClient("/comments", {
+export async function createCommentApi(data: CreateCommentInput) {
+  const comment = (await apiClient("/comments", {
     method: "POST",
     body: JSON.stringify(data),
-  }) as Promise<Comment>;
+  })) as Comment;
+
+  invalidateCommentsForPin(data.pin_id);
+  return comment;
 }
 
 export function deleteCommentApi(id: number) {
