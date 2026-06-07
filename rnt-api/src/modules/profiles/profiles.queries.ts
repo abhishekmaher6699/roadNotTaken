@@ -117,48 +117,64 @@ export const profileQueries = {
   `,
 
   searchProfiles: `
+    WITH candidate_profiles AS (
+      SELECT
+        profiles.user_id,
+        profiles.username,
+        profiles.display_name,
+        profiles.bio,
+        profiles.avatar_url,
+        profiles.location,
+        profiles.created_at,
+        GREATEST(
+          COALESCE(similarity(profiles.display_name, $1), 0),
+          COALESCE(similarity(profiles.username, $1), 0)
+        ) AS similarity_score
+      FROM profiles
+      WHERE
+        profiles.display_name ILIKE $2
+        OR profiles.username ILIKE $2
+        OR profiles.display_name % $1
+        OR profiles.username % $1
+    ),
+    pin_stats AS (
+      SELECT
+        user_id,
+        COUNT(*) AS pin_count,
+        SUM(COALESCE(likes_count, 0)) AS pin_karma
+      FROM pins
+      WHERE user_id IN (SELECT user_id FROM candidate_profiles)
+      GROUP BY user_id
+    ),
+    comment_stats AS (
+      SELECT
+        user_id,
+        COUNT(*) AS comment_count,
+        SUM(COALESCE(likes_count, 0)) AS comment_karma
+      FROM comments
+      WHERE user_id IN (SELECT user_id FROM candidate_profiles)
+      GROUP BY user_id
+    )
     SELECT
-      profiles.user_id,
-      profiles.username,
-      profiles.display_name,
-      profiles.bio,
-      profiles.avatar_url,
-      profiles.location,
+      candidate_profiles.user_id,
+      candidate_profiles.username,
+      candidate_profiles.display_name,
+      candidate_profiles.bio,
+      candidate_profiles.avatar_url,
+      candidate_profiles.location,
       (
         COALESCE(pin_stats.pin_karma, 0)
         + COALESCE(comment_stats.comment_karma, 0)
       )::integer AS total_karma,
       COALESCE(pin_stats.pin_count, 0)::integer AS pin_count,
       COALESCE(comment_stats.comment_count, 0)::integer AS comment_count
-    FROM profiles
-    LEFT JOIN (
-      SELECT
-        user_id,
-        COUNT(*) AS pin_count,
-        SUM(COALESCE(likes_count, 0)) AS pin_karma
-      FROM pins
-      GROUP BY user_id
-    ) pin_stats ON pin_stats.user_id = profiles.user_id
-    LEFT JOIN (
-      SELECT
-        user_id,
-        COUNT(*) AS comment_count,
-        SUM(COALESCE(likes_count, 0)) AS comment_karma
-      FROM comments
-      GROUP BY user_id
-    ) comment_stats ON comment_stats.user_id = profiles.user_id
-    WHERE
-      profiles.display_name ILIKE $2
-      OR profiles.username ILIKE $2
-      OR profiles.display_name % $1
-      OR profiles.username % $1
+    FROM candidate_profiles
+    LEFT JOIN pin_stats ON pin_stats.user_id = candidate_profiles.user_id
+    LEFT JOIN comment_stats ON comment_stats.user_id = candidate_profiles.user_id
     ORDER BY
-      GREATEST(
-        COALESCE(similarity(profiles.display_name, $1), 0),
-        COALESCE(similarity(profiles.username, $1), 0)
-      ) DESC,
+      candidate_profiles.similarity_score DESC,
       total_karma DESC,
-      profiles.created_at DESC
+      candidate_profiles.created_at DESC
     LIMIT $3;
   `,
 };
