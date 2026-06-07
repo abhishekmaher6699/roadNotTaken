@@ -12,4 +12,5 @@ export interface PinDetailsSidebarProps {
   onOpenProfile?: (userId: string) => void;
   focusedCommentId?: number | null;
   onCommentCountChange?: (pinId: string, delta: number) => void;
+  onCommentCountSync?: (pinId: string, count: number) => void;
 }

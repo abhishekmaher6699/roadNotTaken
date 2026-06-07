@@ -13,6 +13,10 @@ interface RateLimitBucket {
 
 const buckets = new Map<string, RateLimitBucket>();
 
+export function resetRateLimitBuckets() {
+  buckets.clear();
+}
+
 export function createRateLimitMiddleware(options: RateLimitOptions) {
   const { keyPrefix, windowMs, max } = options;
 

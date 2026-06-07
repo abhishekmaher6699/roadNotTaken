@@ -14,6 +14,7 @@ function isAbortError(error: unknown) {
 }
 
 const LIKE_FLUSH_DELAY_MS = 500;
+const COMMENT_PAGE_LIMIT = 5;
 
 interface PendingLikeMutation {
   baseComment: Comment;
@@ -26,7 +27,11 @@ export function useComments(pinId: number | null) {
   const [comments, setComments] = useState<Comment[]>([]);
   const commentsRef = useRef<Comment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [commentCount, setCommentCount] = useState<number | null>(null);
   const likeControllersRef = useRef<Map<number, AbortController>>(new Map());
   const likeRequestIdsRef = useRef<Map<number, number>>(new Map());
   const pendingLikeMutationsRef = useRef<
@@ -74,8 +79,13 @@ export function useComments(pinId: number | null) {
     setLoading(true);
     setError(null);
     try {
-      const data = await getCommentsForPinApi(pinId);
-      setSyncedComments(data);
+      const data = await getCommentsForPinApi(pinId, {
+        limit: COMMENT_PAGE_LIMIT,
+      });
+      setSyncedComments(data.comments);
+      setNextCursor(data.next_cursor);
+      setHasMore(data.has_more);
+      setCommentCount(data.comment_count);
     } catch (err) {
       setError("Failed to load comments");
       console.error(err);
@@ -83,6 +93,33 @@ export function useComments(pinId: number | null) {
       setLoading(false);
     }
   }, [pinId, setSyncedComments]);
+
+  const loadMoreComments = useCallback(async () => {
+    if (!pinId || !nextCursor || loadingMore) return;
+
+    setLoadingMore(true);
+    setError(null);
+    try {
+      const data = await getCommentsForPinApi(pinId, {
+        cursor: nextCursor,
+        limit: COMMENT_PAGE_LIMIT,
+      });
+
+      setSyncedComments((prev) => {
+        const commentsById = new Map(prev.map((comment) => [comment.id, comment]));
+        data.comments.forEach((comment) => commentsById.set(comment.id, comment));
+        return Array.from(commentsById.values());
+      });
+      setNextCursor(data.next_cursor);
+      setHasMore(data.has_more);
+      setCommentCount(data.comment_count);
+    } catch (err) {
+      setError("Failed to load more comments");
+      console.error(err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, nextCursor, pinId, setSyncedComments]);
 
   const addComment = useCallback(async (
     input: CreateCommentInput,
@@ -109,6 +146,7 @@ export function useComments(pinId: number | null) {
       setSyncedComments((prev) =>
         prev.map((c) => (c.id === optimisticComment.id ? newComment : c)),
       );
+      setCommentCount((current) => (current == null ? current : current + 1));
       return newComment;
     } catch (err) {
       setSyncedComments((prev) =>
@@ -146,6 +184,9 @@ export function useComments(pinId: number | null) {
     try {
       await deleteCommentApi(commentId);
       setSyncedComments((prev) => prev.filter((c) => !removedIds.has(c.id)));
+      setCommentCount((current) =>
+        current == null ? current : Math.max(current - removedIds.size, 0),
+      );
       return removedIds.size;
     } catch (err) {
       setSyncedComments((prev) =>
@@ -251,8 +292,12 @@ export function useComments(pinId: number | null) {
   return {
     comments,
     loading,
+    loadingMore,
     error,
+    hasMore,
+    commentCount,
     fetchComments,
+    loadMoreComments,
     addComment,
     removeComment,
     toggleLike,

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthenticatedRequest, getOptionalAuthenticatedUser } from '../../middleware/auth.middleware';
 import { CommentsServiceError, createComment, deleteCommentById, getCommentsForPin, likeCommentById, unlikeCommentById } from './comments.service';
+import { parseCommentPageQuery } from './comments.pagination';
 
 export async function createCommentHandler(req: AuthenticatedRequest, res: Response) {
   try {
@@ -55,8 +56,12 @@ export async function getCommentsForPinHandler(req: Request, res: Response) {
     }
 
     const user = await getOptionalAuthenticatedUser(req);
-    const comments = await getCommentsForPin(pinId, user?.id);
-    res.json(comments);
+    const commentsPage = await getCommentsForPin(
+      pinId,
+      user?.id,
+      parseCommentPageQuery(req.query),
+    );
+    res.json(commentsPage);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch comments' });

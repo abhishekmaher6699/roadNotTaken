@@ -1,6 +1,13 @@
 import { getPool } from "../../config/db";
-import { Comment, CommentLikeMutationResult, CreateCommentInput } from "./comments.types";
+import {
+  Comment,
+  CommentLikeMutationResult,
+  CommentPage,
+  CommentPageInput,
+  CreateCommentInput,
+} from "./comments.types";
 import { commentQueries } from "./comments.queries";
+import { buildCommentPage, prepareCommentPage } from "./comments.pagination";
 
 const MAX_COMMENT_LENGTH = 1000;
 
@@ -61,16 +68,64 @@ export async function createComment(input: CreateCommentInput & { user_id: strin
   return result.rows[0];
 }
 
-export async function getCommentsForPin(pin_id: number, viewerUserId?: string | null): Promise<Comment[]> {
+export async function getCommentsForPin(
+  pin_id: number,
+  viewerUserId?: string | null,
+  pageInput: CommentPageInput = {},
+): Promise<CommentPage> {
   const pool = getPool();
-  const params = viewerUserId ? [pin_id, viewerUserId] : [pin_id];
+  const { cursor, limit } = prepareCommentPage(pageInput);
+  const pageParams: (number | string)[] = [pin_id];
 
-  const result = await pool.query(
-    commentQueries.getCommentsForPin(viewerUserId),
-    params
+  let cursorIdParam: string | undefined;
+
+  if (cursor) {
+    pageParams.push(cursor.id);
+    cursorIdParam = `$${pageParams.length}`;
+  }
+
+  pageParams.push(limit + 1);
+  const limitParam = `$${pageParams.length}`;
+
+  const [topLevelResult, countResult] = await Promise.all([
+    pool.query(
+      commentQueries.getTopLevelCommentPage({
+        cursorIdParam,
+        limitParam,
+      }),
+      pageParams,
+    ),
+    pool.query(commentQueries.countCommentsForPin, [pin_id]),
+  ]);
+  const topLevelRows = topLevelResult.rows as Pick<Comment, "id">[];
+  const visibleRootIds = topLevelRows.slice(0, limit).map((row) => row.id);
+
+  let comments: Comment[] = [];
+
+  if (visibleRootIds.length > 0) {
+    const commentParams: (number[] | string)[] = [visibleRootIds];
+
+    if (viewerUserId) {
+      commentParams.push(viewerUserId);
+    }
+
+    const commentsResult = await pool.query(
+      commentQueries.getCommentsForThreadRoots({
+        viewerUserId,
+        rootIdsParam: "$1",
+        viewerUserIdParam: viewerUserId ? "$2" : undefined,
+      }),
+      commentParams,
+    );
+    comments = commentsResult.rows as Comment[];
+  }
+
+  return buildCommentPage(
+    comments,
+    topLevelRows,
+    limit,
+    countResult.rows[0]?.comment_count ?? 0,
   );
-
-  return result.rows;
 }
 
 export async function deleteCommentById(comment_id: number, user_id: string): Promise<Comment | null> {

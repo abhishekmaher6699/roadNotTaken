@@ -144,6 +144,10 @@ describe('Comments API Endpoint Tests', () => {
         id: otherUserId,
         username: 'comment_other',
       });
+
+      const pinRes = await request(app).get(`/pins/${pin.id}`);
+      expect(pinRes.status).toBe(200);
+      expect(pinRes.body).toHaveProperty('comment_count', 2);
     });
 
     it('should reject empty comments', async () => {
@@ -191,8 +195,11 @@ describe('Comments API Endpoint Tests', () => {
         .set('Cookie', [`access_token=${otherAccessToken}`]);
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      const found = res.body.find((item: any) => item.id === comment.id);
+      expect(Array.isArray(res.body.comments)).toBe(true);
+      expect(res.body).toHaveProperty('has_more', false);
+      expect(res.body).toHaveProperty('next_cursor', null);
+      expect(res.body).toHaveProperty('comment_count', 1);
+      const found = res.body.comments.find((item: any) => item.id === comment.id);
       expect(found).toBeDefined();
       expect(found).toHaveProperty('likes_count', 1);
       expect(found).toHaveProperty('viewer_has_liked', true);
@@ -200,6 +207,66 @@ describe('Comments API Endpoint Tests', () => {
         username: 'comment_owner',
         display_name: 'Comment Owner',
       });
+    });
+
+    it('should paginate comments with a cursor', async () => {
+      const pin = await createTestPin();
+      const first = await createTestComment(pin.id, 'First visible comment');
+      const second = await createTestComment(pin.id, 'Second visible comment');
+
+      const firstPage = await request(app)
+        .get(`/comments/pins/${pin.id}/comments?limit=1`);
+
+      expect(firstPage.status).toBe(200);
+      expect(firstPage.body.comments).toHaveLength(1);
+      expect(firstPage.body.comments[0]).toHaveProperty('id', first.id);
+      expect(firstPage.body).toHaveProperty('has_more', true);
+      expect(typeof firstPage.body.next_cursor).toBe('string');
+
+      const secondPage = await request(app)
+        .get(`/comments/pins/${pin.id}/comments?limit=1&cursor=${encodeURIComponent(firstPage.body.next_cursor)}`);
+
+      expect(secondPage.status).toBe(200);
+      expect(secondPage.body.comments).toHaveLength(1);
+      expect(secondPage.body.comments[0]).toHaveProperty('id', second.id);
+      expect(secondPage.body).toHaveProperty('has_more', false);
+      expect(secondPage.body).toHaveProperty('next_cursor', null);
+    });
+
+    it('should paginate by top-level comments while returning replies in the selected threads', async () => {
+      const pin = await createTestPin();
+      const first = await createTestComment(pin.id, 'First thread');
+      const firstReply = await request(app)
+        .post('/comments')
+        .set('Cookie', [`access_token=${otherAccessToken}`])
+        .send({
+          pin_id: pin.id,
+          parent_comment_id: first.id,
+          content: 'Reply in first thread',
+        });
+      expect(firstReply.status).toBe(201);
+      const second = await createTestComment(pin.id, 'Second thread');
+
+      const firstPage = await request(app)
+        .get(`/comments/pins/${pin.id}/comments?limit=1`);
+
+      expect(firstPage.status).toBe(200);
+      expect(firstPage.body.comments.map((comment: any) => comment.id)).toEqual([
+        first.id,
+        firstReply.body.id,
+      ]);
+      expect(firstPage.body).toHaveProperty('comment_count', 3);
+      expect(firstPage.body).toHaveProperty('has_more', true);
+
+      const secondPage = await request(app)
+        .get(`/comments/pins/${pin.id}/comments?limit=1&cursor=${encodeURIComponent(firstPage.body.next_cursor)}`);
+
+      expect(secondPage.status).toBe(200);
+      expect(secondPage.body.comments.map((comment: any) => comment.id)).toEqual([
+        second.id,
+      ]);
+      expect(secondPage.body).toHaveProperty('comment_count', 3);
+      expect(secondPage.body).toHaveProperty('has_more', false);
     });
 
     it('should return 400 for malformed pin IDs', async () => {
@@ -274,7 +341,7 @@ describe('Comments API Endpoint Tests', () => {
       expect(res.body).toEqual({ id: comment.id });
 
       const listRes = await request(app).get(`/comments/pins/${pin.id}/comments`);
-      expect(listRes.body.some((item: any) => item.id === comment.id)).toBe(false);
+      expect(listRes.body.comments.some((item: any) => item.id === comment.id)).toBe(false);
     });
   });
 });

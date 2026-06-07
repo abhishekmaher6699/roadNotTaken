@@ -53,6 +53,7 @@ export function useMapPageState() {
     togglePinLike,
     togglePinVisit,
     updatePinCommentCount,
+    setPinCommentCount,
     loadTiles,
     loadTileSummaries,
   } = usePins();
@@ -305,6 +306,18 @@ export function useMapPageState() {
     );
   };
 
+  const handleCommentCountSync = (pinId: string, count: number) => {
+    setPinCommentCount(pinId, count);
+    setSelectedPin((current) =>
+      current && current.id === pinId
+        ? {
+            ...current,
+            comment_count: Math.max(count, 0),
+          }
+        : current,
+    );
+  };
+
   const handleClearSelection = () => {
     if (sidebarView === "details" || sidebarView === "edit") {
       return;
@@ -362,6 +375,7 @@ export function useMapPageState() {
     handleTogglePinLike,
     handleTogglePinVisit,
     handleCommentCountChange,
+    handleCommentCountSync,
     handleClearSelection,
     handleCloseSidebar,
     handleViewDetails,

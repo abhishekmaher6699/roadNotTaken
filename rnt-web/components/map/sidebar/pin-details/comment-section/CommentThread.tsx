@@ -3,6 +3,8 @@ import { CommentItem } from "./CommentItem";
 import type { Comment } from "../../../../../features/comments/api";
 import type { User } from "../../../../../lib/auth";
 
+const NESTED_EXPAND_LEVELS = 3;
+
 interface CommentThreadProps {
   comments: Comment[];
   currentUser: User | null;
@@ -31,18 +33,9 @@ export function CommentThread({
   const [collapsedComments, setCollapsedComments] = useState<Set<number>>(
     new Set(),
   );
-
-  const toggleCollapse = (id: number) => {
-    setCollapsedComments((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
+  const [expandedNestedComments, setExpandedNestedComments] = useState<Set<number>>(
+    new Set(),
+  );
 
   const commentsByParent = comments.reduce<Record<number, Comment[]>>(
     (acc, c) => {
@@ -55,6 +48,57 @@ export function CommentThread({
     {},
   );
 
+  const toggleSetValue = (prev: Set<number>, id: number) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+  };
+
+  const collectExpandableNestedIds = (id: number, remainingLevels: number) => {
+    const ids = new Set<number>([id]);
+
+    if (remainingLevels <= 0) {
+      return ids;
+    }
+
+    (commentsByParent[id] ?? []).forEach((reply) => {
+      collectExpandableNestedIds(reply.id, remainingLevels - 1).forEach(
+        (replyId) => ids.add(replyId),
+      );
+    });
+
+    return ids;
+  };
+
+  const toggleCollapse = (id: number, isNestedReply: boolean) => {
+    if (isNestedReply) {
+      setExpandedNestedComments((prev) => {
+        const next = new Set(prev);
+        const chunkIds = collectExpandableNestedIds(
+          id,
+          NESTED_EXPAND_LEVELS - 1,
+        );
+
+        if (next.has(id)) {
+          chunkIds.forEach((chunkId) => next.delete(chunkId));
+        } else {
+          chunkIds.forEach((chunkId) => next.add(chunkId));
+        }
+
+        return next;
+      });
+      return;
+    }
+
+    setCollapsedComments((prev) => {
+      return toggleSetValue(prev, id);
+    });
+  };
+
   const sort = (a: Comment, b: Comment) => {
     // fallback for optimistic / missing timestamps
     if (!a.created_at) return 1;
@@ -64,7 +108,11 @@ export function CommentThread({
   };
   const render = (comment: Comment, depth = 0, parent?: Comment) => {
     const replies = (commentsByParent[comment.id] ?? []).sort(sort);
-    const collapsed = collapsedComments.has(comment.id);
+    const isNestedReply = depth > 0;
+    const collapsed =
+      isNestedReply && replies.length > 0
+        ? !expandedNestedComments.has(comment.id)
+        : collapsedComments.has(comment.id);
 
     return (
       <div key={comment.id}>
@@ -81,7 +129,7 @@ export function CommentThread({
           onOpenProfile={onOpenProfile}
           isFocused={focusedCommentId === comment.id}
           isCollapsed={collapsed}
-          onToggleCollapse={toggleCollapse}
+          onToggleCollapse={(id) => toggleCollapse(id, isNestedReply)}
           replyCount={replies.length}
         />
 

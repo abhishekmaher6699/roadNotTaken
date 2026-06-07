@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CommentForm } from "./CommentForm";
 import { CommentThread } from "./CommentThread";
 import { useComments } from "../../../../../features/comments/hooks";
@@ -9,6 +9,7 @@ interface CommentsSectionProps {
   onOpenProfile?: (userId: string) => void;
   focusedCommentId?: number | null;
   onCommentCountChange?: (delta: number) => void;
+  onCommentCountSync?: (count: number) => void;
 }
 
 export function CommentsSection({
@@ -16,6 +17,7 @@ export function CommentsSection({
   onOpenProfile,
   focusedCommentId,
   onCommentCountChange,
+  onCommentCountSync,
 }: CommentsSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -24,16 +26,22 @@ export function CommentsSection({
     number | null
   >(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const onCommentCountSyncRef = useRef(onCommentCountSync);
 
   const {
     comments,
     loading: commentsLoading,
+    loadingMore: commentsLoadingMore,
     error: commentsError,
+    hasMore: commentsHasMore,
+    commentCount,
     fetchComments,
+    loadMoreComments,
     addComment,
     removeComment,
     toggleLike,
   } = useComments(pinId);
+  const visibleCommentCount = commentCount ?? comments.length;
 
   useEffect(() => {
     if (pinId) {
@@ -46,6 +54,16 @@ export function CommentsSection({
       .then((user) => setCurrentUser(user))
       .catch(() => setCurrentUser(null));
   }, []);
+
+  useEffect(() => {
+    onCommentCountSyncRef.current = onCommentCountSync;
+  }, [onCommentCountSync]);
+
+  useEffect(() => {
+    if (commentCount != null) {
+      onCommentCountSyncRef.current?.(commentCount);
+    }
+  }, [commentCount]);
 
   const handleSubmitComment = async (content: string) => {
     if (!pinId) return;
@@ -90,7 +108,6 @@ export function CommentsSection({
         },
         { id: author?.id, postedBy: author ? "You" : "Anonymous" },
       );
-      onCommentCountChange?.(1);
     } finally {
       setReplySubmittingCommentId(null);
     }
@@ -132,7 +149,7 @@ export function CommentsSection({
 
         <div className="flex shrink-0 items-center gap-2">
           <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-700">
-            {comments.length}
+            {visibleCommentCount}
           </span>
           <span
             className={`flex h-6 w-6 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 transition ${
@@ -174,28 +191,43 @@ export function CommentsSection({
               <p className="mx-2 rounded-xl bg-neutral-50 px-3 py-2.5 text-sm text-neutral-500">
                 Loading comments...
               </p>
-            ) : comments.length === 0 ? (
+            ) : visibleCommentCount === 0 ? (
               <p className="mx-2 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-4 text-center text-sm text-neutral-500">
                 No comments yet.
               </p>
             ) : (
-              <CommentThread
-                comments={comments}
-                currentUser={currentUser}
-                replyToCommentId={replyToCommentId}
-                replySubmittingCommentId={replySubmittingCommentId}
-                onReply={(id) =>
-                  setReplyToCommentId(replyToCommentId === id ? null : id)
-                }
+              <>
+                <CommentThread
+                  comments={comments}
+                  currentUser={currentUser}
+                  replyToCommentId={replyToCommentId}
+                  replySubmittingCommentId={replySubmittingCommentId}
+                  onReply={(id) =>
+                    setReplyToCommentId(replyToCommentId === id ? null : id)
+                  }
                 onDelete={async (id) => {
+                  const deletedComment = comments.find((comment) => comment.id === id);
                   const removedCount = await removeComment(id);
-                  onCommentCountChange?.(-removedCount);
+                  if (deletedComment?.parent_comment_id == null && removedCount > 0) {
+                    onCommentCountChange?.(-1);
+                  }
                 }}
-                onToggleLike={toggleLike}
-                onSubmitReply={handleSubmitReply}
-                onOpenProfile={onOpenProfile}
-                focusedCommentId={focusedCommentId}
-              />
+                  onToggleLike={toggleLike}
+                  onSubmitReply={handleSubmitReply}
+                  onOpenProfile={onOpenProfile}
+                  focusedCommentId={focusedCommentId}
+                />
+                {commentsHasMore && (
+                  <button
+                    type="button"
+                    onClick={() => void loadMoreComments()}
+                    disabled={commentsLoadingMore}
+                    className="mx-2 mt-2 w-[calc(100%-1rem)] rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {commentsLoadingMore ? "Loading..." : "Load more comments"}
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

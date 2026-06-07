@@ -45,6 +45,12 @@ export const commentQueries = {
 
   findParentCommentForPin: `SELECT id FROM comments WHERE id = $1 AND pin_id = $2`,
 
+  countCommentsForPin: `
+    SELECT COUNT(*)::integer AS comment_count
+    FROM comments
+    WHERE pin_id = $1
+  `,
+
   createComment: `
     WITH inserted_comment AS (
       INSERT INTO comments (pin_id, user_id, content, posted_by, parent_comment_id)
@@ -56,13 +62,59 @@ export const commentQueries = {
     LEFT JOIN profiles ON profiles.user_id = inserted_comment.user_id;
   `,
 
-  getCommentsForPin(viewerUserId?: string | null) {
+  getTopLevelCommentPage({
+    cursorIdParam,
+    limitParam,
+  }: {
+    cursorIdParam?: string;
+    limitParam: string;
+  }) {
+    const cursorClause =
+      cursorIdParam
+        ? `AND id > ${cursorIdParam}::integer`
+        : "";
+
     return `
-      SELECT ${buildCommentSelectFragment(viewerUserId)}
+      SELECT id
       FROM comments
-      LEFT JOIN profiles ON profiles.user_id = comments.user_id
       WHERE pin_id = $1
-      ORDER BY created_at ASC
+        AND parent_comment_id IS NULL
+        ${cursorClause}
+      ORDER BY id ASC
+      LIMIT ${limitParam}
+    `;
+  },
+
+  getCommentsForThreadRoots({
+    viewerUserId,
+    rootIdsParam,
+    viewerUserIdParam,
+  }: {
+    viewerUserId?: string | null;
+    rootIdsParam: string;
+    viewerUserIdParam?: string;
+  }) {
+    return `
+      WITH RECURSIVE comment_tree AS (
+        SELECT comments.*, comments.id AS root_id
+        FROM comments
+        WHERE comments.id = ANY(${rootIdsParam}::integer[])
+
+        UNION ALL
+
+        SELECT replies.*, comment_tree.root_id
+        FROM comments replies
+        INNER JOIN comment_tree ON comment_tree.id = replies.parent_comment_id
+        WHERE replies.pin_id = comment_tree.pin_id
+      )
+      SELECT ${buildCommentSelectFragment(
+        viewerUserId,
+        "comments",
+        viewerUserIdParam,
+      )}
+      FROM comment_tree comments
+      LEFT JOIN profiles ON profiles.user_id = comments.user_id
+      ORDER BY comments.root_id ASC, comments.id ASC
     `;
   },
 

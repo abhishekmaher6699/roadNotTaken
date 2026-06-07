@@ -32,3 +32,15 @@ export interface CommentLikeMutationResult {
   liked: boolean;
   likes_count: number;
 }
+
+export interface CommentPage {
+  comments: Comment[];
+  next_cursor: string | null;
+  has_more: boolean;
+  comment_count: number;
+}
+
+export interface CommentPageInput {
+  cursor?: string | null;
+  limit?: number;
+}

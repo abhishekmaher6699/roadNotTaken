@@ -64,6 +64,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleTogglePinLike,
     handleTogglePinVisit,
     handleCommentCountChange,
+    handleCommentCountSync,
     handleClearSelection,
     handleCloseSidebar,
     handleViewDetails,
@@ -224,6 +225,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onOpenProfile={handleOpenProfile}
         focusedCommentId={focusedCommentId}
         onCommentCountChange={handleCommentCountChange}
+        onCommentCountSync={handleCommentCountSync}
       />
 
       <ProfileSidebar

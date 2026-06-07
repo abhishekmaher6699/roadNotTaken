@@ -33,8 +33,31 @@ export interface CommentLikeMutationResponse {
   likes_count: number;
 }
 
-export function getCommentsForPinApi(pinId: number) {
-  return apiClient(`/comments/pins/${pinId}/comments`) as Promise<Comment[]>;
+export interface CommentPageResponse {
+  comments: Comment[];
+  next_cursor: string | null;
+  has_more: boolean;
+  comment_count: number;
+}
+
+export function getCommentsForPinApi(
+  pinId: number,
+  options: { cursor?: string | null; limit?: number } = {},
+) {
+  const params = new URLSearchParams();
+
+  if (options.cursor) {
+    params.set("cursor", options.cursor);
+  }
+
+  if (options.limit) {
+    params.set("limit", String(options.limit));
+  }
+
+  const query = params.toString();
+  const path = `/comments/pins/${pinId}/comments${query ? `?${query}` : ""}`;
+
+  return apiClient(path) as Promise<CommentPageResponse>;
 }
 
 export function createCommentApi(data: CreateCommentInput) {

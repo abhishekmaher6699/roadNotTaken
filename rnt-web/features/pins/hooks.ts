@@ -307,6 +307,20 @@ export function usePins() {
     });
   };
 
+  const setPinCommentCount = (pinId: string, count: number) => {
+    patchPinInCache(pinId, (pin) => {
+      const nextPin = {
+        ...pin,
+        comment_count: Math.max(count, 0),
+      };
+
+      return {
+        ...nextPin,
+        score: getSocialScore(nextPin),
+      };
+    });
+  };
+
   const addPin = async (data: CreatePinInput) => {
     const newPin = await createPinApi(data);
     // Mutations patch the local tile cache so the map does not wait for a refetch to stay accurate.
@@ -477,6 +491,7 @@ export function usePins() {
     togglePinLike,
     togglePinVisit,
     updatePinCommentCount,
+    setPinCommentCount,
     loadTiles,
     loadTileSummaries,
   };

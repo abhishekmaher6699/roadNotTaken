@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { vi, beforeEach } from 'vitest';
+import { resetRateLimitBuckets } from '../src/middleware/rate-limit.middleware';
 
 export const mockSupabaseDb = {
   users: new Map<string, any>(),
@@ -17,6 +18,7 @@ export const mockSupabaseDb = {
 // Global reset before each test
 beforeEach(() => {
   mockSupabaseDb.reset();
+  resetRateLimitBuckets();
 });
 
 // Mock Supabase globally

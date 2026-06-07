@@ -77,6 +77,7 @@ export function PinDetailsSidebar({
   onOpenProfile,
   focusedCommentId,
   onCommentCountChange,
+  onCommentCountSync,
 }: PinDetailsSidebarProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -235,6 +236,7 @@ export function PinDetailsSidebar({
               onCommentCountChange={(delta) =>
                 onCommentCountChange?.(pin.id, delta)
               }
+              onCommentCountSync={(count) => onCommentCountSync?.(pin.id, count)}
             />
           )}
         </div>
