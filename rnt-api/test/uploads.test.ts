@@ -8,6 +8,14 @@ describe('Uploads API Endpoint Tests', () => {
   const mockAccessToken = 'access_upload_tester_jwt';
   const mockUserEmail = 'upload_tester@trail.com';
 
+  function restoreEnv(name: string, value: string | undefined) {
+    if (value == null) {
+      delete process.env[name];
+    } else {
+      process.env[name] = value;
+    }
+  }
+
   beforeEach(() => {
     mockSupabaseDb.users.set(mockUserEmail, { id: mockUserId, email: mockUserEmail });
     mockSupabaseDb.sessions.set(mockAccessToken, {
@@ -40,6 +48,16 @@ describe('Uploads API Endpoint Tests', () => {
       expect(res.body.folder).toContain('profiles');
     });
 
+    it('should safely fall back to the pins folder for invalid folder values', async () => {
+      const res = await request(app)
+        .get('/uploads/cloudinary/signature?folder=../../profiles')
+        .set('Cookie', [`access_token=${mockAccessToken}`]);
+
+      expect(res.status).toBe(200);
+      expect(res.body.folder).toContain('pins');
+      expect(res.body.folder).not.toContain('..');
+    });
+
     it('should return 401 Unauthorized when unauthenticated', async () => {
       const res = await request(app).get('/uploads/cloudinary/signature');
       expect(res.status).toBe(401);
@@ -65,9 +83,9 @@ describe('Uploads API Endpoint Tests', () => {
         expect(res.body).toHaveProperty('error', 'Cloudinary env vars are missing');
       } finally {
         // 3. Restore env vars
-        process.env.CLOUDINARY_CLOUD_NAME = backupCloudName;
-        process.env.CLOUDINARY_API_KEY = backupApiKey;
-        process.env.CLOUDINARY_API_SECRET = backupApiSecret;
+        restoreEnv('CLOUDINARY_CLOUD_NAME', backupCloudName);
+        restoreEnv('CLOUDINARY_API_KEY', backupApiKey);
+        restoreEnv('CLOUDINARY_API_SECRET', backupApiSecret);
       }
     });
   });

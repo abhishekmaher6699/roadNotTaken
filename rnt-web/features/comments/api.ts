@@ -1,3 +1,4 @@
+import { createAsyncCache } from "../../lib/async-cache";
 import { apiClient } from "../../lib/api-client";
 
 export interface Comment {
@@ -41,15 +42,9 @@ export interface CommentPageResponse {
 }
 
 const COMMENT_PAGE_CACHE_TTL_MS = 15_000;
-
-const commentPageCache = new Map<
-  string,
-  {
-    data: CommentPageResponse;
-    expiresAt: number;
-  }
->();
-const commentPageRequests = new Map<string, Promise<CommentPageResponse>>();
+const commentPageCache = createAsyncCache<CommentPageResponse>(
+  COMMENT_PAGE_CACHE_TTL_MS,
+);
 
 function getCommentPageCacheKey(
   pinId: number,
@@ -59,19 +54,7 @@ function getCommentPageCacheKey(
 }
 
 export function invalidateCommentsForPin(pinId: number) {
-  const prefix = `${pinId}:`;
-
-  for (const key of commentPageCache.keys()) {
-    if (key.startsWith(prefix)) {
-      commentPageCache.delete(key);
-    }
-  }
-
-  for (const key of commentPageRequests.keys()) {
-    if (key.startsWith(prefix)) {
-      commentPageRequests.delete(key);
-    }
-  }
+  commentPageCache.deleteByPrefix(`${pinId}:`);
 }
 
 export function getCommentsForPinApi(
@@ -79,16 +62,6 @@ export function getCommentsForPinApi(
   options: { cursor?: string | null; limit?: number } = {},
 ) {
   const cacheKey = getCommentPageCacheKey(pinId, options);
-  const cached = commentPageCache.get(cacheKey);
-
-  if (cached && cached.expiresAt > Date.now()) {
-    return Promise.resolve(cached.data);
-  }
-
-  const activeRequest = commentPageRequests.get(cacheKey);
-  if (activeRequest) {
-    return activeRequest;
-  }
 
   const params = new URLSearchParams();
 
@@ -103,20 +76,9 @@ export function getCommentsForPinApi(
   const query = params.toString();
   const path = `/comments/pins/${pinId}/comments${query ? `?${query}` : ""}`;
 
-  const request = (apiClient(path) as Promise<CommentPageResponse>)
-    .then((data) => {
-      commentPageCache.set(cacheKey, {
-        data,
-        expiresAt: Date.now() + COMMENT_PAGE_CACHE_TTL_MS,
-      });
-      return data;
-    })
-    .finally(() => {
-      commentPageRequests.delete(cacheKey);
-    });
-
-  commentPageRequests.set(cacheKey, request);
-  return request;
+  return commentPageCache.get(cacheKey, () =>
+    apiClient(path) as Promise<CommentPageResponse>,
+  );
 }
 
 export async function createCommentApi(data: CreateCommentInput) {

@@ -1,3 +1,4 @@
+import { createAsyncCache } from "@/lib/async-cache";
 import { apiClient } from "@/lib/api-client";
 import {
   CloudinarySignaturePayload,
@@ -11,14 +12,9 @@ const MAX_UPLOAD_BYTES: Record<UploadFolder, number> = {
   pins: 8 * 1024 * 1024,
   profiles: 4 * 1024 * 1024,
 };
-const signatureCache = new Map<
-  UploadFolder,
-  {
-    expiresAt: number;
-    payload?: CloudinarySignaturePayload;
-    request?: Promise<CloudinarySignaturePayload>;
-  }
->();
+const signatureCache = createAsyncCache<CloudinarySignaturePayload>(
+  SIGNATURE_TTL_MS,
+);
 
 function formatMegabytes(bytes: number) {
   return `${Math.round(bytes / 1024 / 1024)}MB`;
@@ -36,38 +32,11 @@ function validateImageFile(file: File, folder: UploadFolder) {
 }
 
 export function getCloudinarySignatureApi(folder: UploadFolder = "pins") {
-  const cached = signatureCache.get(folder);
-  const now = Date.now();
-
-  if (cached?.payload && cached.expiresAt > now) {
-    return Promise.resolve(cached.payload);
-  }
-
-  if (cached?.request) {
-    return cached.request;
-  }
-
-  const request = (apiClient(
-    `/uploads/cloudinary/signature?folder=${folder}`
-  ) as Promise<CloudinarySignaturePayload>)
-    .then((payload) => {
-      signatureCache.set(folder, {
-        payload,
-        expiresAt: Date.now() + SIGNATURE_TTL_MS,
-      });
-      return payload;
-    })
-    .catch((error) => {
-      signatureCache.delete(folder);
-      throw error;
-    });
-
-  signatureCache.set(folder, {
-    request,
-    expiresAt: now + SIGNATURE_TTL_MS,
-  });
-
-  return request;
+  return signatureCache.get(folder, () =>
+    apiClient(
+      `/uploads/cloudinary/signature?folder=${folder}`
+    ) as Promise<CloudinarySignaturePayload>,
+  );
 }
 
 export async function uploadImageToCloudinary(

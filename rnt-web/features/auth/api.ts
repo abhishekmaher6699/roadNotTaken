@@ -1,3 +1,4 @@
+import { createAsyncCache } from "@/lib/async-cache";
 import { apiClient, getApiUrl } from "@/lib/api-client";
 import {
   AuthResponse,
@@ -10,25 +11,17 @@ import {
 type CurrentUserResponse = { user: AuthUser | null };
 
 const CURRENT_USER_CACHE_TTL_MS = 30_000;
-
-let currentUserCache:
-  | {
-      user: AuthUser | null;
-      expiresAt: number;
-    }
-  | null = null;
-let currentUserPromise: Promise<CurrentUserResponse> | null = null;
+const CURRENT_USER_CACHE_KEY = "current";
+const currentUserCache = createAsyncCache<CurrentUserResponse>(
+  CURRENT_USER_CACHE_TTL_MS,
+);
 
 export function clearCurrentUserCache() {
-  currentUserCache = null;
-  currentUserPromise = null;
+  currentUserCache.clear();
 }
 
 function setCurrentUserCache(user: AuthUser | null) {
-  currentUserCache = {
-    user,
-    expiresAt: Date.now() + CURRENT_USER_CACHE_TTL_MS,
-  };
+  currentUserCache.set(CURRENT_USER_CACHE_KEY, { user });
 }
 
 export async function loginApi(email: string, password: string) {
@@ -56,28 +49,17 @@ export function getGoogleAuthUrlApi() {
 }
 
 export function getCurrentUserApi() {
-  if (currentUserCache && currentUserCache.expiresAt > Date.now()) {
-    return Promise.resolve({ user: currentUserCache.user });
-  }
-
-  if (currentUserPromise) {
-    return currentUserPromise;
-  }
-
-  currentUserPromise = (apiClient("/auth/me") as Promise<CurrentUserResponse>)
-    .then((response) => {
-      setCurrentUserCache(response.user ?? null);
-      return response;
-    })
-    .catch((error) => {
-      clearCurrentUserCache();
-      throw error;
-    })
-    .finally(() => {
-      currentUserPromise = null;
-    });
-
-  return currentUserPromise;
+  return currentUserCache.get(CURRENT_USER_CACHE_KEY, () =>
+    (apiClient("/auth/me") as Promise<CurrentUserResponse>)
+      .then((response) => {
+        setCurrentUserCache(response.user ?? null);
+        return response;
+      })
+      .catch((error) => {
+        clearCurrentUserCache();
+        throw error;
+      }),
+  );
 }
 
 export async function logoutApi() {
