@@ -53,11 +53,7 @@ function buildPinSelectFragment(
     ${tableName}.image_urls,
     COALESCE(${tableName}.likes_count, 0) AS likes_count,
     COALESCE(${tableName}.visits_count, 0) AS visits_count,
-    (
-      SELECT COUNT(*)
-      FROM comments
-      WHERE comments.pin_id = ${tableName}.id
-    )::integer AS comment_count,
+    COALESCE(${tableName}.comment_count, 0)::integer AS comment_count,
     ${likedExpression} AS viewer_has_liked,
     ${visitedExpression} AS viewer_has_visited,
     ${tableName}.score,
