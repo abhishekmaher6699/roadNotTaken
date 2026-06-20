@@ -1,4 +1,4 @@
-import type { PublicProfileResponse } from "@/features/profiles";
+import type { ProfileFollowListKind, PublicProfileResponse } from "@/features/profiles";
 import { getOptimizedCloudinaryUrl } from "@/lib/cloudinary";
 import { formatDate, getInitial } from "./utils";
 
@@ -11,6 +11,7 @@ interface ProfileHeaderProps {
   isFollowPending?: boolean;
   onToggleEdit: () => void;
   onToggleFollow?: () => void;
+  onOpenFollowList?: (kind: ProfileFollowListKind) => void;
 }
 
 export function ProfileHeader({
@@ -22,6 +23,7 @@ export function ProfileHeader({
   isFollowPending = false,
   onToggleEdit,
   onToggleFollow,
+  onOpenFollowList,
 }: ProfileHeaderProps) {
   const displayName =
     user.display_name || user.username || "Anonymous";
@@ -123,22 +125,30 @@ export function ProfileHeader({
             Comments
           </p>
         </div>
-        <div className="border-r border-neutral-200 px-2 py-3">
+        <button
+          type="button"
+          onClick={() => onOpenFollowList?.("followers")}
+          className="border-r border-neutral-200 px-2 py-3 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-0"
+        >
           <p className="text-base font-semibold text-neutral-950">
             {stats.followers_count.toLocaleString()}
           </p>
           <p className="text-[10px] font-semibold uppercase text-neutral-500">
             Followers
           </p>
-        </div>
-        <div className="px-2 py-3">
+        </button>
+        <button
+          type="button"
+          onClick={() => onOpenFollowList?.("following")}
+          className="px-2 py-3 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-0"
+        >
           <p className="text-base font-semibold text-neutral-950">
             {stats.following_count.toLocaleString()}
           </p>
           <p className="text-[10px] font-semibold uppercase text-neutral-500">
             Following
           </p>
-        </div>
+        </button>
       </section>
     </>
   );

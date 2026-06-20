@@ -10,6 +10,77 @@ const profileColumns = `
   updated_at
 `;
 
+function buildFollowListSelect({
+  relationUserColumn,
+  listedUserColumn,
+}: {
+  relationUserColumn: "following_user_id" | "follower_user_id";
+  listedUserColumn: "following_user_id" | "follower_user_id";
+}) {
+  return `
+    WITH follow_rows AS (
+      SELECT
+        profile_follows.${listedUserColumn} AS listed_user_id,
+        profile_follows.created_at AS followed_at
+      FROM profile_follows
+      WHERE profile_follows.${relationUserColumn} = $1
+        AND (
+          $3::timestamptz IS NULL
+          OR (profile_follows.created_at, profile_follows.${listedUserColumn})
+             < ($3::timestamptz, $4::text)
+        )
+      ORDER BY profile_follows.created_at DESC, profile_follows.${listedUserColumn} DESC
+      LIMIT $5
+    ),
+    pin_stats AS (
+      SELECT
+        user_id,
+        COUNT(*) AS pin_count,
+        SUM(COALESCE(likes_count, 0)) AS pin_karma
+      FROM pins
+      WHERE user_id IN (SELECT listed_user_id FROM follow_rows)
+      GROUP BY user_id
+    ),
+    comment_stats AS (
+      SELECT
+        user_id,
+        COUNT(*) AS comment_count,
+        SUM(COALESCE(likes_count, 0)) AS comment_karma
+      FROM comments
+      WHERE user_id IN (SELECT listed_user_id FROM follow_rows)
+      GROUP BY user_id
+    )
+    SELECT
+      profiles.user_id,
+      profiles.username,
+      profiles.display_name,
+      profiles.bio,
+      profiles.avatar_url,
+      profiles.location,
+      (
+        COALESCE(pin_stats.pin_karma, 0)
+        + COALESCE(comment_stats.comment_karma, 0)
+      )::integer AS total_karma,
+      COALESCE(pin_stats.pin_count, 0)::integer AS pin_count,
+      COALESCE(comment_stats.comment_count, 0)::integer AS comment_count,
+      CASE
+        WHEN $2::text IS NULL THEN false
+        ELSE EXISTS (
+          SELECT 1
+          FROM profile_follows viewer_follow
+          WHERE viewer_follow.follower_user_id = $2
+            AND viewer_follow.following_user_id = profiles.user_id
+        )
+      END AS viewer_has_followed,
+      follow_rows.followed_at
+    FROM follow_rows
+    JOIN profiles ON profiles.user_id = follow_rows.listed_user_id
+    LEFT JOIN pin_stats ON pin_stats.user_id = profiles.user_id
+    LEFT JOIN comment_stats ON comment_stats.user_id = profiles.user_id
+    ORDER BY follow_rows.followed_at DESC, profiles.user_id DESC;
+  `;
+}
+
 export const profileQueries = {
   ensureProfile: `
     INSERT INTO profiles (user_id)
@@ -150,6 +221,16 @@ export const profileQueries = {
     WHERE follower_user_id = $1
       AND following_user_id = $2;
   `,
+
+  getProfileFollowers: buildFollowListSelect({
+    relationUserColumn: "following_user_id",
+    listedUserColumn: "follower_user_id",
+  }),
+
+  getProfileFollowing: buildFollowListSelect({
+    relationUserColumn: "follower_user_id",
+    listedUserColumn: "following_user_id",
+  }),
 
   getPublicProfilePins: `
     SELECT

@@ -2,6 +2,8 @@ import { Response } from "express";
 import { getOptionalAuthenticatedUser } from "../../middleware/auth.middleware";
 import {
   followProfile,
+  getProfileFollowers,
+  getProfileFollowing,
   getPublicProfile,
   getOrCreateProfile,
   searchProfiles,
@@ -80,6 +82,56 @@ export async function unfollowProfileHandler(req: any, res: Response) {
 
     console.error(error);
     return res.status(500).json({ error: "Failed to unfollow profile" });
+  }
+}
+
+function parseFollowListQuery(req: any) {
+  const limitParam = parseInt(req.query.limit as string, 10);
+
+  return {
+    cursor: typeof req.query.cursor === "string" ? req.query.cursor : undefined,
+    limit:
+      Number.isFinite(limitParam) && limitParam > 0
+        ? Math.min(limitParam, 50)
+        : undefined,
+  };
+}
+
+export async function getProfileFollowersHandler(req: any, res: Response) {
+  try {
+    const user = await getOptionalAuthenticatedUser(req);
+    const page = await getProfileFollowers(
+      req.params.userId,
+      user?.id ?? null,
+      parseFollowListQuery(req),
+    );
+    return res.json(page);
+  } catch (error) {
+    if (error instanceof ProfilesServiceError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
+    console.error(error);
+    return res.status(500).json({ error: "Failed to fetch followers" });
+  }
+}
+
+export async function getProfileFollowingHandler(req: any, res: Response) {
+  try {
+    const user = await getOptionalAuthenticatedUser(req);
+    const page = await getProfileFollowing(
+      req.params.userId,
+      user?.id ?? null,
+      parseFollowListQuery(req),
+    );
+    return res.json(page);
+  } catch (error) {
+    if (error instanceof ProfilesServiceError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
+    console.error(error);
+    return res.status(500).json({ error: "Failed to fetch following" });
   }
 }
 

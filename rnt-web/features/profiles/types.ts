@@ -71,3 +71,16 @@ export interface ProfileSearchResult {
   pin_count: number;
   comment_count: number;
 }
+
+export interface ProfileFollowListUser extends ProfileSearchResult {
+  viewer_has_followed: boolean;
+  followed_at: string;
+}
+
+export interface ProfileFollowListPage {
+  users: ProfileFollowListUser[];
+  next_cursor: string | null;
+  has_more: boolean;
+}
+
+export type ProfileFollowListKind = "followers" | "following";

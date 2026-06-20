@@ -6,26 +6,32 @@ import {
   followProfileApi,
   unfollowProfileApi,
   updateMyProfileApi,
+  useProfileFollowList,
   usePublicProfile,
+  type ProfileFollowListKind,
 } from "@/features/profiles";
 import { useCloudinaryUpload } from "@/features/uploads/hooks";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileEditForm, type ProfileFormState } from "./ProfileEditForm";
 import { ProfileContent } from "./ProfileContent";
+import { ProfileFollowList } from "./ProfileFollowList";
 import type { ProfileSidebarProps } from "./types";
 
 export function ProfileSidebar({
   open,
   userId,
+  currentUserId,
   fallbackEmail,
   canEdit = false,
   onOpenPin,
+  onOpenProfile,
   onProfileSaved,
   onClose,
 }: ProfileSidebarProps) {
   const { profile, isLoading, error, refetch, setProfile } = usePublicProfile(open ? userId : null);
   const { uploadImage } = useCloudinaryUpload();
   const [isEditing, setIsEditing] = useState(false);
+  const [followListKind, setFollowListKind] = useState<ProfileFollowListKind | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isFollowPending, setIsFollowPending] = useState(false);
@@ -39,6 +45,10 @@ export function ProfileSidebar({
     website: "",
     avatar_url: "",
   });
+  const followList = useProfileFollowList(
+    open && userId && followListKind ? userId : null,
+    followListKind,
+  );
 
   useEffect(() => {
     const user = profile?.user;
@@ -57,6 +67,7 @@ export function ProfileSidebar({
   useEffect(() => {
     setFollowError(null);
     setIsFollowPending(false);
+    setFollowListKind(null);
   }, [userId]);
 
   if (!open && !userId) return null;
@@ -132,8 +143,8 @@ export function ProfileSidebar({
 
     try {
       const result = wasFollowing
-        ? await unfollowProfileApi(targetUserId)
-        : await followProfileApi(targetUserId);
+        ? await unfollowProfileApi(targetUserId, currentUserId)
+        : await followProfileApi(targetUserId, currentUserId);
 
       setProfile((current) => {
         if (!current || current.user.user_id !== targetUserId) {
@@ -210,6 +221,10 @@ export function ProfileSidebar({
                 isFollowPending={isFollowPending}
                 onToggleEdit={() => setIsEditing((v) => !v)}
                 onToggleFollow={handleToggleFollow}
+                onOpenFollowList={(kind) => {
+                  setFollowListKind(kind);
+                  setIsEditing(false);
+                }}
               />
             )}
 
@@ -237,7 +252,24 @@ export function ProfileSidebar({
               </section>
             )}
 
-            {!isEditing && (
+            {!isEditing && followListKind && (
+              <ProfileFollowList
+                kind={followListKind}
+                users={followList.users}
+                isLoading={followList.isLoading}
+                isLoadingMore={followList.isLoadingMore}
+                error={followList.error}
+                hasMore={followList.hasMore}
+                onBack={() => setFollowListKind(null)}
+                onLoadMore={() => void followList.loadMore()}
+                onOpenProfile={(nextUserId) => {
+                  setFollowListKind(null);
+                  onOpenProfile?.(nextUserId);
+                }}
+              />
+            )}
+
+            {!isEditing && !followListKind && (
               <ProfileContent
                 content={activeProfile.content}
                 onOpenPin={onOpenPin}

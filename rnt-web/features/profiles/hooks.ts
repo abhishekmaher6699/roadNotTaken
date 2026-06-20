@@ -3,14 +3,19 @@
 import { useCallback, useEffect, useRef, useState, type SetStateAction } from "react";
 import {
   getMyProfileApi,
+  getProfileFollowListApi,
   getPublicProfileApi,
   updateMyProfileApi,
 } from "./api";
 import type {
+  ProfileFollowListKind,
+  ProfileFollowListUser,
   Profile,
   PublicProfileResponse,
   UpdateProfileInput,
 } from "./types";
+
+const FOLLOW_LIST_PAGE_LIMIT = 20;
 
 export function usePublicProfile(userId: string | null) {
   const [profile, setProfile] = useState<PublicProfileResponse | null>(null);
@@ -94,4 +99,112 @@ export function useMyProfile() {
   }, []);
 
   return { profile, isLoading, error, loadProfile, updateProfile };
+}
+
+export function useProfileFollowList(
+  userId: string | null,
+  kind: ProfileFollowListKind | null,
+) {
+  const [users, setUsers] = useState<ProfileFollowListUser[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
+
+  const loadList = useCallback(async () => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
+    if (!userId || !kind) {
+      setUsers([]);
+      setNextCursor(null);
+      setHasMore(false);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setUsers([]);
+    setNextCursor(null);
+    setHasMore(false);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const page = await getProfileFollowListApi(userId, kind, {
+        limit: FOLLOW_LIST_PAGE_LIMIT,
+      });
+
+      if (requestIdRef.current !== requestId) return;
+
+      setUsers(page.users);
+      setNextCursor(page.next_cursor);
+      setHasMore(page.has_more);
+      return page;
+    } catch (err) {
+      if (requestIdRef.current === requestId) {
+        setUsers([]);
+        setNextCursor(null);
+        setHasMore(false);
+        setError(err instanceof Error ? err.message : "Failed to load users");
+      }
+      throw err;
+    } finally {
+      if (requestIdRef.current === requestId) {
+        setIsLoading(false);
+      }
+    }
+  }, [kind, userId]);
+
+  const loadMore = useCallback(async () => {
+    if (!userId || !kind || !nextCursor || isLoadingMore) return;
+
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    setIsLoadingMore(true);
+    setError(null);
+
+    try {
+      const page = await getProfileFollowListApi(userId, kind, {
+        cursor: nextCursor,
+        limit: FOLLOW_LIST_PAGE_LIMIT,
+      });
+
+      if (requestIdRef.current !== requestId) return;
+
+      setUsers((current) => {
+        const seen = new Set(current.map((user) => user.user_id));
+        const nextUsers = page.users.filter((user) => !seen.has(user.user_id));
+        return [...current, ...nextUsers];
+      });
+      setNextCursor(page.next_cursor);
+      setHasMore(page.has_more);
+      return page;
+    } catch (err) {
+      if (requestIdRef.current === requestId) {
+        setError(err instanceof Error ? err.message : "Failed to load more users");
+      }
+      throw err;
+    } finally {
+      if (requestIdRef.current === requestId) {
+        setIsLoadingMore(false);
+      }
+    }
+  }, [isLoadingMore, kind, nextCursor, userId]);
+
+  useEffect(() => {
+    void loadList().catch(() => undefined);
+  }, [loadList]);
+
+  return {
+    users,
+    isLoading,
+    isLoadingMore,
+    error,
+    hasMore,
+    refetch: loadList,
+    loadMore,
+  };
 }

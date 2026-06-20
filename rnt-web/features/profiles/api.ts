@@ -2,6 +2,8 @@ import { apiClient } from "@/lib/api-client";
 import { createAsyncCache } from "@/lib/async-cache";
 import type {
   Profile,
+  ProfileFollowListKind,
+  ProfileFollowListPage,
   ProfileFollowMutationResponse,
   ProfileSearchResult,
   PublicProfileResponse,
@@ -9,8 +11,12 @@ import type {
 } from "./types";
 
 const PUBLIC_PROFILE_CACHE_TTL_MS = 15_000;
+const PROFILE_FOLLOW_LIST_CACHE_TTL_MS = 15_000;
 const publicProfileCache = createAsyncCache<PublicProfileResponse>(
   PUBLIC_PROFILE_CACHE_TTL_MS,
+);
+const followListCache = createAsyncCache<ProfileFollowListPage>(
+  PROFILE_FOLLOW_LIST_CACHE_TTL_MS,
 );
 
 export function invalidatePublicProfileCache(userId?: string | null) {
@@ -20,6 +26,15 @@ export function invalidatePublicProfileCache(userId?: string | null) {
   }
 
   publicProfileCache.delete(userId);
+}
+
+export function invalidateProfileFollowListCache(userId?: string | null) {
+  if (!userId) {
+    followListCache.clear();
+    return;
+  }
+
+  followListCache.deleteByPrefix(`${userId}:`);
 }
 
 export function getMyProfileApi() {
@@ -39,22 +54,57 @@ export function getPublicProfileApi(userId: string) {
   );
 }
 
-export async function followProfileApi(userId: string) {
+function invalidateFollowMutationCaches(targetUserId: string, viewerUserId?: string | null) {
+  invalidatePublicProfileCache(targetUserId);
+
+  if (viewerUserId && viewerUserId !== targetUserId) {
+    invalidatePublicProfileCache(viewerUserId);
+  }
+
+  invalidateProfileFollowListCache();
+}
+
+export async function followProfileApi(userId: string, viewerUserId?: string | null) {
   const result = (await apiClient(`/profiles/${encodeURIComponent(userId)}/follow`, {
     method: "POST",
   })) as ProfileFollowMutationResponse;
 
-  invalidatePublicProfileCache(userId);
+  invalidateFollowMutationCaches(userId, viewerUserId);
   return result;
 }
 
-export async function unfollowProfileApi(userId: string) {
+export async function unfollowProfileApi(userId: string, viewerUserId?: string | null) {
   const result = (await apiClient(`/profiles/${encodeURIComponent(userId)}/follow`, {
     method: "DELETE",
   })) as ProfileFollowMutationResponse;
 
-  invalidatePublicProfileCache(userId);
+  invalidateFollowMutationCaches(userId, viewerUserId);
   return result;
+}
+
+export function getProfileFollowListApi(
+  userId: string,
+  kind: ProfileFollowListKind,
+  options: { cursor?: string | null; limit?: number } = {},
+) {
+  const params = new URLSearchParams();
+
+  if (options.cursor) {
+    params.set("cursor", options.cursor);
+  }
+
+  if (options.limit) {
+    params.set("limit", String(options.limit));
+  }
+
+  const encodedUserId = encodeURIComponent(userId);
+  const query = params.toString();
+  const path = `/profiles/${encodedUserId}/${kind}${query ? `?${query}` : ""}`;
+  const cacheKey = `${userId}:${kind}:${options.cursor ?? ""}:${options.limit ?? ""}`;
+
+  return followListCache.get(cacheKey, () =>
+    apiClient(path) as Promise<ProfileFollowListPage>,
+  );
 }
 
 export function searchProfilesApi(

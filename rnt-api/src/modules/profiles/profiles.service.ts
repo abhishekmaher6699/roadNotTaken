@@ -1,19 +1,20 @@
 import { queryDb } from "../../config/db";
 import type {
   Profile,
+  ProfileFollowListInput,
+  ProfileFollowListPage,
   ProfileFollowMutationResponse,
   ProfileSearchResult,
   PublicProfileResponse,
   UpdateProfileInput,
 } from "./profiles.types";
 import { profileQueries } from "./profiles.queries";
+import { buildFollowListPage, prepareFollowListPage } from "./profiles.pagination";
 
 import hasOwn, {
   ProfilesServiceError,
   normalizeProfileInput,
 } from "./profiles.utils";
-
-
 
 export async function getOrCreateProfile(
   userId: string,
@@ -218,6 +219,69 @@ export async function unfollowProfile(
   );
 
   return getProfileFollowMutationResponse(followerUserId, followingUserId);
+}
+
+async function getProfileFollowList({
+  queryName,
+  query,
+  userId,
+  viewerUserId,
+  pageInput,
+}: {
+  queryName: string;
+  query: string;
+  userId: string;
+  viewerUserId?: string | null;
+  pageInput?: ProfileFollowListInput;
+}): Promise<ProfileFollowListPage> {
+  const target = await ensureFollowableProfile(userId);
+
+  if (!target) {
+    throw new ProfilesServiceError("Profile not found", 404);
+  }
+
+  const { cursor, limit } = prepareFollowListPage(pageInput);
+  const result = await queryDb(
+    queryName,
+    query,
+    [
+      userId,
+      viewerUserId ?? null,
+      cursor?.followed_at ?? null,
+      cursor?.user_id ?? null,
+      limit + 1,
+    ],
+  );
+
+  return buildFollowListPage(result.rows, limit);
+}
+
+export function getProfileFollowers(
+  userId: string,
+  viewerUserId?: string | null,
+  pageInput?: ProfileFollowListInput,
+): Promise<ProfileFollowListPage> {
+  return getProfileFollowList({
+    queryName: "profiles.followers",
+    query: profileQueries.getProfileFollowers,
+    userId,
+    viewerUserId,
+    pageInput,
+  });
+}
+
+export function getProfileFollowing(
+  userId: string,
+  viewerUserId?: string | null,
+  pageInput?: ProfileFollowListInput,
+): Promise<ProfileFollowListPage> {
+  return getProfileFollowList({
+    queryName: "profiles.following",
+    query: profileQueries.getProfileFollowing,
+    userId,
+    viewerUserId,
+    pageInput,
+  });
 }
 
 export async function searchProfiles(

@@ -253,9 +253,11 @@ export function MapPageClient({ user }: MapPageClientProps) {
       <ProfileSidebar
         open={Boolean(profileSidebarUserId)}
         userId={profileSidebarUserId}
+        currentUserId={user.id}
         fallbackEmail={user.email}
         canEdit={profileSidebarUserId === user.id}
         onOpenPin={handleOpenProfilePin}
+        onOpenProfile={handleOpenProfile}
         onProfileSaved={setProfileAvatarUrl}
         onClose={handleCloseProfile}
       />
