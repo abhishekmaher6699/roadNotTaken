@@ -17,11 +17,14 @@ export interface ProfileStats {
   comment_karma: number;
   pin_count: number;
   comment_count: number;
+  followers_count: number;
+  following_count: number;
 }
 
 export interface PublicProfileResponse {
   user: Omit<Profile, "email" | "updated_at">;
   stats: ProfileStats;
+  viewer_has_followed: boolean;
   content: {
     pins: Array<{
       id: string;
@@ -40,6 +43,12 @@ export interface PublicProfileResponse {
       created_at: string;
     }>;
   };
+}
+
+export interface ProfileFollowMutationResponse {
+  following: boolean;
+  followers_count: number;
+  following_count: number;
 }
 
 export interface UpdateProfileInput {

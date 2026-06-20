@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { MapSidebarShell } from "../MapSidebarShell";
-import { updateMyProfileApi, usePublicProfile } from "@/features/profiles";
+import {
+  followProfileApi,
+  unfollowProfileApi,
+  updateMyProfileApi,
+  usePublicProfile,
+} from "@/features/profiles";
 import { useCloudinaryUpload } from "@/features/uploads/hooks";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileEditForm, type ProfileFormState } from "./ProfileEditForm";
@@ -18,12 +23,14 @@ export function ProfileSidebar({
   onProfileSaved,
   onClose,
 }: ProfileSidebarProps) {
-  const { profile, isLoading, error, refetch } = usePublicProfile(open ? userId : null);
+  const { profile, isLoading, error, refetch, setProfile } = usePublicProfile(open ? userId : null);
   const { uploadImage } = useCloudinaryUpload();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isFollowPending, setIsFollowPending] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [followError, setFollowError] = useState<string | null>(null);
   const [form, setForm] = useState<ProfileFormState>({
     display_name: "",
     username: "",
@@ -46,6 +53,11 @@ export function ProfileSidebar({
       avatar_url: user.avatar_url ?? "",
     });
   }, [isEditing, profile?.user]);
+
+  useEffect(() => {
+    setFollowError(null);
+    setIsFollowPending(false);
+  }, [userId]);
 
   if (!open && !userId) return null;
 
@@ -92,6 +104,79 @@ export function ProfileSidebar({
     }
   };
 
+  const handleToggleFollow = async () => {
+    if (!user || canEdit || isFollowPending) return;
+
+    const targetUserId = user.user_id;
+    const wasFollowing = Boolean(activeProfile?.viewer_has_followed);
+
+    setFollowError(null);
+    setIsFollowPending(true);
+    setProfile((current) => {
+      if (!current || current.user.user_id !== targetUserId) {
+        return current;
+      }
+
+      return {
+        ...current,
+        viewer_has_followed: !wasFollowing,
+        stats: {
+          ...current.stats,
+          followers_count: Math.max(
+            current.stats.followers_count + (wasFollowing ? -1 : 1),
+            0,
+          ),
+        },
+      };
+    });
+
+    try {
+      const result = wasFollowing
+        ? await unfollowProfileApi(targetUserId)
+        : await followProfileApi(targetUserId);
+
+      setProfile((current) => {
+        if (!current || current.user.user_id !== targetUserId) {
+          return current;
+        }
+
+        return {
+          ...current,
+          viewer_has_followed: result.following,
+          stats: {
+            ...current.stats,
+            followers_count: result.followers_count,
+          },
+        };
+      });
+    } catch (followToggleError) {
+      setProfile((current) => {
+        if (!current || current.user.user_id !== targetUserId) {
+          return current;
+        }
+
+        return {
+          ...current,
+          viewer_has_followed: wasFollowing,
+          stats: {
+            ...current.stats,
+            followers_count: Math.max(
+              current.stats.followers_count + (wasFollowing ? 1 : -1),
+              0,
+            ),
+          },
+        };
+      });
+      setFollowError(
+        followToggleError instanceof Error
+          ? followToggleError.message
+          : "Failed to update follow state",
+      );
+    } finally {
+      setIsFollowPending(false);
+    }
+  };
+
   return (
     <MapSidebarShell
       open={open}
@@ -119,10 +204,19 @@ export function ProfileSidebar({
               <ProfileHeader
                 user={user}
                 stats={stats}
+                viewerHasFollowed={activeProfile.viewer_has_followed}
                 canEdit={canEdit}
                 isEditing={isEditing}
+                isFollowPending={isFollowPending}
                 onToggleEdit={() => setIsEditing((v) => !v)}
+                onToggleFollow={handleToggleFollow}
               />
+            )}
+
+            {followError && !isEditing && (
+              <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-medium text-red-700">
+                {followError}
+              </div>
             )}
 
             {isEditing && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type SetStateAction } from "react";
 import {
   getMyProfileApi,
   getPublicProfileApi,
@@ -55,7 +55,14 @@ export function usePublicProfile(userId: string | null) {
     void loadProfile().catch(() => undefined);
   }, [loadProfile]);
 
-  return { profile, isLoading, error, refetch: loadProfile };
+  const updateProfileState = useCallback(
+    (updater: SetStateAction<PublicProfileResponse | null>) => {
+      setProfile(updater);
+    },
+    [],
+  );
+
+  return { profile, isLoading, error, refetch: loadProfile, setProfile: updateProfileState };
 }
 
 export function useMyProfile() {

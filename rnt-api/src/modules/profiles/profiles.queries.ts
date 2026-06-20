@@ -60,7 +60,18 @@ export const profileQueries = {
       COALESCE(pin_stats.pin_count, 0)::integer AS pin_count,
       COALESCE(pin_stats.pin_karma, 0)::integer AS pin_karma,
       COALESCE(comment_stats.comment_count, 0)::integer AS comment_count,
-      COALESCE(comment_stats.comment_karma, 0)::integer AS comment_karma
+      COALESCE(comment_stats.comment_karma, 0)::integer AS comment_karma,
+      COALESCE(follower_stats.followers_count, 0)::integer AS followers_count,
+      COALESCE(following_stats.following_count, 0)::integer AS following_count,
+      CASE
+        WHEN $2::text IS NULL THEN false
+        ELSE EXISTS (
+          SELECT 1
+          FROM profile_follows viewer_follow
+          WHERE viewer_follow.follower_user_id = $2
+            AND viewer_follow.following_user_id = profiles.user_id
+        )
+      END AS viewer_has_followed
     FROM profiles
     LEFT JOIN (
       SELECT
@@ -80,7 +91,64 @@ export const profileQueries = {
       WHERE user_id = $1
       GROUP BY user_id
     ) comment_stats ON comment_stats.user_id = profiles.user_id
+    LEFT JOIN (
+      SELECT
+        following_user_id AS user_id,
+        COUNT(*) AS followers_count
+      FROM profile_follows
+      WHERE following_user_id = $1
+      GROUP BY following_user_id
+    ) follower_stats ON follower_stats.user_id = profiles.user_id
+    LEFT JOIN (
+      SELECT
+        follower_user_id AS user_id,
+        COUNT(*) AS following_count
+      FROM profile_follows
+      WHERE follower_user_id = $1
+      GROUP BY follower_user_id
+    ) following_stats ON following_stats.user_id = profiles.user_id
     WHERE profiles.user_id = $1;
+  `,
+
+  ensureFollowTargetProfile: `
+    INSERT INTO profiles (user_id)
+    SELECT $1
+    WHERE EXISTS (SELECT 1 FROM pins WHERE user_id = $1)
+       OR EXISTS (SELECT 1 FROM comments WHERE user_id = $1)
+       OR EXISTS (SELECT 1 FROM profiles WHERE user_id = $1)
+    ON CONFLICT (user_id) DO NOTHING;
+  `,
+
+  getProfileFollowStats: `
+    SELECT
+      EXISTS (
+        SELECT 1
+        FROM profile_follows
+        WHERE follower_user_id = $1
+          AND following_user_id = $2
+      ) AS following,
+      (
+        SELECT COUNT(*)
+        FROM profile_follows
+        WHERE following_user_id = $2
+      )::integer AS followers_count,
+      (
+        SELECT COUNT(*)
+        FROM profile_follows
+        WHERE follower_user_id = $1
+      )::integer AS following_count;
+  `,
+
+  followProfile: `
+    INSERT INTO profile_follows (follower_user_id, following_user_id)
+    VALUES ($1, $2)
+    ON CONFLICT (follower_user_id, following_user_id) DO NOTHING;
+  `,
+
+  unfollowProfile: `
+    DELETE FROM profile_follows
+    WHERE follower_user_id = $1
+      AND following_user_id = $2;
   `,
 
   getPublicProfilePins: `

@@ -1,6 +1,7 @@
 import { queryDb } from "../../config/db";
 import type {
   Profile,
+  ProfileFollowMutationResponse,
   ProfileSearchResult,
   PublicProfileResponse,
   UpdateProfileInput,
@@ -81,15 +82,50 @@ export async function updateProfile(
   }
 }
 
+async function ensureFollowableProfile(userId: string) {
+  await queryDb(
+    "profiles.follow.ensure_target",
+    profileQueries.ensureFollowTargetProfile,
+    [userId],
+  );
+
+  const result = await queryDb(
+    "profiles.follow.target",
+    profileQueries.getProfileByUserId,
+    [userId],
+  );
+
+  return result.rows[0] as Profile | undefined;
+}
+
+async function getProfileFollowMutationResponse(
+  followerUserId: string,
+  followingUserId: string,
+): Promise<ProfileFollowMutationResponse> {
+  const result = await queryDb(
+    "profiles.follow.stats",
+    profileQueries.getProfileFollowStats,
+    [followerUserId, followingUserId],
+  );
+
+  const row = result.rows[0];
+  return {
+    following: Boolean(row?.following),
+    followers_count: row?.followers_count ?? 0,
+    following_count: row?.following_count ?? 0,
+  };
+}
+
 export async function getPublicProfile(
   userId: string,
+  viewerUserId?: string | null,
 ): Promise<PublicProfileResponse | null> {
   await queryDb("profiles.public.ensure", profileQueries.ensurePublicProfile, [userId]);
 
   const result = await queryDb(
     "profiles.public",
     profileQueries.getPublicProfile,
-    [userId],
+    [userId, viewerUserId ?? null],
   );
 
   const row = result.rows[0];
@@ -125,12 +161,63 @@ export async function getPublicProfile(
       comment_karma: row.comment_karma,
       pin_count: row.pin_count,
       comment_count: row.comment_count,
+      followers_count: row.followers_count,
+      following_count: row.following_count,
     },
+    viewer_has_followed: Boolean(row.viewer_has_followed),
     content: {
       pins: pinsResult.rows,
       comments: commentsResult.rows,
     },
   };
+}
+
+export async function followProfile(
+  followerUserId: string,
+  followingUserId: string,
+): Promise<ProfileFollowMutationResponse> {
+  if (followerUserId === followingUserId) {
+    throw new ProfilesServiceError("You cannot follow yourself", 400);
+  }
+
+  await getOrCreateProfile(followerUserId);
+  const target = await ensureFollowableProfile(followingUserId);
+
+  if (!target) {
+    throw new ProfilesServiceError("Profile not found", 404);
+  }
+
+  await queryDb(
+    "profiles.follow",
+    profileQueries.followProfile,
+    [followerUserId, followingUserId],
+  );
+
+  return getProfileFollowMutationResponse(followerUserId, followingUserId);
+}
+
+export async function unfollowProfile(
+  followerUserId: string,
+  followingUserId: string,
+): Promise<ProfileFollowMutationResponse> {
+  if (followerUserId === followingUserId) {
+    throw new ProfilesServiceError("You cannot unfollow yourself", 400);
+  }
+
+  await getOrCreateProfile(followerUserId);
+  const target = await ensureFollowableProfile(followingUserId);
+
+  if (!target) {
+    throw new ProfilesServiceError("Profile not found", 404);
+  }
+
+  await queryDb(
+    "profiles.unfollow",
+    profileQueries.unfollowProfile,
+    [followerUserId, followingUserId],
+  );
+
+  return getProfileFollowMutationResponse(followerUserId, followingUserId);
 }
 
 export async function searchProfiles(

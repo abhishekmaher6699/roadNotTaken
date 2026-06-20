@@ -5,17 +5,23 @@ import { formatDate, getInitial } from "./utils";
 interface ProfileHeaderProps {
   user: PublicProfileResponse["user"];
   stats: PublicProfileResponse["stats"];
+  viewerHasFollowed: boolean;
   canEdit: boolean;
   isEditing: boolean;
+  isFollowPending?: boolean;
   onToggleEdit: () => void;
+  onToggleFollow?: () => void;
 }
 
 export function ProfileHeader({
   user,
   stats,
+  viewerHasFollowed,
   canEdit,
   isEditing,
+  isFollowPending = false,
   onToggleEdit,
+  onToggleFollow,
 }: ProfileHeaderProps) {
   const displayName =
     user.display_name || user.username || "Anonymous";
@@ -48,13 +54,26 @@ export function ProfileHeader({
                   </h3>
                   <p className="truncate text-sm text-neutral-500">{handle}</p>
                 </div>
-                {canEdit && (
+                {canEdit ? (
                   <button
                     type="button"
                     onClick={onToggleEdit}
                     className="shrink-0 rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-50"
                   >
                     {isEditing ? "Cancel" : "Edit"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onToggleFollow}
+                    disabled={isFollowPending}
+                    className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                      viewerHasFollowed
+                        ? "border border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                        : "bg-neutral-950 text-white hover:bg-neutral-800"
+                    }`}
+                  >
+                    {viewerHasFollowed ? "Following" : "Follow"}
                   </button>
                 )}
               </div>
@@ -79,7 +98,7 @@ export function ProfileHeader({
         </p>
       </section>
 
-      <section className="grid grid-cols-3 overflow-hidden rounded-2xl border border-neutral-200 bg-white text-center">
+      <section className="grid grid-cols-5 overflow-hidden rounded-2xl border border-neutral-200 bg-white text-center">
         <div className="border-r border-neutral-200 px-2 py-3">
           <p className="text-base font-semibold text-neutral-950">
             {stats.total_karma.toLocaleString()}
@@ -96,12 +115,28 @@ export function ProfileHeader({
             Pins
           </p>
         </div>
-        <div className="px-2 py-3">
+        <div className="border-r border-neutral-200 px-2 py-3">
           <p className="text-base font-semibold text-neutral-950">
             {stats.comment_count.toLocaleString()}
           </p>
           <p className="text-[10px] font-semibold uppercase text-neutral-500">
             Comments
+          </p>
+        </div>
+        <div className="border-r border-neutral-200 px-2 py-3">
+          <p className="text-base font-semibold text-neutral-950">
+            {stats.followers_count.toLocaleString()}
+          </p>
+          <p className="text-[10px] font-semibold uppercase text-neutral-500">
+            Followers
+          </p>
+        </div>
+        <div className="px-2 py-3">
+          <p className="text-base font-semibold text-neutral-950">
+            {stats.following_count.toLocaleString()}
+          </p>
+          <p className="text-[10px] font-semibold uppercase text-neutral-500">
+            Following
           </p>
         </div>
       </section>

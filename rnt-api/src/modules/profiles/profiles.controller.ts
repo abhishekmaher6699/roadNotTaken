@@ -1,9 +1,11 @@
 import { Response } from "express";
 import { getOptionalAuthenticatedUser } from "../../middleware/auth.middleware";
 import {
+  followProfile,
   getPublicProfile,
   getOrCreateProfile,
   searchProfiles,
+  unfollowProfile,
   updateProfile,
 } from "./profiles.service";
 import { ProfilesServiceError } from "./profiles.utils";
@@ -40,7 +42,7 @@ export async function getPublicProfileHandler(req: any, res: Response) {
       await getOrCreateProfile(user.id, user.email);
     }
 
-    const profile = await getPublicProfile(req.params.userId);
+    const profile = await getPublicProfile(req.params.userId, user?.id ?? null);
 
     if (!profile) {
       return res.status(404).json({ error: "Profile not found" });
@@ -50,6 +52,34 @@ export async function getPublicProfileHandler(req: any, res: Response) {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Failed to fetch profile" });
+  }
+}
+
+export async function followProfileHandler(req: any, res: Response) {
+  try {
+    const result = await followProfile(req.user.id, req.params.userId);
+    return res.json(result);
+  } catch (error) {
+    if (error instanceof ProfilesServiceError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
+    console.error(error);
+    return res.status(500).json({ error: "Failed to follow profile" });
+  }
+}
+
+export async function unfollowProfileHandler(req: any, res: Response) {
+  try {
+    const result = await unfollowProfile(req.user.id, req.params.userId);
+    return res.json(result);
+  } catch (error) {
+    if (error instanceof ProfilesServiceError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
+    console.error(error);
+    return res.status(500).json({ error: "Failed to unfollow profile" });
   }
 }
 

@@ -35,6 +35,19 @@ describe('Profiles API Endpoint Tests', () => {
   }
 
   async function cleanupProfiles() {
+    try {
+      await getPool().query(
+        `DELETE FROM profile_follows
+         WHERE follower_user_id IN ($1, $2, $3)
+            OR following_user_id IN ($1, $2, $3)`,
+        [mockUserId, otherUserId, tempUserId],
+      );
+    } catch (error: any) {
+      if (error?.code !== '42P01') {
+        throw error;
+      }
+    }
+
     await getPool().query('DELETE FROM profiles WHERE user_id IN ($1, $2, $3)', [
       mockUserId,
       otherUserId,
@@ -143,12 +156,114 @@ describe('Profiles API Endpoint Tests', () => {
       expect(res.body.user).toHaveProperty('user_id', otherUserId);
       expect(res.body.user).toHaveProperty('username', 'another_explorer_unique');
       expect(res.body).toHaveProperty('stats');
+      expect(res.body.stats).toMatchObject({
+        followers_count: 0,
+        following_count: 0,
+      });
+      expect(res.body).toHaveProperty('viewer_has_followed', false);
       expect(res.body).toHaveProperty('content');
     });
 
     it('should return 404 for a user ID that does not exist', async () => {
       const res = await request(app).get('/profiles/usr_does_not_exist_999');
       expect(res.status).toBe(404);
+    });
+  });
+
+  describe('POST & DELETE /profiles/:userId/follow - Follow Profiles', () => {
+    it('should follow a profile and update public profile viewer state', async () => {
+      const followRes = await request(app)
+        .post(`/profiles/${otherUserId}/follow`)
+        .set('Cookie', [`access_token=${mockAccessToken}`]);
+
+      expect(followRes.status).toBe(200);
+      expect(followRes.body).toEqual({
+        following: true,
+        followers_count: 1,
+        following_count: 1,
+      });
+
+      const profileRes = await request(app)
+        .get(`/profiles/${otherUserId}`)
+        .set('Cookie', [`access_token=${mockAccessToken}`]);
+
+      expect(profileRes.status).toBe(200);
+      expect(profileRes.body).toHaveProperty('viewer_has_followed', true);
+      expect(profileRes.body.stats).toMatchObject({
+        followers_count: 1,
+        following_count: 0,
+      });
+    });
+
+    it('should make duplicate follows idempotent', async () => {
+      await request(app)
+        .post(`/profiles/${otherUserId}/follow`)
+        .set('Cookie', [`access_token=${mockAccessToken}`]);
+
+      const res = await request(app)
+        .post(`/profiles/${otherUserId}/follow`)
+        .set('Cookie', [`access_token=${mockAccessToken}`]);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        following: true,
+        followers_count: 1,
+        following_count: 1,
+      });
+    });
+
+    it('should unfollow a profile and update counts', async () => {
+      await request(app)
+        .post(`/profiles/${otherUserId}/follow`)
+        .set('Cookie', [`access_token=${mockAccessToken}`]);
+
+      const unfollowRes = await request(app)
+        .delete(`/profiles/${otherUserId}/follow`)
+        .set('Cookie', [`access_token=${mockAccessToken}`]);
+
+      expect(unfollowRes.status).toBe(200);
+      expect(unfollowRes.body).toEqual({
+        following: false,
+        followers_count: 0,
+        following_count: 0,
+      });
+    });
+
+    it('should make unfollowing a profile that is not followed idempotent', async () => {
+      const res = await request(app)
+        .delete(`/profiles/${otherUserId}/follow`)
+        .set('Cookie', [`access_token=${mockAccessToken}`]);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        following: false,
+        followers_count: 0,
+        following_count: 0,
+      });
+    });
+
+    it('should reject self-follow', async () => {
+      const res = await request(app)
+        .post(`/profiles/${mockUserId}/follow`)
+        .set('Cookie', [`access_token=${mockAccessToken}`]);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'You cannot follow yourself');
+    });
+
+    it('should return 401 when following unauthenticated', async () => {
+      const res = await request(app).post(`/profiles/${otherUserId}/follow`);
+
+      expect(res.status).toBe(401);
+    });
+
+    it('should return 404 when following a missing profile', async () => {
+      const res = await request(app)
+        .post('/profiles/usr_missing_follow_target/follow')
+        .set('Cookie', [`access_token=${mockAccessToken}`]);
+
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty('error', 'Profile not found');
     });
   });
 
