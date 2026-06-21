@@ -21,7 +21,7 @@ export interface MapViewport {
   zoom: number;
 }
 
-export type MapSidebarView = "create" | "details" | "edit" | null;
+export type MapSidebarView = "create" | "details" | "edit" | "feed" | null;
 
 export type AddPinProps = {
   onAdd: (latlng: LatLng) => void;
@@ -89,5 +89,6 @@ export interface MapPageOverlayProps extends MapPageClientProps {
   onLocate: (lat: number, lng: number) => void;
   onOpenProfile: () => void;
   onOpenProfileById: (userId: string) => void;
+  onOpenFeed: () => void;
   onLogout: () => Promise<void>;
 }

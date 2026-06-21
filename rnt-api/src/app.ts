@@ -11,6 +11,7 @@ import authRoutes from "./modules/auth/auth.routes"
 import uploadsRoutes from "./modules/uploads/uploads.routes"
 import commentsRoutes from "./modules/comments/comments.routes"
 import profilesRoutes from "./modules/profiles/profiles.routes"
+import feedRoutes from "./modules/feed/feed.routes"
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/auth', authRoutes)
 app.use('/uploads', uploadsRoutes)
 app.use('/comments', commentsRoutes)
 app.use('/profiles', profilesRoutes)
+app.use('/feed', feedRoutes)
 
 
 app.get('/', (req, res) => {

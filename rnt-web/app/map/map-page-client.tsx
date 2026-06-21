@@ -9,6 +9,7 @@ import { CreatePinSidebar } from "@/components/map/sidebar/create-pin";
 import { EditPinSidebar } from "@/components/map/sidebar/edit-pin";
 import { PinDetailsSidebar } from "@/components/map/sidebar/pin-details";
 import { ProfileSidebar } from "@/components/map/sidebar/profile";
+import { FeedSidebar } from "@/components/map/sidebar/feed";
 import { SearchResultsPanel } from "@/components/search";
 import { useMapPageState } from "@/features/map/hooks";
 import { useSearch } from "@/features/search";
@@ -91,6 +92,8 @@ export function MapPageClient({ user }: MapPageClientProps) {
     handleViewDetails,
     handleOpenProfile,
     handleCloseProfile,
+    handleOpenFeed,
+    handleCloseFeed,
   } = useMapPageState();
 
   const search = useSearch(mapRef);
@@ -216,6 +219,7 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onLocate={handleLocate}
         onOpenProfile={() => handleOpenProfile(user.id)}
         onOpenProfileById={handleOpenProfile}
+        onOpenFeed={handleOpenFeed}
         onLogout={handleLogout}
       />
 
@@ -260,6 +264,20 @@ export function MapPageClient({ user }: MapPageClientProps) {
         onOpenProfile={handleOpenProfile}
         onProfileSaved={setProfileAvatarUrl}
         onClose={handleCloseProfile}
+      />
+
+      <FeedSidebar
+        open={sidebarView === "feed"}
+        onClose={handleCloseFeed}
+        onViewPin={async (pinId) => {
+          const pin =
+            pins.find((p) => String(p.id) === String(pinId)) ??
+            (await getPinApi(pinId));
+          setSelectedPin(pin);
+          setFlyToTarget({ lat: pin.latitude, lng: pin.longitude });
+          handleViewDetails();
+        }}
+        onOpenProfile={handleOpenProfile}
       />
 
       <SearchResultsPanel

@@ -360,6 +360,15 @@ export function useMapPageState() {
     setProfileSidebarUserId(null);
   };
 
+  const handleOpenFeed = () => {
+    setSidebarView("feed");
+    setSelectedPin(null);
+  };
+
+  const handleCloseFeed = () => {
+    setSidebarView(null);
+  };
+
   return {
     pins,
     tileSummaries,
@@ -392,5 +401,7 @@ export function useMapPageState() {
     handleViewDetails,
     handleOpenProfile,
     handleCloseProfile,
+    handleOpenFeed,
+    handleCloseFeed,
   };
 }

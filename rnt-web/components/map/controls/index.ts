@@ -3,3 +3,4 @@ export { ModeSwitch } from "./ModeSwitch";
 export { PinInfoCard } from "./PinInfoCard";
 export { UserMenu } from "./UserMenu";
 export { BasemapToggle } from "./BasemapToggle";
+export { ActivityButton } from "./ActivityButton";

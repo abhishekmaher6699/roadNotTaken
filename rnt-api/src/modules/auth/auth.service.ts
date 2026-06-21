@@ -105,6 +105,8 @@ export function getGoogleAuthUrl() {
 
   authorizeUrl.searchParams.set("provider", "google");
   authorizeUrl.searchParams.set("redirect_to", callbackUrl.toString());
+  // Always show the Google account picker — prevents auto-sign-in to the last account.
+  authorizeUrl.searchParams.set("prompt", "select_account");
 
   return authorizeUrl.toString();
 }
